@@ -350,7 +350,7 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
 
                         unique &= (matchIter->second != 0);
 
-                        if (!visited[matchIter->first]) {
+                        if (!visited[matchIter->first] && (sc.noOtuBreaking || ac[matchIter->first].abundance <= ac[curSeed.id].abundance)) {
 
                             //curOtu->links.add(curSeed.id, matchIter->first, matchIter->second);
 

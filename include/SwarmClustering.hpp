@@ -130,6 +130,8 @@ struct SwarmConfig {
     char sepStatistics = '\t';
     char sepAbundance = ';';
 
+    bool noOtuBreaking = false; //-n
+
 };
 
 void exploreAndOutput(const AmpliconPools& pools, std::vector<Matches*>& allMatches, /*std::vector<Otu*>& otus,*/ const SwarmConfig& sc);

@@ -69,6 +69,9 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--swarm-statistics"] = 106; // (optional)
     parameters["-sw"] = 107;
     parameters["--swarm-seeds"] = 108; // (optional)
+    parameters["-sn"] = 109;
+    parameters["--swarm-no-otu-breaking"] = 110; // (optional)
+
 
     parameters["--min-length"] = 1001; // optional
     parameters["--max-length"] = 1002; // optional
@@ -110,6 +113,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             flagNumThreadsPerWorker = false, // (1003)
             flagNumWorkers = false // (1004)
     ;
+
+    int flagNoOtuBreaking = -1; // (109,110)
 
 
     /* Determine parameter values */
@@ -183,14 +188,19 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                 case 106:
                     oFileSwarmStatistics = argv[++i];
                     break;
-                    // parameters without abbreviation
+
 
                 case 107: //fallthrough -sw to --swarm-seeds
                 case 108:
                     oFileSwarmSeeds = argv[++i];
                     break;
 
+                case 109: //fallthrough -sn to --swarm-no-otu-breaking
+                case 110:
+                    flagNoOtuBreaking = std::stoi(argv[++i]);
+                    break;
 
+                // parameters without abbreviation
                 case 1001:
                     minLength = std::stoul(argv[++i]);
                     filterMinLength = true;
@@ -273,6 +283,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     if (oFileSwarmStatistics != "") config.set(SWARM_OUTPUT_STATISTICS, oFileSwarmStatistics);
 
     if (oFileSwarmSeeds != "") config.set(SWARM_OUTPUT_SEEDS, oFileSwarmSeeds);
+
+    if (flagNoOtuBreaking != -1) config.set(SWARM_NO_OTU_BREAKING, std::to_string(flagNoOtuBreaking));
 
     return config;
 

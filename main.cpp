@@ -176,6 +176,7 @@ int run(int argc, const char* argv[]) {
     if (sc.outOtus) sc.oFileOtus = c.get(SWARM_OUTPUT_OTUS);
     if (sc.outStatistics) sc.oFileStatistics = c.get(SWARM_OUTPUT_STATISTICS);
     if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
+    if (c.peek(SWARM_NO_OTU_BREAKING)) sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
 
     SwarmClustering::exploreAndOutput(*pools, allMatches, sc);
     auto postpStop = clock();

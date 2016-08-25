@@ -15,6 +15,7 @@
 #include <fstream>
 #include <queue>
 #include <sstream>
+#include <unordered_set>
 
 namespace SCT_PJ {
 
@@ -32,6 +33,7 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
     std::queue<OtuEntry> otuRim;
     OtuEntry curSeed, newSeed;
     bool unique;
+    std::unordered_set<std::string> nonUniques;
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> next;
 
     // open new OTU for the amplicon with the highest abundance that is not yet included in an OTU
@@ -86,6 +88,8 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
 
                     }
                 }
+
+                unique = unique || nonUniques.insert(ac[curSeed.id].seq).second;
 
                 curOtu->numUniqueSequences += unique;
 
@@ -284,6 +288,7 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
     Otu* curOtu = 0;
     numSeqs_t numOtu = 0;
     std::vector<bool> visited;
+    std::unordered_set<std::string> nonUniques;
     std::queue<OtuEntry> otuRim;
     OtuEntry curSeed, newSeed;
     bool unique;
@@ -318,6 +323,7 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
                 otuRim.push(newSeed);
 
                 visited[*seedIter] = true;
+                nonUniques.clear();
 
 
                 /* (b) BFS through 'match space' */
@@ -364,6 +370,8 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
 
                         }
                     }
+
+                    unique = unique || nonUniques.insert(ac[curSeed.id].seq).second;
 
                     curOtu->numUniqueSequences += unique;
 

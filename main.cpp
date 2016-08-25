@@ -74,13 +74,14 @@ int run(int argc, const char* argv[]) {
 
     /* Preprocessing */
     std::cout << "Preprocessing..." << std::endl;
-
+    auto prepStart = clock();
     auto pools = Preprocessor::run(c, files);
-
+    auto prepStop = clock();
+    std::cout << "Preprocessing: " << (prepStop - prepStart) / CLOCKS_PER_SEC << std::endl;
 
     /* Matching */
     std::cout << "Matching..." << std::endl;
-auto t1 = clock();
+    auto matchStart = clock();
     unsigned long numWorkers = std::stoul(c.get(NUM_WORKERS));
     unsigned long numThreadsPerWorkers = std::stoul(c.get(NUM_THREADS_PER_WORKER));
     int mode = std::stoi(c.get(SEGMENT_FILTER));
@@ -110,12 +111,12 @@ auto t1 = clock();
         }
 
     }
-auto t2 = clock();
-        std::cout << (t2 - t1) / CLOCKS_PER_SEC << std::endl;
+    auto matchStop = clock();
+    std::cout << "Matching: " << (matchStop - matchStart) / CLOCKS_PER_SEC << std::endl;
 
     /* Postprocessing */
     std::cout << "Postprocessing..." << std::endl;
-
+    auto postpStart = clock();
     if (c.peek(MATCHES_OUTPUT_FILE)) {
 
         std::cout << "Writing matches..." << std::endl;
@@ -177,7 +178,8 @@ auto t2 = clock();
     if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
 
     SwarmClustering::exploreAndOutput(*pools, allMatches, sc);
-
+    auto postpStop = clock();
+    std::cout << "Postprocessing: " << (postpStop - postpStart) / CLOCKS_PER_SEC << std::endl;
 
 
     /* Cleaning up */

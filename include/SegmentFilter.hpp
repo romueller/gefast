@@ -57,7 +57,14 @@ namespace SegmentFilter {
     void selectSegments(Segments& segments, const lenSeqs_t seqLen, const lenSeqs_t t, const lenSeqs_t k);
 
 
-    //TODO avoid counting multiple times per segment (during the full filter step), e.g. by collecting the found partners in a set and +1 per set element at the end of processing the segment
+
+    /*
+     * Concerning all four filter variants:
+     * Currently, a segment contributes with each matched substring (instead of at most one), which can make an indexed sequence a candidate even though not enough different segments are matched.
+     * This would increase the workload of the verification stage.
+     * However, some runtime tests with means preventing this multiple counting increased the overall runtime, as the costs for avoiding multiple counting seem to exceed the additional verification costs.
+     * Therefore, multiple counting is not prevented (as it also has no influence on the final result).
+     */
 
     // (forward) segment filter for the general pigeonhole principle (t + k segments, k segments must be matched)
     void filterForward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);

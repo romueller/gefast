@@ -95,9 +95,6 @@ struct OtuEntry {
 
 };
 
-// Assumptions:
-// - An amplicon is a singleton, if it has abundance 1 (even if it is not unique)
-// - An amplicon is unique, if there is no other amplicon with the same sequence.
 void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu*>& otus);
 
 

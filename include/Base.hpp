@@ -70,23 +70,6 @@ struct AmpliconSeqEqual;
 typedef std::vector<Amplicon> AmpliconCollection;
 
 
-// comparer structure
-// intended use: sort indices [1:n] according to the respective abundances of the amplicons in the referenced AmpliconCollection
-struct IndexCompareAbund {
-
-    const AmpliconCollection& ac;
-
-    IndexCompareAbund(const AmpliconCollection& coll) : ac(coll) {
-        // nothing more to do
-    }
-
-    bool operator()(numSeqs_t a, numSeqs_t b) {
-        return ac[a].abundance > ac[b].abundance;
-    }
-
-};
-
-
 // multiple amplicon collections
 // intended use: see pool() method of LengthGroups
 class AmpliconPools {

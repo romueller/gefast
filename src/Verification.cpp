@@ -721,7 +721,7 @@ void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Can
 
             if (!mat.contains(c.first, c.second)) {
 
-                lenSeqs_t d = computeBoundedRow(ac[c.first].seq, ac[c.second].seq, t); //TODO choose "best" implementation
+                lenSeqs_t d = computeLengthAwareRow(ac[c.first].seq, ac[c.second].seq, t); //TODO choose "best" implementation
 
                 if (d <= t) { matches++; //TODO remove
                     mat.add(c.first, c.second, d);

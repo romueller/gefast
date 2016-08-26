@@ -95,6 +95,37 @@ struct OtuEntry {
 
 };
 
+// comparer structures
+// intended use: sort indices [1:n] according to the respective abundances of the amplicons in the referenced AmpliconCollection
+struct IndexCompareAbund {
+
+    const AmpliconCollection& ac;
+
+    IndexCompareAbund(const AmpliconCollection& coll) : ac(coll) {
+        // nothing more to do
+    }
+
+    bool operator()(numSeqs_t a, numSeqs_t b) {
+        return ac[a].abundance > ac[b].abundance;
+    }
+
+};
+
+// intended use: sort content of a deque (representing a generation in an OTU) according to the respective abundance of the amplicons in the referenced AmpliconCollection
+struct DequeCompareAbund {
+
+    const AmpliconCollection& ac;
+
+    DequeCompareAbund(const AmpliconCollection& coll) : ac(coll) {
+        // nothing more to do
+    }
+
+    bool operator()(OtuEntry& a, OtuEntry& b) {
+        return ac[a.id].abundance > ac[b.id].abundance;
+    }
+
+};
+
 void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu*>& otus);
 
 

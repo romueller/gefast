@@ -285,14 +285,15 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
 
 
     std::vector<numSeqs_t> index;
-    Otu* curOtu = 0;
+    Otu curOtu; // change into pointer (+ changes below) if determined OTUs shall be returned via parameter otus
     numSeqs_t numOtu = 0;
     std::vector<bool> visited;
     std::unordered_set<std::string> nonUniques;
-    std::queue<OtuEntry> otuRim;
+    std::deque<OtuEntry> otuRim;
     OtuEntry curSeed, newSeed;
     bool unique;
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> next;
+    lenSeqs_t lastGen;
 
 
     for (numSeqs_t p = 0; p < pools.numPools(); p++) {
@@ -313,17 +314,19 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
             if (!visited[*seedIter]) { // visited amplicons are already included in an OTU
 
                 /* (a) Initialise new OTU with seed */
-                curOtu = new Otu(++numOtu, *seedIter, ac[*seedIter].abundance);
+                curOtu = Otu(++numOtu, *seedIter, ac[*seedIter].abundance);
 
                 if (sc.outOtus) sStreamOtus << ac[*seedIter].id << sc.sepAbundance << ac[*seedIter].abundance;
 
                 newSeed.id = *seedIter;
                 newSeed.gen = 0;
                 newSeed.rad = 0;
-                otuRim.push(newSeed);
+                otuRim.push_back(newSeed);
 
                 visited[*seedIter] = true;
                 nonUniques.clear();
+
+                lastGen = 0;
 
 
                 /* (b) BFS through 'match space' */
@@ -331,16 +334,20 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
 
                     // Get next OTU (sub)seed
                     curSeed = otuRim.front();
-                    otuRim.pop();
+                    otuRim.pop_front();
+
+                    if (lastGen != curSeed.gen) {
+                        std::sort(otuRim.begin(), otuRim.end(), DequeCompareAbund(ac));
+                    }
 
                     unique = true;
 
                     // Update OTU information
-                    curOtu->totalCopyNumber += ac[curSeed.id].abundance;
-                    curOtu->numSingletons += (ac[curSeed.id].abundance == 1);
+                    curOtu.totalCopyNumber += ac[curSeed.id].abundance;
+                    curOtu.numSingletons += (ac[curSeed.id].abundance == 1);
 
-                    if (curSeed.gen > curOtu->maxGen) curOtu->maxGen = curSeed.gen;
-                    if (curSeed.rad > curOtu->maxRad) curOtu->maxRad = curSeed.rad;
+                    if (curSeed.gen > curOtu.maxGen) curOtu.maxGen = curSeed.gen;
+                    if (curSeed.rad > curOtu.maxRad) curOtu.maxRad = curSeed.rad;
 
                     // Consider yet unseen (unvisited) amplicons to continue exploring
                     // An amplicon is marked as 'visited' as soon as it occurs the first time as matching partner
@@ -357,23 +364,27 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
                             newSeed.id = matchIter->first;
                             newSeed.gen = curSeed.gen + 1;
                             newSeed.rad = curSeed.rad + matchIter->second;
-                            otuRim.push(newSeed);
+                            otuRim.push_back(newSeed);
                             visited[matchIter->first] = true;
 
                             if (sc.outInternals) {
 
-                                sStreamInternals << ac[curSeed.id].id << sc.sepInternals << ac[matchIter->first].id << sc.sepInternals << matchIter->second << sc.sepInternals << curOtu->id << sc.sepInternals << (curSeed.gen + 1) << std::endl;
+                                sStreamInternals << ac[curSeed.id].id << sc.sepInternals << ac[matchIter->first].id << sc.sepInternals << matchIter->second << sc.sepInternals << curOtu.id << sc.sepInternals << (curSeed.gen + 1) << std::endl;
                                 oStreamInternals << sStreamInternals.rdbuf();
+                                sStreamInternals.str(std::string());
 
                             }
                             if (sc.outOtus) sStreamOtus << sc.sepOtus << ac[matchIter->first].id << sc.sepAbundance << ac[matchIter->first].abundance;
 
                         }
+
                     }
 
                     unique = unique || nonUniques.insert(ac[curSeed.id].seq).second;
 
-                    curOtu->numUniqueSequences += unique;
+                    curOtu.numUniqueSequences += unique;
+
+                    lastGen = curSeed.gen;
 
                 }
 
@@ -384,18 +395,21 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
 
                     sStreamOtus << std::endl;
                     oStreamOtus << sStreamOtus.rdbuf();
+                    sStreamOtus.str(std::string());
 
                 }
                 if (sc.outStatistics) {
 
-                    sStreamStatistics << curOtu->numUniqueSequences << sc.sepStatistics << curOtu->totalCopyNumber << sc.sepStatistics << ac[curOtu->seedId].id << sc.sepStatistics << curOtu->seedCopyNumber << sc.sepStatistics << curOtu->numSingletons << sc.sepStatistics << curOtu->maxGen << sc.sepStatistics << curOtu->maxRad << std::endl;
+                    sStreamStatistics << curOtu.numUniqueSequences << sc.sepStatistics << curOtu.totalCopyNumber << sc.sepStatistics << ac[curOtu.seedId].id << sc.sepStatistics << curOtu.seedCopyNumber << sc.sepStatistics << curOtu.numSingletons << sc.sepStatistics << curOtu.maxGen << sc.sepStatistics << curOtu.maxRad << std::endl;
                     oStreamStatistics << sStreamStatistics.rdbuf();
+                    sStreamStatistics.str(std::string());
 
                 }
                 if (sc.outSeeds) {
 
-                    sStreamSeeds << ">" << ac[curOtu->seedId].id << sc.sepAbundance << curOtu->totalCopyNumber << std::endl << ac[curOtu->seedId].seq << std::endl;
+                    sStreamSeeds << ">" << ac[curOtu.seedId].id << sc.sepAbundance << curOtu.totalCopyNumber << std::endl << ac[curOtu.seedId].seq << std::endl;
                     oStreamSeeds << sStreamSeeds.rdbuf();
+                    sStreamSeeds.str(std::string());
 
                 }
 

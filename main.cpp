@@ -178,6 +178,7 @@ int run(int argc, const char* argv[]) {
     if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
     if (c.peek(SWARM_NO_OTU_BREAKING)) sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
 
+    std::cout << "Swarming results..." << std::endl;
     SwarmClustering::exploreAndOutput(*pools, allMatches, sc);
     auto postpStop = clock();
     std::cout << "Postprocessing: " << (postpStop - postpStart) / CLOCKS_PER_SEC << std::endl;

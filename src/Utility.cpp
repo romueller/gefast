@@ -71,7 +71,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--swarm-seeds"] = 108; // (optional)
     parameters["-sn"] = 109;
     parameters["--swarm-no-otu-breaking"] = 110; // (optional)
-
+    parameters["-sd"] = 111;
+    parameters["--swarm-dereplicate"] = 112; // optional
 
     parameters["--min-length"] = 1001; // optional
     parameters["--max-length"] = 1002; // optional
@@ -111,7 +112,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             flagThreshold = false, // (7,8)
             flagSegFilter = false, // (13,14)
             flagNumThreadsPerWorker = false, // (1003)
-            flagNumWorkers = false // (1004)
+            flagNumWorkers = false, // (1004)
+            flagDereplicate = false // 111,112
     ;
 
     int flagNoOtuBreaking = -1; // (109,110)
@@ -122,9 +124,16 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     for (int i = 1; i < argc; i++) {
 
         // one-part parameters
-//        switch (parameters[argv[i]]) {
-//
-//        }
+        switch (parameters[argv[i]]) {
+            case 111: //fallthrough -sd to -swarm-dereplicate
+            case 112:
+                flagDereplicate = true;
+                break;
+
+            default:
+                // do nothing
+                break;
+        }
 
         // two-part parameters
         if (i + 1 != argc) {
@@ -285,6 +294,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     if (oFileSwarmSeeds != "") config.set(SWARM_OUTPUT_SEEDS, oFileSwarmSeeds);
 
     if (flagNoOtuBreaking != -1) config.set(SWARM_NO_OTU_BREAKING, std::to_string(flagNoOtuBreaking));
+
+    if (flagDereplicate) config.set(SWARM_DEREPLICATE, "1");
 
     return config;
 

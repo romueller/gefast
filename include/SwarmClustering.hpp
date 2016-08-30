@@ -20,6 +20,33 @@
 namespace SCT_PJ {
 namespace SwarmClustering {
 
+struct SwarmConfig {
+
+    bool outInternals; //-i
+    std::string oFileInternals;
+
+    bool outOtus; //-o
+    std::string oFileOtus;
+
+    bool outStatistics; //-s
+    std::string oFileStatistics;
+
+    bool outSeeds; //-w
+    std::string oFileSeeds;
+
+    char sepInternals = '\t';
+    char sepOtus = ' ';
+    char sepStatistics = '\t';
+    char sepAbundance = ';';
+
+    bool noOtuBreaking = false; //-n
+
+    bool dereplicate = false; //-d 0
+
+    unsigned long numExplorers = 1;
+
+};
+
 /**
  * Representation of one OTU.
  *
@@ -46,6 +73,8 @@ struct Otu {
     lenSeqs_t maxRad;
     SimpleMatches<lenSeqs_t, numSeqs_t> links;
 
+    numSeqs_t poolId; //only for dereplication
+
     Otu() {
 
         id = 0;
@@ -57,6 +86,7 @@ struct Otu {
         maxGen = 0;
         maxRad = 0;
         links = SimpleMatches<lenSeqs_t, numSeqs_t>();
+        poolId = 0;
 
     }
 
@@ -71,6 +101,7 @@ struct Otu {
         maxGen = 0;
         maxRad = 0;
         links = SimpleMatches<lenSeqs_t, numSeqs_t>();
+        poolId = 0;
 
     }
 
@@ -126,7 +157,14 @@ struct DequeCompareAbund {
 
 };
 
-void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu*>& otus);
+// intended use: sort OTUs by their mass ( = total abundance)
+struct OtusCompareAbund {
+    bool operator()(Otu* a, Otu* b) {
+        return a->totalCopyNumber > b->totalCopyNumber;
+    }
+};
+
+void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu*>& otus, const SwarmConfig& sc);
 
 
 //option -i, --internal-structure output of swarm
@@ -142,30 +180,13 @@ void outputStatistics(const std::string oFile, const AmpliconPools& pools, const
 void outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sepAbundance = '\t');
 
 
-struct SwarmConfig {
+void outputDereplicate(const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc);
 
-    bool outInternals; //-i
-    std::string oFileInternals;
 
-    bool outOtus; //-o
-    std::string oFileOtus;
+void exploreThenOutput(const AmpliconPools& pools, std::vector<Matches*>& allMatches, const SwarmConfig& sc);
 
-    bool outStatistics; //-s
-    std::string oFileStatistics;
 
-    bool outSeeds; //-w
-    std::string oFileSeeds;
-
-    char sepInternals = '\t';
-    char sepOtus = ' ';
-    char sepStatistics = '\t';
-    char sepAbundance = ';';
-
-    bool noOtuBreaking = false; //-n
-
-};
-
-void exploreAndOutput(const AmpliconPools& pools, std::vector<Matches*>& allMatches, /*std::vector<Otu*>& otus,*/ const SwarmConfig& sc);
+void exploreAndOutput(const AmpliconPools& pools, std::vector<Matches*>& allMatches, const SwarmConfig& sc);
 
 }
 }

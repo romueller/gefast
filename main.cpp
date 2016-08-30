@@ -25,7 +25,6 @@
 
 namespace SCT_PJ {
 
-// Note: no internal dereplication (unlike swarm), TODO? incorporate
 int run(int argc, const char* argv[]) {
 
     /* Bootstrapping */
@@ -60,6 +59,23 @@ int run(int argc, const char* argv[]) {
         std::cerr << "ERROR: No output file specified." << std::endl;
         return 1;
 
+    }
+
+    SwarmClustering::SwarmConfig sc;
+    sc.outInternals = c.peek(SWARM_OUTPUT_INTERNAL);
+    sc.outOtus = c.peek(SWARM_OUTPUT_OTUS);
+    sc.outStatistics = c.peek(SWARM_OUTPUT_STATISTICS);
+    sc.outSeeds = c.peek(SWARM_OUTPUT_SEEDS);
+    if (sc.outInternals) sc.oFileInternals = c.get(SWARM_OUTPUT_INTERNAL);
+    if (sc.outOtus) sc.oFileOtus = c.get(SWARM_OUTPUT_OTUS);
+    if (sc.outStatistics) sc.oFileStatistics = c.get(SWARM_OUTPUT_STATISTICS);
+    if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
+    if (c.peek(SWARM_NO_OTU_BREAKING)) sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
+    if (c.peek(SWARM_DEREPLICATE)) sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
+
+    // swarm parameters influencing the matching stage
+    if (sc.dereplicate) {
+        c.set(THRESHOLD, "0");
     }
 
 
@@ -124,61 +140,11 @@ int run(int argc, const char* argv[]) {
 
     }
 
-//    // parallel computation of swarm clusters & subsequent generation of outputs
-//    std::cout << "Finding OTUs..." << std::endl;
-//    std::vector<std::vector<SwarmClustering::Otu*>> otus(pools->numPools());
-//    unsigned long numExplorers = numWorkers * numThreadsPerWorkers;
-//    std::thread explorers[numExplorers];
-//    unsigned long r = 0;
-//    for (; r + numExplorers <= pools->numPools(); r += numExplorers) {
-//
-//        for (unsigned long e = 0; e < numExplorers; e++) {
-//            explorers[e] = std::thread(&SwarmClustering::explorePool, std::ref(*(pools->get(r + e))), std::ref(*(allMatches[r + e])), std::ref(otus[r + e]));
-//        }
-//        for (unsigned long e = 0; e < numExplorers; e++) {
-//            explorers[e].join();
-//        }
-//
-//    }
-//
-//    for (unsigned long e = 0; e < pools->numPools() % numExplorers; e++) {
-//        explorers[e] = std::thread(&SwarmClustering::explorePool, std::ref(*(pools->get(r + e))), std::ref(*(allMatches[r + e])), std::ref(otus[r + e]));
-//    }
-//    for (unsigned long e = 0; e < pools->numPools() % numExplorers; e++) {
-//        explorers[e].join();
-//    }
-//
-//    // make OTU IDs unique over all pools (so far IDs start at 1 in each pool)
-//    numSeqs_t cnt = otus[0].size();
-//    for (numSeqs_t p = 1; p < pools->numPools(); p++) {
-//
-//        for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
-//            (*otuIter)->id += cnt;
-//        }
-//
-//        cnt += otus[p].size();
-//
-//    }
-//
-//    // swarm outputs
-//    if (c.peek(SWARM_OUTPUT_INTERNAL)) SwarmClustering::outputInternalStructures(c.get(SWARM_OUTPUT_INTERNAL), *pools, otus);
-//    if (c.peek(SWARM_OUTPUT_OTUS)) SwarmClustering::outputOtus(c.peek(SWARM_OUTPUT_OTUS), *pools, otus);
-//    if (c.peek(SWARM_OUTPUT_STATISTICS)) SwarmClustering::outputStatistics(c.get(SWARM_OUTPUT_STATISTICS), *pools, otus);
-//    if (c.peek(SWARM_OUTPUT_SEEDS)) SwarmClustering::outputSeeds(c.get(SWARM_OUTPUT_SEEDS), *pools, otus);
+    std::cout << "Swarming results..." << std::endl;
+    // parallel computation of swarm clusters & subsequent generation of outputs
+//    SwarmClustering::exploreThenOutput(*pools, allMatches, sc);
 
     // interleaved computation of swarm clusters & generation of outputs
-    SwarmClustering::SwarmConfig sc;
-    sc.outInternals = c.peek(SWARM_OUTPUT_INTERNAL);
-    sc.outOtus = c.peek(SWARM_OUTPUT_OTUS);
-    sc.outStatistics = c.peek(SWARM_OUTPUT_STATISTICS);
-    sc.outSeeds = c.peek(SWARM_OUTPUT_SEEDS);
-    if (sc.outInternals) sc.oFileInternals = c.get(SWARM_OUTPUT_INTERNAL);
-    if (sc.outOtus) sc.oFileOtus = c.get(SWARM_OUTPUT_OTUS);
-    if (sc.outStatistics) sc.oFileStatistics = c.get(SWARM_OUTPUT_STATISTICS);
-    if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
-    if (c.peek(SWARM_NO_OTU_BREAKING)) sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
-
-    std::cout << "Swarming results..." << std::endl;
     SwarmClustering::exploreAndOutput(*pools, allMatches, sc);
     auto postpStop = clock();
     std::cout << "Postprocessing: " << (postpStop - postpStart) / CLOCKS_PER_SEC << std::endl;

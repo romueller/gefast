@@ -44,6 +44,7 @@ enum ConfigParameters {
     NUM_THREADS_PER_WORKER, // number of parallel threads employed by each work
     NUM_WORKERS,            // number of parallel workers
     SEGMENT_FILTER,         // mode of the segment filter (forward, backward, forward-backward, backward-forward)
+    SWARM_DEREPLICATE,      // boolean flag indicating demand for dereplication, corresponds to swarm with -d 0
     SWARM_NO_OTU_BREAKING,  // boolean flag indicating usage of OTU breaking, corresponds to swarm's option -n
     SWARM_OUTPUT_INTERNAL,  // name of the output file corresponding to swarm's output option -i (internal structures)
     SWARM_OUTPUT_OTUS,      // name of the output file corresponding to swarm's output option -o (OTUs)
@@ -159,6 +160,7 @@ private:
                         {"NUM_WORKERS",            NUM_WORKERS},
                         {"MATCHES_OUTPUT_FILE",    MATCHES_OUTPUT_FILE},
                         {"SEGMENT_FILTER",         SEGMENT_FILTER},
+                        {"SWARM_DEREPLICATE",      SWARM_DEREPLICATE},
                         {"SWARM_NO_OTU_BREAKING",  SWARM_NO_OTU_BREAKING},
                         {"SWARM_OUTPUT_INTERNAL",  SWARM_OUTPUT_INTERNAL},
                         {"SWARM_OUTPUT_OTUS",      SWARM_OUTPUT_OTUS},

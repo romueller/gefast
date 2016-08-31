@@ -37,7 +37,7 @@ struct SwarmConfig {
     char sepInternals = '\t';
     char sepOtus = ' ';
     char sepStatistics = '\t';
-    char sepAbundance = ';';
+    char sepAbundance;
 
     bool noOtuBreaking = false; //-n
 
@@ -168,16 +168,16 @@ void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu
 
 
 //option -i, --internal-structure output of swarm
-void outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sep = '\t');
+void outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sep);
 
 //option -o, --output-file output of swarm
-void outputOtus(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sep = ' ', const char sepAbundance = ';');
+void outputOtus(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sep, const char sepAbundance);
 
 //option -s, --statistics-file output of swarm
-void outputStatistics(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sep = '\t');
+void outputStatistics(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sep);
 
 //option -w, --seeds output of swarm
-void outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sepAbundance = '\t');
+void outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const char sepAbundance);
 
 
 void outputDereplicate(const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc);

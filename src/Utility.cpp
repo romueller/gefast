@@ -79,6 +79,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--per-worker"] = 1003; // optional (has default)
     parameters["--workers"] = 1004; // optional (has default)
     parameters["--info-file"] = 1005; // optional
+    parameters["--sep-abundance"] = 1006; // optional (has default)
 
 
     std::string
@@ -91,7 +92,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             oFileSwarmOutput = "", // 103,104
             oFileSwarmStatistics = "", // 105,106
             oFileSwarmSeeds = "", // 107,108
-            infoFile = "" // 1005
+            infoFile = "", // 1005
+            sepAbundance = ";" // 1006 //TODO choose "best" default (underscore as in swarm?)
     ;
 
     unsigned long long
@@ -113,7 +115,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             flagSegFilter = false, // (13,14)
             flagNumThreadsPerWorker = false, // (1003)
             flagNumWorkers = false, // (1004)
-            flagDereplicate = false // 111,112
+            flagDereplicate = false, // 111,112
+            flagSepAbundance = false // 1006
     ;
 
     int flagNoOtuBreaking = -1; // (109,110)
@@ -234,6 +237,11 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                     infoFile = std::stoul(argv[++i]);
                     break;
 
+                case 1006:
+                    sepAbundance = argv[++i];
+                    flagSepAbundance = true;
+                    break;
+
                 default:
                     std::cout << "Unknown parameter: " << argv[i] << " (is ignored)" << std::endl;
                     break;
@@ -296,6 +304,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     if (flagNoOtuBreaking != -1) config.set(SWARM_NO_OTU_BREAKING, std::to_string(flagNoOtuBreaking));
 
     if (flagDereplicate) config.set(SWARM_DEREPLICATE, "1");
+
+    if (flagSepAbundance || !config.peek(SEPARATOR_ABUNDANCE)) config.set(SEPARATOR_ABUNDANCE, sepAbundance);
 
     return config;
 

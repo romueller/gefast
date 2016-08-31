@@ -60,7 +60,7 @@ void Preprocessor::lowerCase(std::string& s) {
 
 //adds contents of specified file (if readable) to the given LengthGroups object, returns pointer to this object
 // "normalises" to lower-case letters
-LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string fileName) {
+LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string fileName, const char sep) {
 
     std::ifstream iStream(fileName);
     if (!iStream.good()) {
@@ -86,7 +86,7 @@ LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string f
 
             if (cnt == 1) { //first entry found (no previous entry to finish), simply parse header
 
-                dl = parseDescriptionLine(line);
+                dl = parseDescriptionLine(line, sep);
 
             } else { //finish and store previous entry, then collect parse header of new entry
 
@@ -94,7 +94,7 @@ LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string f
                 ampls.add(Amplicon(dl.id, seq, dl.abundance));
 
                 seq.clear();
-                dl = parseDescriptionLine(line);
+                dl = parseDescriptionLine(line, sep);
 
             }
 
@@ -225,8 +225,9 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
 
     // collect amplicons from all input files
     LengthGroups* ampls = new LengthGroups();
+    char sep = conf.get(SEPARATOR_ABUNDANCE)[0];
     for (auto iter = fileNames.begin(); iter != fileNames.end(); iter++) {
-        appendInput(*ampls, *iter);
+        appendInput(*ampls, *iter, sep);
     }
 
 

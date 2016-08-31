@@ -408,10 +408,10 @@ void SwarmClustering::exploreThenOutput(const AmpliconPools& pools, std::vector<
 
     } else {
 
-        if (sc.outInternals) outputInternalStructures(sc.oFileInternals, pools, otus);
-        if (sc.outOtus) outputOtus(sc.oFileOtus, pools, otus);
-        if (sc.outStatistics) outputStatistics(sc.oFileStatistics, pools, otus);
-        if (sc.outSeeds) outputSeeds(sc.oFileSeeds, pools, otus);
+        if (sc.outInternals) outputInternalStructures(sc.oFileInternals, pools, otus, sc.sepInternals);
+        if (sc.outOtus) outputOtus(sc.oFileOtus, pools, otus, sc.sepOtus, sc.sepAbundance);
+        if (sc.outStatistics) outputStatistics(sc.oFileStatistics, pools, otus, sc.sepStatistics);
+        if (sc.outSeeds) outputSeeds(sc.oFileSeeds, pools, otus, sc.sepAbundance);
 
         for (auto pIter = otus.begin(); pIter != otus.end(); pIter++) {
             for (auto otuIter = pIter->begin(); otuIter != pIter->end(); otuIter++) {

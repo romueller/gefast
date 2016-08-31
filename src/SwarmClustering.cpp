@@ -60,13 +60,13 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
             /* (b) BFS through 'match space' */
             while (!otuRim.empty()) { // expand current OTU until no further similar amplicons can be added
 
+                if (lastGen != otuRim.front().gen) {
+                    std::sort(otuRim.begin(), otuRim.end(), DequeCompareAbund(ac));
+                }
+
                 // Get next OTU (sub)seed
                 curSeed = otuRim.front();
                 otuRim.pop_front();
-
-                if (lastGen != curSeed.gen) {
-                    std::sort(otuRim.begin(), otuRim.end(), DequeCompareAbund(ac));
-                }
 
                 unique = true;
 
@@ -490,13 +490,13 @@ void SwarmClustering::exploreAndOutput(const AmpliconPools& pools, std::vector<M
                 /* (b) BFS through 'match space' */
                 while (!otuRim.empty()) { // expand current OTU until no further similar amplicons can be added
 
+                    if (lastGen != otuRim.front().gen) {
+                        std::sort(otuRim.begin(), otuRim.end(), DequeCompareAbund(ac));
+                    }
+
                     // Get next OTU (sub)seed
                     curSeed = otuRim.front();
                     otuRim.pop_front();
-
-                    if (lastGen != curSeed.gen) {
-                        std::sort(otuRim.begin(), otuRim.end(), DequeCompareAbund(ac));
-                    }
 
                     unique = true;
 

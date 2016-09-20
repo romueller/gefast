@@ -234,6 +234,17 @@ std::map<lenSeqs_t, AmpliconCollection>& LengthGroups::getGroups() {
     return groups_;
 }
 
+numSeqs_t LengthGroups::size() {
+
+    numSeqs_t res = 0;
+    for (auto iter = groups_.begin(); iter != groups_.end(); iter++) {
+        res += iter->second.size();
+    }
+
+    return res;
+
+}
+
 AmpliconPools* LengthGroups::pool(const lenSeqs_t threshold) {
 
     AmpliconPools* pools = new AmpliconPools();

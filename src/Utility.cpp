@@ -73,6 +73,10 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--swarm-no-otu-breaking"] = 110; // (optional)
     parameters["-sd"] = 111;
     parameters["--swarm-dereplicate"] = 112; // optional
+    parameters["-sf"] = 113;
+    parameters["--swarm-fastidious"] = 114; // optional
+    parameters["-sb"] = 115;
+    parameters["--swarm-boundary"] = 116; // optional
 
     parameters["--min-length"] = 1001; // optional
     parameters["--max-length"] = 1002; // optional
@@ -103,7 +107,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             minLength = 0, // 1001
             maxLength = 0, // 1002
             numThreadsPerWorker = 1, // 1003
-            numWorkers = 1 // 1004
+            numWorkers = 1, // 1004
+            boundary = 3 // 115,116
     ;
 
     bool
@@ -116,7 +121,9 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             flagNumThreadsPerWorker = false, // (1003)
             flagNumWorkers = false, // (1004)
             flagDereplicate = false, // 111,112
-            flagSepAbundance = false // 1006
+            flagSepAbundance = false, // 1006
+            flagFastidious = false, // 113,114
+            flagBoundary = false // 115,116
     ;
 
     int flagNoOtuBreaking = -1; // (109,110)
@@ -128,9 +135,14 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
         // one-part parameters
         switch (parameters[argv[i]]) {
-            case 111: //fallthrough -sd to -swarm-dereplicate
+            case 111: //fallthrough -sd to --swarm-dereplicate
             case 112:
                 flagDereplicate = true;
+                break;
+
+            case 113: //fallthrough -sf to --swarm-fastidious
+            case 114:
+                flagFastidious = true;
                 break;
 
             default:
@@ -210,6 +222,12 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                 case 109: //fallthrough -sn to --swarm-no-otu-breaking
                 case 110:
                     flagNoOtuBreaking = std::stoi(argv[++i]);
+                    break;
+
+                case 115: //fallthrough -sb to --swarm-boundary
+                case 116:
+                    boundary = std::stoul(argv[++i]);
+                    flagBoundary = true;
                     break;
 
                 // parameters without abbreviation
@@ -306,6 +324,10 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     if (flagDereplicate) config.set(SWARM_DEREPLICATE, "1");
 
     if (flagSepAbundance || !config.peek(SEPARATOR_ABUNDANCE)) config.set(SEPARATOR_ABUNDANCE, sepAbundance);
+
+    if (flagFastidious) config.set(SWARM_FASTIDIOUS, "1");
+
+    if (flagBoundary || !config.peek(SWARM_BOUNDARY)) config.set(SWARM_BOUNDARY, std::to_string(boundary));
 
     return config;
 

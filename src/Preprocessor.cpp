@@ -71,6 +71,9 @@ LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string f
 
     }
 
+#if INPUT_RANK
+    numSeqs_t prevSize = ampls.size();
+#endif
     numSeqs_t cnt = 0;
     Defline dl;
     std::string line, seq;
@@ -91,7 +94,11 @@ LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string f
             } else { //finish and store previous entry, then collect parse header of new entry
 
                 lowerCase(seq);
+#if INPUT_RANK
+                ampls.add(Amplicon(dl.id, seq, dl.abundance, prevSize + cnt));
+#else
                 ampls.add(Amplicon(dl.id, seq, dl.abundance));
+#endif
 
                 seq.clear();
                 dl = parseDescriptionLine(line, sep);
@@ -108,7 +115,11 @@ LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string f
     if (cnt > 0) { //ensures that last entry (if any) is written to file.
 
         lowerCase(seq);
+#if INPUT_RANK
+        ampls.add(Amplicon(dl.id, seq, dl.abundance, prevSize + cnt));
+#else
         ampls.add(Amplicon(dl.id, seq, dl.abundance));
+#endif
 
     }
 

@@ -17,6 +17,9 @@
 #include <string>
 #include <vector>
 
+#define INPUT_RANK 1
+
+
 namespace SCT_PJ {
 
 // type for everything related to counts of amplicons / sequences
@@ -36,20 +39,33 @@ struct Amplicon {
     std::string id;
     std::string seq;
     numSeqs_t abundance;
+#if INPUT_RANK
+    numSeqs_t rank;
+#endif
 
     Amplicon() {
 
         id = "";
         seq = "";
         abundance = 0;
+#if INPUT_RANK
+        rank = 0;
+#endif
 
     }
 
+#if INPUT_RANK
+    Amplicon(std::string i, std::string s, numSeqs_t a, numSeqs_t r) {
+#else
     Amplicon(std::string i, std::string s, numSeqs_t a) {
+#endif
 
         id = i;
         seq = s;
         abundance = a;
+#if INPUT_RANK
+        rank = r;
+#endif
 
     }
 
@@ -152,6 +168,9 @@ public:
     // return reference to all length groups
     std::map<lenSeqs_t, AmpliconCollection>& getGroups();
 
+    // return total number of amplicons in all length groups
+    numSeqs_t size();
+
     /*
      * 	Split the total amplicon collection at 'breaks' into 'pools'.
      *	A 'break' (conceptually) lies between two neighboured length groups whose difference
@@ -198,11 +217,12 @@ public:
     typedef std::vector<T> Row;
 
 
-    RollingIndices(lenSeqs_t t, lenSeqs_t w, bool f) {
+    RollingIndices(lenSeqs_t t, lenSeqs_t w, bool f, bool s = true) {
 
         threshold_ = t;
         width_ = w;
         forward_ = f;
+        shrink_ = s;
 
         empty_ = T();
         emptyRow_ = Row(0);
@@ -246,7 +266,7 @@ public:
         if (indices_.find(len) == indices_.end()) {
 
             indices_[len] = Row(width_);
-            shrink(len);
+            if (shrink_) shrink(len);
 
         }
 
@@ -274,7 +294,7 @@ public:
 
 private:
 
-    lenSeqs_t threshold_; // maximal number of rows
+    lenSeqs_t threshold_; // limits number of rows when applying shrink()
     lenSeqs_t width_; // number of columns / segments per row
 
     std::map<lenSeqs_t, Row> indices_; // indices grid
@@ -282,7 +302,8 @@ private:
     T empty_; // empty (dummy) index returned for out-of-bounds queries
     Row emptyRow_; // empty (dummy) row returned for out-of-bounds queries
 
-    bool forward_; // flag indicating of rolling forwards (increasingly larger lengths are 'inserted') or backwards (shorter lengths are 'inserted')
+    bool forward_; // flag indicating whether rolling forwards (increasingly larger lengths are 'inserted') or backwards (shorter lengths are 'inserted')
+    bool shrink_; // flag indicating whether roll() automatically shrinks the index
 
 };
 

@@ -73,11 +73,23 @@ int run(int argc, const char* argv[]) {
     if (c.peek(SWARM_NO_OTU_BREAKING)) sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
     if (c.peek(SWARM_DEREPLICATE)) sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
     sc.sepAbundance = c.get(SEPARATOR_ABUNDANCE)[0];
+    sc.extraSegs = std::stoul(c.get(NUM_EXTRA_SEGMENTS));
 
-    // swarm parameters influencing the matching stage
-    if (sc.dereplicate) {
+    if (sc.dereplicate) { // dereplication uses matching with distance 0
         c.set(THRESHOLD, "0");
     }
+
+    sc.threshold = std::stoul(c.get(THRESHOLD));
+
+    if (sc.dereplicate || (c.get(THRESHOLD) == "0")) { // fastidious option pointless when dereplicating or matching with distance 0
+
+        c.set(SWARM_FASTIDIOUS, "0");
+        sc.fastidious = false;
+
+    }
+
+    if (c.peek(SWARM_FASTIDIOUS)) sc.fastidious = (c.get(SWARM_FASTIDIOUS) == "1");
+    if (sc.fastidious) sc.boundary = std::stoul(c.get(SWARM_BOUNDARY));
 
 
     //TODO remove or redirect to logger
@@ -90,15 +102,16 @@ int run(int argc, const char* argv[]) {
 
 
     /* Preprocessing */
-    std::cout << "Preprocessing..." << std::endl;
-    auto prepStart = clock();
+    std::cout << "Preprocessing..." << std::flush;
+//    auto prepStart = clock();
     auto pools = Preprocessor::run(c, files);
-    auto prepStop = clock();
-    std::cout << "Preprocessing: " << (prepStop - prepStart) / CLOCKS_PER_SEC << std::endl;
+//    auto prepStop = clock();
+    std::cout << "DONE" << std::endl;
+//    std::cout << "Preprocessing: " << (prepStop - prepStart) / CLOCKS_PER_SEC << std::endl;
 
     /* Matching */
-    std::cout << "Matching..." << std::endl;
-    auto matchStart = clock();
+    std::cout << "Matching..." << std::flush;
+//    auto matchStart = clock();
     unsigned long numWorkers = std::stoul(c.get(NUM_WORKERS));
     unsigned long numThreadsPerWorkers = std::stoul(c.get(NUM_THREADS_PER_WORKER));
     int mode = std::stoi(c.get(SEGMENT_FILTER));
@@ -110,7 +123,7 @@ int run(int argc, const char* argv[]) {
     std::vector<Subpool> subpools; // subpools of one pool
     std::thread workers[numWorkers]; // at most numWorkers per pool
 
-    for (numSeqs_t p = 0; p < pools->numPools(); p++) { std::cout << "Pool #" << p << std::endl; //TODO remove print
+    for (numSeqs_t p = 0; p < pools->numPools(); p++) {// std::cout << "Pool #" << p << std::endl; //TODO remove print
 
         allMatches[p] = new Matches();
         if (mode % 2 == 0) {
@@ -128,35 +141,36 @@ int run(int argc, const char* argv[]) {
         }
 
     }
-    auto matchStop = clock();
-    std::cout << "Matching: " << (matchStop - matchStart) / CLOCKS_PER_SEC << std::endl;
+//    auto matchStop = clock();
+    std::cout << "DONE" << std::endl;
+//    std::cout << "Matching: " << (matchStop - matchStart) / CLOCKS_PER_SEC << std::endl;
 
     /* Postprocessing */
-    std::cout << "Postprocessing..." << std::endl;
-    auto postpStart = clock();
+//    std::cout << "Postprocessing..." << std::endl;
+//    auto postpStart = clock();
     if (c.peek(MATCHES_OUTPUT_FILE)) {
 
-        std::cout << "Writing matches..." << std::endl;
+        std::cout << "Writing matches..." << std::flush;
         SegmentFilter::writeMatches(c.get(MATCHES_OUTPUT_FILE), *pools, allMatches);
+        std::cout << "DONE" << std::endl;
 
     }
 
     std::cout << "Swarming results..." << std::endl;
     // parallel computation of swarm clusters & subsequent generation of outputs
-//    SwarmClustering::exploreThenOutput(*pools, allMatches, sc);
-
-    // interleaved computation of swarm clusters & generation of outputs
-    SwarmClustering::exploreAndOutput(*pools, allMatches, sc);
-    auto postpStop = clock();
-    std::cout << "Postprocessing: " << (postpStop - postpStart) / CLOCKS_PER_SEC << std::endl;
+    SwarmClustering::cluster(*pools, allMatches, sc);
+    std::cout << "Swarming results...DONE" << std::endl;
+//    auto postpStop = clock();
+//    std::cout << "Postprocessing: " << (postpStop - postpStart) / CLOCKS_PER_SEC << std::endl;
 
 
     /* Cleaning up */
-    std::cout << "Cleaning up..." << std::endl;
+    std::cout << "Cleaning up..." << std::flush;
     for (auto iter = allMatches.begin(); iter != allMatches.end(); iter++) {
         delete *iter;
     }
     delete pools;
+    std::cout << "DONE" << std::endl;
 
     return 0;
 

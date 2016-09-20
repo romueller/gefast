@@ -710,7 +710,7 @@ lenSeqs_t Verification::computeLengthAwareRowSlim(const std::string& s, const st
 
 void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t t) {
 
-    numSeqs_t matches = 0; //TODO remove
+//    numSeqs_t matches = 0; //TODO remove
     Candidate c;
 
     while (!buf.getFlag() || buf.size() > 0) {
@@ -723,7 +723,7 @@ void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Can
 
                 lenSeqs_t d = computeLengthAwareRow(ac[c.first].seq, ac[c.second].seq, t); //TODO choose "best" implementation
 
-                if (d <= t) { matches++; //TODO remove
+                if (d <= t) {// matches++; //TODO remove
                     mat.add(c.first, c.second, d);
                 }
 
@@ -733,7 +733,7 @@ void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Can
 
     }
 
-    std::cout << "#matches = " << matches << std::endl; //TODO remove
+//    std::cout << "#matches = " << matches << std::endl; //TODO remove
 
 }
 

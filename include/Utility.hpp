@@ -45,7 +45,9 @@ enum ConfigParameters {
     NUM_WORKERS,            // number of parallel workers
     SEGMENT_FILTER,         // mode of the segment filter (forward, backward, forward-backward, backward-forward)
     SEPARATOR_ABUNDANCE,    // seperator symbol (char) between ID and abundance in a FASTA header line
+    SWARM_BOUNDARY,         // minimum mass of a heavy OTU, used only during fastidious swarming
     SWARM_DEREPLICATE,      // boolean flag indicating demand for dereplication, corresponds to swarm with -d 0
+    SWARM_FASTIDIOUS,       // boolean flag indicating demand for second, fastidious swarming phase, corresponds to swarm's -f
     SWARM_NO_OTU_BREAKING,  // boolean flag indicating usage of OTU breaking, corresponds to swarm's option -n
     SWARM_OUTPUT_INTERNAL,  // name of the output file corresponding to swarm's output option -i (internal structures)
     SWARM_OUTPUT_OTUS,      // name of the output file corresponding to swarm's output option -o (OTUs)
@@ -162,7 +164,9 @@ private:
                         {"MATCHES_OUTPUT_FILE",    MATCHES_OUTPUT_FILE},
                         {"SEGMENT_FILTER",         SEGMENT_FILTER},
                         {"SEPARATOR_ABUNDANCE",    SEPARATOR_ABUNDANCE},
+                        {"SWARM_BOUNDARY",         SWARM_BOUNDARY},
                         {"SWARM_DEREPLICATE",      SWARM_DEREPLICATE},
+                        {"SWARM_FASTIDIOUS",       SWARM_FASTIDIOUS},
                         {"SWARM_NO_OTU_BREAKING",  SWARM_NO_OTU_BREAKING},
                         {"SWARM_OUTPUT_INTERNAL",  SWARM_OUTPUT_INTERNAL},
                         {"SWARM_OUTPUT_OTUS",      SWARM_OUTPUT_OTUS},

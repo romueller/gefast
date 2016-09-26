@@ -790,7 +790,7 @@ void SwarmClustering::outputInternalStructures(const std::string oFile, const Am
 
 }
 
-void SwarmClustering::outputOtus(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep, const char sepAbundance) {
+void SwarmClustering::outputOtus(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep, const std::string sepAbundance) {
 
     std::ofstream oStream(oFile);
     std::stringstream sStream;
@@ -850,7 +850,7 @@ void SwarmClustering::outputStatistics(const std::string oFile, const AmpliconPo
 
 }
 
-void SwarmClustering::outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sepAbundance) {
+void SwarmClustering::outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const std::string sepAbundance) {
 
     std::ofstream oStream(oFile);
     std::stringstream sStream;

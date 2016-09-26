@@ -47,11 +47,11 @@ namespace Preprocessor {
     };
 
 
-    Defline parseDescriptionLine(const std::string defline, const char sep);
+    Defline parseDescriptionLine(const std::string defline, const std::string sep);
 
     void lowerCase(std::string& s);
 
-    LengthGroups& appendInput(LengthGroups& lg, const std::string fileName, const char sep);
+    LengthGroups& appendInput(LengthGroups& lg, const std::string fileName, const std::string sep);
 
     LengthGroups& filterMinLength(LengthGroups& lg, const numSeqs_t minLen);
 

@@ -17,7 +17,7 @@
 
 namespace SCT_PJ {
 
-Preprocessor::Defline Preprocessor::parseDescriptionLine(const std::string defline, const char sep) {
+Preprocessor::Defline Preprocessor::parseDescriptionLine(const std::string defline, const std::string sep) {
 
     auto pos = defline.find(' ');
     numSeqs_t abundance = 1;
@@ -27,7 +27,7 @@ Preprocessor::Defline Preprocessor::parseDescriptionLine(const std::string defli
     pos = firstPart.find(sep);
 
     if (pos != std::string::npos) {
-        abundance = std::stoul(firstPart.substr(pos + 1));
+        abundance = std::stoul(firstPart.substr(pos + sep.size()));
         firstPart = firstPart.substr(0, pos);
     }
 
@@ -60,7 +60,7 @@ void Preprocessor::lowerCase(std::string& s) {
 
 //adds contents of specified file (if readable) to the given LengthGroups object, returns pointer to this object
 // "normalises" to lower-case letters
-LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string fileName, const char sep) {
+LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string fileName, const std::string sep) {
 
     std::ifstream iStream(fileName);
     if (!iStream.good()) {
@@ -236,7 +236,7 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
 
     // collect amplicons from all input files
     LengthGroups* ampls = new LengthGroups();
-    char sep = conf.get(SEPARATOR_ABUNDANCE)[0];
+    std::string sep = conf.get(SEPARATOR_ABUNDANCE);
     for (auto iter = fileNames.begin(); iter != fileNames.end(); iter++) {
         appendInput(*ampls, *iter, sep);
     }

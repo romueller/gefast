@@ -72,7 +72,7 @@ int run(int argc, const char* argv[]) {
     if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
     if (c.peek(SWARM_NO_OTU_BREAKING)) sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
     if (c.peek(SWARM_DEREPLICATE)) sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
-    sc.sepAbundance = c.get(SEPARATOR_ABUNDANCE)[0];
+    sc.sepAbundance = c.get(SEPARATOR_ABUNDANCE);
     sc.extraSegs = std::stoul(c.get(NUM_EXTRA_SEGMENTS));
 
     if (sc.dereplicate) { // dereplication uses matching with distance 0

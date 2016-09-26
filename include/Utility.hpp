@@ -44,7 +44,7 @@ enum ConfigParameters {
     NUM_THREADS_PER_WORKER, // number of parallel threads employed by each work
     NUM_WORKERS,            // number of parallel workers
     SEGMENT_FILTER,         // mode of the segment filter (forward, backward, forward-backward, backward-forward)
-    SEPARATOR_ABUNDANCE,    // seperator symbol (char) between ID and abundance in a FASTA header line
+    SEPARATOR_ABUNDANCE,    // seperator symbol (string) between ID and abundance in a FASTA header line
     SWARM_BOUNDARY,         // minimum mass of a heavy OTU, used only during fastidious swarming
     SWARM_DEREPLICATE,      // boolean flag indicating demand for dereplication, corresponds to swarm with -d 0
     SWARM_FASTIDIOUS,       // boolean flag indicating demand for second, fastidious swarming phase, corresponds to swarm's -f

@@ -45,7 +45,7 @@ struct SwarmConfig {
     char sepInternals = '\t';
     char sepOtus = ' ';
     char sepStatistics = '\t';
-    char sepAbundance;
+    std::string sepAbundance;
 
     // clustering options
     bool noOtuBreaking = false; //-n
@@ -387,7 +387,7 @@ void outputInternalStructures(const std::string oFile, const AmpliconPools& pool
  * Each line contains the members of one OTU represented through amplicon id and abundance.
  * The members are separated via sep, while id and abundance are separated via sepAbundance.
  */
-void outputOtus(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep, const char sepAbundance);
+void outputOtus(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep, const std::string sepAbundance);
 
 /**
  * Write the statistics of the given OTUs to file (corresponds to output of swarm's option -s).
@@ -409,7 +409,7 @@ void outputStatistics(const std::string oFile, const AmpliconPools& pools, const
  * The first line contains the amplicon id of the seed preceded by '>' and followed by a separator and the mass of the OTU.
  * The second line describes the sequence of the seed amplicon.
  */
-void outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sepAbundance);
+void outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const std::string sepAbundance);
 
 /**
  * Write the requested dereplication outputs to file (SwarmConfig stores information on which are requested).

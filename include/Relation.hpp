@@ -14,8 +14,7 @@
 #define SCT_PJ_RELATION_HPP
 
 #include <algorithm>
-#include <atomic>
-#include <mutex>
+//#include <mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -191,6 +190,23 @@ public:
 
     }
 
+    void join(SimpleBinaryRelation<O, L>& sbr) {
+
+        for (auto iter = sbr.binRel_.begin(); iter != sbr.binRel_.end(); iter++) {
+
+            auto& labs = binRel_[iter->first];
+
+            for (auto labIter = iter->second.begin(); labIter != iter->second.end(); labIter++) {
+
+                if (std::find(labs.begin(), labs.end(), *labIter) == labs.end()) { // add label only if it is not already there
+                    labs.push_back(*labIter);
+                }
+
+            }
+        }
+
+    }
+
 
 private:
     std::unordered_map<O,std::vector<L>> binRel_;
@@ -220,7 +236,7 @@ public:
 
 
     // return whether the pair (obj,lab) is recorded as a pair
-    bool contains(T t1, T t2) {
+    bool contains(T& t1, T& t2) {
 
         bool found = false;
 
@@ -233,7 +249,7 @@ public:
     }
 
     // add a match
-    void add(T t1, T t2, K d) {
+    void add(T& t1, T& t2, K& d) {
 
         matches_[d].add(t1, t2);
         matches_[d].add(t2, t1); //NEW for symmetry
@@ -241,7 +257,7 @@ public:
     }
 
     // remove (a) match
-    void remove(T t1, T t2) {
+    void remove(T& t1, T& t2) {
 
         for (auto iter = matches_.begin(); iter != matches_.end(); iter++) {
             iter->second.remove(t1, t2);
@@ -252,7 +268,7 @@ public:
 
 
     // return all matches of the specified element
-    std::vector<T> getMatchesOf(T t) {
+    std::vector<T> getMatchesOf(T& t) {
 
         std::vector<T> res;
         std::vector<T> m;
@@ -270,7 +286,7 @@ public:
 
 
     // return whether the pair (obj,lab) is recorded as a pair (1st component) and, if yes, what is their distance (2nd component)
-    std::pair<bool, K> containsAugmented(T t1, T t2) {
+    std::pair<bool, K> containsAugmented(T& t1, T& t2) {
 
         bool found = false;
         K d = 0;
@@ -284,9 +300,8 @@ public:
 
     }
 
-
     // return all matches (and their distances) of the specified element
-    std::vector<std::pair<T, K>> getMatchesOfAugmented(T t) {
+    std::vector<std::pair<T, K>> getMatchesOfAugmented(T& t) {
 
         std::vector<std::pair<T, K>> res;
         std::vector<T> m;
@@ -320,7 +335,7 @@ public:
     }
 
     // count the number of matches of the specified element
-    unsigned long countMatchesOf(T t) {
+    unsigned long countMatchesOf(T& t) {
 
         unsigned long sum = 0;
 
@@ -332,18 +347,91 @@ public:
 
     }
 
+    void join(SimpleMatches<T, T>& sm) {
+
+        for (auto iter = sm.matches_.begin(); iter != sm.matches_.end(); iter++) {
+            matches_[iter->first].join(iter->second);
+        }
+
+    }
+
+/*
+    bool syncContains(T& t1, T& t2) {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        return contains(t1, t2);
+
+    }
+
+    void syncAdd(T& t1, T& t2, K& d) {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        add(t1, t2, d);
+
+    }
+
+    void syncRemove(T& t1, T& t2) {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        remove(t1, t2);
+
+    }
+
+    std::vector<T> syncGetMatchesOf(T& t) {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        return getMatchesOf(t);
+
+    }
+
+    std::pair<bool, K> syncContainsAugmented(T& t1, T& t2) {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        return containsAugmented(t1, t2);
+
+    }
+
+    std::vector<std::pair<T, K>> syncGetMatchesOfAugmented(T& t) {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        return getMatchesOfAugmented(t);
+
+    }
+
+    unsigned long syncCountMatches() {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        return countMatches();
+
+    }
+
+    unsigned long syncCountMatchesOf(T& t) {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        return countMatchesOf(t);
+
+    }
+
+    void syncJoin(SimpleMatches<T, T>& sm) {//assumption: no concurrent accesses on sm
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        join(sm);
+
+    }
+*/
 
 private:
     std::map<K, SimpleBinaryRelation<T, T>> matches_;
+//    std::mutex mtx_;
 
 };
 
 
 
 /*
- * Sync wrapper of SimpleMatches
+ * Sync wrapper of SimpleMatches [probably not needed: (1) currently no concurrent accesses to Matches instances, (2) sync-methods in SimpleMatches]
  */
-template<typename K, typename T>
+/*template<typename K, typename T>
 class SyncSimpleMatches {
 
 public:
@@ -431,15 +519,21 @@ public:
 
     }
 
+    void join(SyncSimpleMatches<K, T>& ssm) {
+
+        std::lock_guard<std::mutex> lock(mtx_);
+
+        matches_.join(ssm.matches_);
+    }
+
 private:
     SimpleMatches<K, T> matches_;
     std::mutex mtx_;
 
-};
-
+};*/
 
 // minimum interface: contains, add, remove
-typedef SyncSimpleMatches<lenSeqs_t, numSeqs_t> Matches;
+typedef SimpleMatches<lenSeqs_t, numSeqs_t> Matches;
 
 }
 

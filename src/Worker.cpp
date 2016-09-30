@@ -42,16 +42,31 @@ void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
 
         cbs = RotatingBuffers<Candidate>(numThreads_ - 1);
 
+        Matches* matchesPerThread[numThreads_ - 1];
+        matchesPerThread[0] = &matches_;
+        for (unsigned long v = 1; v < numThreads_ - 1; v++) {
+            matchesPerThread[v] = new Matches();
+        }
+
         std::thread verifierThreads[numThreads_ - 1];
         for (unsigned long v = 0; v < numThreads_ - 1; v++) {
-            verifierThreads[v] = std::thread(&Verification::verify, std::ref(ac_), std::ref(matches_), std::ref(cbs.getBuffer(v)), threshold);
+            verifierThreads[v] = std::thread(&Verification::verify, std::ref(ac_), std::ref(*(matchesPerThread[v])), std::ref(cbs.getBuffer(v)), threshold);
         }
 
         SegmentFilter::filter(ac_, sp_, cbs, threshold, numExtraSegments, mode_);
         cbs.close();
 
         for (unsigned long v = 0; v < numThreads_ - 1; v++) {
+
             verifierThreads[v].join();
+
+            if (v > 0) {
+
+                matches_.join(*(matchesPerThread[v]));
+                delete matchesPerThread[v];
+
+            }
+
         }
 
     }

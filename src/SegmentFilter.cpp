@@ -153,6 +153,7 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
     Segments segments(t + k);
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<Candidate> candColl;
 
     lenSeqs_t seqLen = 0;
     numSeqs_t curIntId = sp.beginIndex;
@@ -223,7 +224,7 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
             for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
                 if (candIter->second >= k) {
-                    cands.push(Candidate(curIntId, candIter->first));
+                    candColl.push_back(Candidate(curIntId, candIter->first));
                 }
 
             }
@@ -234,6 +235,9 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
         }
+
+        cands.push(candColl);
+        candColl = std::vector<Candidate>();
 
     }
 
@@ -250,6 +254,7 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
     Segments segments(t + k);
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<Candidate> candColl;
 
     lenSeqs_t seqLen = 0;
     numSeqs_t curIntId = sp.end - 1;
@@ -323,7 +328,7 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
             for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
                 if (candIter->second >= k) {
-                    cands.push(Candidate(curIntId, candIter->first));
+                    candColl.push_back(Candidate(curIntId, candIter->first));
                 }
 
             }
@@ -334,6 +339,9 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
         }
+
+        cands.push(candColl);
+        candColl = std::vector<Candidate>();
 
     } while (curIntId != sp.beginMatch);
 
@@ -351,6 +359,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
     std::vector<std::string> segmentStrs(t + k);
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<Candidate> candColl;
 
     lenSeqs_t seqLen = 0;
     numSeqs_t curIntId = sp.beginIndex;
@@ -447,7 +456,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
                     }
 
                     if (cnt == k) {
-                        cands.push(Candidate(curIntId, candIter->first));
+                        candColl.push_back(Candidate(curIntId, candIter->first));
                     }
 
                     cnt = 0;
@@ -463,6 +472,9 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
         }
+
+        cands.push(candColl);
+        candColl = std::vector<Candidate>();
 
     }
 
@@ -480,6 +492,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
     std::vector<std::string> segmentStrs(t + k);
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<Candidate> candColl;
 
     lenSeqs_t seqLen = 0;
     numSeqs_t curIntId = sp.end - 1;
@@ -579,7 +592,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
                     }
 
                     if (cnt == k) {
-                        cands.push(Candidate(curIntId, candIter->first));
+                        candColl.push_back(Candidate(curIntId, candIter->first));
                     }
 
                     cnt = 0;
@@ -595,6 +608,9 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
         }
+
+        cands.push(candColl);
+        candColl = std::vector<Candidate>();
 
     } while (curIntId != sp.beginMatch);
 

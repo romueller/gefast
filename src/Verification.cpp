@@ -712,12 +712,15 @@ void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Can
 
 //    numSeqs_t matches = 0; //TODO remove
     Candidate c;
+    Buffer<Candidate> localBuffer;
 
-    while (!buf.getFlag() || buf.size() > 0) {
+    while (!buf.isClosed() || buf.syncSize() > 0) {
 
-        if (buf.size() > 0) {
+        buf.syncSwapContents(localBuffer);
 
-            c = buf.pop();
+        while (localBuffer.size() > 0) {
+
+            c = localBuffer.pop();
 
             if (!mat.contains(c.first, c.second)) {
 

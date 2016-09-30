@@ -13,7 +13,7 @@
 #ifndef SCT_PJ_BUFFER_HPP
 #define SCT_PJ_BUFFER_HPP
 
-#include <atomic>
+#include <condition_variable>
 #include <mutex>
 #include <queue>
 
@@ -21,51 +21,113 @@
 namespace SCT_PJ {
 
 /*
- * FIFO buffer suitable for concurrent accesses.
+ * FIFO buffer (also) suitable for concurrent accesses.
  */
 template<typename T>
 class Buffer {
 
 public:
     Buffer() {
-        flag_ = false;
+        closed_ = false;
     }
 
-    void setFlag(const bool f) {
-        flag_ = f;
+    inline void close() {
+        closed_ = true;
     }
 
-    bool getFlag() const {
-        return flag_;
+    inline bool isClosed() const {
+        return closed_;
     }
 
-    size_t size() {
-
-        std::lock_guard<std::mutex> lock(mtx_);
+    inline size_t size() {
         return buffer_.size();
-
     }
 
-    T pop() {
+    inline T pop() {
 
-        std::lock_guard<std::mutex> lock(mtx_);
         T val = buffer_.front();
         buffer_.pop();
         return val;
 
     }
 
-    void push(T e) {
+    inline void push(T& t) {
+        buffer_.push(t);
+    }
 
-        std::lock_guard<std::mutex> lock(mtx_);
-        buffer_.push(e);
+    inline void push(std::vector<T>& v) {
+
+        for (auto iter = v.begin(); iter != v.end(); iter++) {
+            buffer_.push(*iter);
+        }
 
     }
 
+    inline void swapContents(Buffer<T>& b) {
+        buffer_.swap(b.buffer_);
+    }
+
+    inline void syncClose() {
+
+        std::unique_lock<std::mutex> lock(mtx_);
+        close();
+        lock.unlock();
+        cv_.notify_one();
+
+    }
+
+    inline bool syncIsClosed() {
+
+        std::unique_lock<std::mutex> lock(mtx_);
+        return isClosed();
+
+    }
+
+    inline size_t syncSize() {
+
+        std::unique_lock<std::mutex> lock(mtx_);
+        return size();
+
+    }
+
+    inline T syncPop() {
+
+        std::unique_lock<std::mutex> lock(mtx_);
+//        cv_.wait(lock, [this](){return buffer_.size() > 0 || flag_;});
+        return pop();
+
+    }
+
+    inline void syncPush(T& t) {
+
+        std::unique_lock<std::mutex> lock(mtx_);
+        push(t);
+        lock.unlock();
+        cv_.notify_one();
+
+    }
+
+    inline void syncPush(std::vector<T>& v) {
+
+        std::unique_lock<std::mutex> lock(mtx_);
+        push(v);
+        lock.unlock();
+        cv_.notify_one();
+
+    }
+
+    inline void syncSwapContents(Buffer<T>& b) {//assumption: no concurrent accesses on b (i.e. b is a (thread-)local buffer)
+
+        std::unique_lock<std::mutex> lock(mtx_);
+        cv_.wait(lock, [this](){return buffer_.size() > 0 || closed_;});
+        swapContents(b);
+
+    }
 
 private:
     std::mutex mtx_;
-    std::atomic<bool> flag_; // true signals that no more push-operations are expected
+    std::condition_variable cv_;
+    bool closed_; // true signals that no more push-operations are expected
 
     std::queue<T> buffer_;
 
@@ -90,29 +152,32 @@ public:
 
     }
 
-    void push(T t) {
+    void push(T& t) {
 
-        buffers_[cur_].push(t);
+        buffers_[cur_].syncPush(t);
+        cur_ = (cur_ + 1) % buffers_.size();
+
+    }
+
+    void push(std::vector<T>& t) {
+
+        buffers_[cur_].syncPush(t);
         cur_ = (cur_ + 1) % buffers_.size();
 
     }
 
     T pop(const unsigned long i) {
-
-        return buffers_[i].pop();
-
+        return buffers_[i].syncPop();
     }
 
     Buffer<T>& getBuffer(const unsigned long i) {
-
         return buffers_[i];
-
     }
 
     void close() {
 
         for (auto iter = buffers_.begin(); iter != buffers_.end(); iter++) {
-            iter->setFlag(true);
+            iter->syncClose();
         }
 
     }
@@ -120,7 +185,7 @@ public:
 
 private:
     std::vector<Buffer<T>> buffers_;
-    unsigned long cur_ = 0;
+    unsigned long cur_;
 
 };
 

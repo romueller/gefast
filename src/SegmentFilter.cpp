@@ -116,25 +116,29 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrsBackward(const lenSeqs_t s
 
 }
 
+// The first t + k - d segments have length floor(seqLen / (t + k)), while the last d segments have length ceil(seqLen / (t + k)).
+// Since d is calculated by seqLen - floor(seqLen / (t + k)) * (t + k), longer segments exist only if seqLen is not divisible by (t + k)
+// and their lengths then higher by exactly one.
 void SegmentFilter::selectSegments(Segments& segments, const lenSeqs_t seqLen, const lenSeqs_t t, const lenSeqs_t k) {
 
     lenSeqs_t d = seqLen - (seqLen / (t + k)) * (t + k);
     lenSeqs_t p = 0;
+    lenSeqs_t i = 0;
 
 
     lenSeqs_t l = (seqLen / (t + k));
-    for (lenSeqs_t i = 1; i <= t + k - d; i++) {
+    for (; i < t + k - d; i++) {
 
-        segments[i - 1] = std::make_pair(p, l);
+        segments[i] = std::make_pair(p, l);
         p += l;
 
     }
 
 
-    l = (seqLen / (t + k)) + 1;
-    for (lenSeqs_t i = 1; i <= d; i++) {
+    l++;
+    for (; i < t + k; i++) {
 
-        segments[t + k - d + (i - 1)] = std::make_pair(p, l);
+        segments[i] = std::make_pair(p, l);
         p += l;
 
     }

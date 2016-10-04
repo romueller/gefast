@@ -74,6 +74,7 @@ int run(int argc, const char* argv[]) {
     if (c.peek(SWARM_DEREPLICATE)) sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
     sc.sepAbundance = c.get(SEPARATOR_ABUNDANCE);
     sc.extraSegs = std::stoul(c.get(NUM_EXTRA_SEGMENTS));
+    sc.numExplorers = std::stoul(c.get(NUM_WORKERS)) * std::stoul(c.get(NUM_THREADS_PER_WORKER)) - 1;
 
     if (sc.dereplicate) { // dereplication uses matching with distance 0
         c.set(THRESHOLD, "0");

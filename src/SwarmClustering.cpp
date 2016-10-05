@@ -162,7 +162,7 @@ void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const A
     std::vector<OtuEntry*> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     lenSeqs_t M[std::max(acOtus.back().seq.length(), acIndices.back().seq.length()) + 1];
-    lenSeqs_t seqLen, dist;
+    lenSeqs_t seqLen;
 
     for (auto otuIter = otus.begin(); otuIter != otus.end(); otuIter++) {
 
@@ -215,16 +215,13 @@ void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const A
                     // general pigeonhole principle: for being a candidate, at least sc.extraSegs segments have to be matched
                     for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
-                        if (candIter->second >= sc.extraSegs) {
+                        if ((candIter->second >= sc.extraSegs)
+                            && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], acOtus[graftCands[candIter->first].parentMember->id]))
+                            && (Verification::computeLengthAwareRow(acOtus[memberIter->id].seq, acIndices[candIter->first].seq, 2 * sc.threshold, M) <= 2 * sc.threshold)) {
 
-                            dist = Verification::computeLengthAwareRow(acOtus[memberIter->id].seq, acIndices[candIter->first].seq, 2 * sc.threshold, M); //TODO choose method
+                            graftCands[candIter->first].parentOtu = *otuIter;
+                            graftCands[candIter->first].parentMember = &(*memberIter);
 
-                            if (dist <= 2 * sc.threshold && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], acOtus[graftCands[candIter->first].parentMember->id]))) {
-
-                                graftCands[candIter->first].parentOtu = *otuIter;
-                                graftCands[candIter->first].parentMember = &(*memberIter);
-
-                            }
                         }
 
                     }
@@ -433,7 +430,6 @@ void SwarmClustering::graftOtus2(numSeqs_t& maxSize, numSeqs_t& numOtus, const A
     AmpliconCollection* ac = pools.get(0);
     AmpliconCollection* last = pools.get(pools.numPools() - 1);
     lenSeqs_t seqLen = 0;
-    lenSeqs_t dist;
     std::vector<SegmentFilter::Substrings> tmp(2 * sc.threshold + sc.extraSegs);
 
     prepareGraftInfos(ac->size(), otus[0], curGraftCands, nextGraftCands, sc);
@@ -504,9 +500,9 @@ void SwarmClustering::graftOtus2(numSeqs_t& maxSize, numSeqs_t& numOtus, const A
                         if (candIter->second >= sc.extraSegs) {
 
                             Amplicon& cand = (*pools.get(otuIter->first->poolId))[candIter->first->id];
-                            dist = Verification::computeBoundedRow(amplIter->seq, cand.seq, 2 * sc.threshold, M); //TODO choose method
 
-                            if (dist <= 2 * sc.threshold && (gc.parentOtu == 0 || compareCandidates(cand, (*pools.get(gc.parentOtu->poolId))[gc.parentMember->id]))) {
+                            if ((gc.parentOtu == 0 || compareCandidates(cand, (*pools.get(gc.parentOtu->poolId))[gc.parentMember->id]))
+                                    && (Verification::computeBoundedRow(amplIter->seq, cand.seq, 2 * sc.threshold, M) <= 2 * sc.threshold)) {
 
                                 gc.parentOtu = otuIter->first;
                                 gc.parentMember = candIter->first;

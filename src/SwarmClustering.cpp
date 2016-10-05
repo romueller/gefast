@@ -161,6 +161,7 @@ void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const A
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
     std::vector<OtuEntry*> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    lenSeqs_t M[std::max(acOtus.back().seq.length(), acIndices.back().seq.length()) + 1];
     lenSeqs_t seqLen, dist;
 
     for (auto otuIter = otus.begin(); otuIter != otus.end(); otuIter++) {
@@ -216,7 +217,7 @@ void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const A
 
                         if (candIter->second >= sc.extraSegs) {
 
-                            dist = Verification::computeLengthAwareRow(acOtus[memberIter->id].seq, acIndices[candIter->first].seq, 2 * sc.threshold); //TODO choose method
+                            dist = Verification::computeLengthAwareRow(acOtus[memberIter->id].seq, acIndices[candIter->first].seq, 2 * sc.threshold, M); //TODO choose method
 
                             if (dist <= 2 * sc.threshold && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], acOtus[graftCands[candIter->first].parentMember->id]))) {
 
@@ -424,6 +425,7 @@ void SwarmClustering::graftOtus2(numSeqs_t& maxSize, numSeqs_t& numOtus, const A
     std::vector<std::pair<Otu*, OtuEntry*>> candMembers;
     std::unordered_map<Otu*, std::unordered_map<OtuEntry*, lenSeqs_t>> candCnts;
     std::vector<GraftCandidate> curGraftCands, nextGraftCands, allGraftCands;
+    lenSeqs_t M[pools.get(pools.numPools() - 1)->back().seq.length() + 1];
 
     // iterate over all amplicons in order of increasing length (as if they were stored in one big pool)
     numSeqs_t a = 0;
@@ -502,7 +504,7 @@ void SwarmClustering::graftOtus2(numSeqs_t& maxSize, numSeqs_t& numOtus, const A
                         if (candIter->second >= sc.extraSegs) {
 
                             Amplicon& cand = (*pools.get(otuIter->first->poolId))[candIter->first->id];
-                            dist = Verification::computeBoundedRow(amplIter->seq, cand.seq, 2 * sc.threshold); //TODO choose method
+                            dist = Verification::computeBoundedRow(amplIter->seq, cand.seq, 2 * sc.threshold, M); //TODO choose method
 
                             if (dist <= 2 * sc.threshold && (gc.parentOtu == 0 || compareCandidates(cand, (*pools.get(gc.parentOtu->poolId))[gc.parentMember->id]))) {
 

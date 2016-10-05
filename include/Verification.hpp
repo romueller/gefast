@@ -43,7 +43,7 @@ lenSeqs_t computeClassicFull(const std::string& s, const std::string& t);
  *  - computes exact edit distance
  */
 // classic_1 / compute_edit_distance_one_row
-lenSeqs_t computeClassicRow(const std::string& s, const std::string& t);
+lenSeqs_t computeClassicRow(const std::string& s, const std::string& t, lenSeqs_t M[]);
 
 
 
@@ -76,7 +76,7 @@ lenSeqs_t computeBoundedFull(const std::string& s, const std::string& t, const l
  *  - early termination if all values in row computed last already larger than bound
  */
 // bounded_1 / compute_bounded_edit_distance_with_early_termination_one_row
-lenSeqs_t computeBoundedRow(const std::string& s, const std::string& t, const lenSeqs_t bound);
+lenSeqs_t computeBoundedRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t M[]);
 
 
 /*
@@ -97,7 +97,7 @@ lenSeqs_t computeBoundedFullSlim(const std::string& s, const std::string& t, con
  *  - early termination if all values in row computed last already larger than bound
  */
 // bounded_1s / compute_bounded_edit_distance_with_early_termination_one_row_slim
-lenSeqs_t computeBoundedRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound);
+lenSeqs_t computeBoundedRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t M[]);
 
 
 
@@ -128,7 +128,7 @@ lenSeqs_t computeLengthAwareFull(const std::string& s, const std::string& t, con
  *  - improved early termination if all expected edit distance values for the row computed last already larger than bound
  */
 // l-aware_1 / compute_length_aware_bounded_edit_distance_with_early_termination_one_row
-lenSeqs_t computeLengthAwareRow(const std::string& s, const std::string& t, const lenSeqs_t bound);
+lenSeqs_t computeLengthAwareRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t M[]);
 
 
 /*
@@ -151,7 +151,7 @@ lenSeqs_t computeLengthAwareFullSlim(const std::string& s, const std::string& t,
  *  - improved early termination if all expected edit distance values for the row computed last already larger than bound
  */
 // l-aware_1s / compute_length_aware_bounded_edit_distance_with_early_termination_one_row_slim
-lenSeqs_t computeLengthAwareRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound);
+lenSeqs_t computeLengthAwareRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t M[]);
 
 
 // compute edit distance of all incoming candidates

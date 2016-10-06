@@ -14,7 +14,7 @@
 #define SCT_PJ_RELATION_HPP
 
 #include <algorithm>
-//#include <mutex>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -355,7 +355,7 @@ public:
 
     }
 
-/*
+
     bool syncContains(T& t1, T& t2) {
 
         std::lock_guard<std::mutex> lock(mtx_);
@@ -418,18 +418,18 @@ public:
         join(sm);
 
     }
-*/
+
 
 private:
     std::map<K, SimpleBinaryRelation<T, T>> matches_;
-//    std::mutex mtx_;
+    std::mutex mtx_;
 
 };
 
 
 
 /*
- * Sync wrapper of SimpleMatches [probably not needed: (1) currently no concurrent accesses to Matches instances, (2) sync-methods in SimpleMatches]
+ * Sync wrapper of SimpleMatches [probably not needed: sync-methods in SimpleMatches]
  */
 /*template<typename K, typename T>
 class SyncSimpleMatches {

@@ -43,8 +43,7 @@ void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
         cbs = RotatingBuffers<Candidate>(numThreads_ - 1);
 
         Matches* matchesPerThread[numThreads_ - 1];
-        matchesPerThread[0] = &matches_;
-        for (unsigned long v = 1; v < numThreads_ - 1; v++) {
+        for (unsigned long v = 0; v < numThreads_ - 1; v++) {
             matchesPerThread[v] = new Matches();
         }
 
@@ -60,12 +59,8 @@ void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
 
             verifierThreads[v].join();
 
-            if (v > 0) {
-
-                matches_.join(*(matchesPerThread[v]));
-                delete matchesPerThread[v];
-
-            }
+            matches_.syncJoin(*(matchesPerThread[v]));
+            delete matchesPerThread[v];
 
         }
 

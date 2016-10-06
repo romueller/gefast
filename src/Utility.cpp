@@ -85,6 +85,11 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--info-file"] = 1005; // optional
     parameters["--sep-abundance"] = 1006; // optional (has default)
 
+    parameters["--swarm-fastidious-checking-mode"] = 1101; // optional (has default)
+    parameters["--swarm-num-explorers"] = 1102; // optional (has default)
+    parameters["--swarm-num-grafters"] = 1103; // optional (has default)
+    parameters["--swarm-num-verifiers-per-checker"] = 1104; // optional (has default)
+
 
     std::string
             alphabet = "", // 1,2
@@ -108,7 +113,11 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             maxLength = 0, // 1002
             numThreadsPerWorker = 1, // 1003
             numWorkers = 1, // 1004
-            boundary = 3 // 115,116
+            boundary = 3, // 115,116,
+            checkingMode = 0, // 1101
+            numExplorers = 1, // 1102
+            numGrafters = 1, // 1103
+            numVerifiersPerChecker = 1 // 1104
     ;
 
     bool
@@ -260,6 +269,25 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                     flagSepAbundance = true;
                     break;
 
+                case 1101:
+                    checkingMode = std::stoul(argv[++i]);
+                    flagNumThreadsPerWorker = true;
+                    break;
+
+                case 1102:
+                    numExplorers = std::stoul(argv[++i]);
+                    flagNumWorkers = true;
+                    break;
+
+                case 1103:
+                    numGrafters = std::stoul(argv[++i]);
+                    break;
+
+                case 1104:
+                    numVerifiersPerChecker = std::stoul(argv[++i]);
+                    flagSepAbundance = true;
+                    break;
+
                 default:
                     std::cout << "Unknown parameter: " << argv[i] << " (is ignored)" << std::endl;
                     break;
@@ -328,6 +356,14 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     if (flagFastidious) config.set(SWARM_FASTIDIOUS, "1");
 
     if (flagBoundary || !config.peek(SWARM_BOUNDARY)) config.set(SWARM_BOUNDARY, std::to_string(boundary));
+
+    if (!config.peek(SWARM_FASTIDIOUS_CHECKING_MODE)) config.set(SWARM_FASTIDIOUS_CHECKING_MODE, std::to_string(checkingMode));
+
+    if (!config.peek(SWARM_NUM_EXPLORERS)) config.set(SWARM_NUM_EXPLORERS, std::to_string(numExplorers));
+
+    if (!config.peek(SWARM_NUM_GRAFTERS)) config.set(SWARM_NUM_GRAFTERS, std::to_string(numGrafters));
+
+    if (!config.peek(SWARM_NUM_VERIFIERS_PER_CHECKER)) config.set(SWARM_NUM_VERIFIERS_PER_CHECKER, std::to_string(numVerifiersPerChecker));
 
     return config;
 

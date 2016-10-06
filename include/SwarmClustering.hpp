@@ -20,6 +20,8 @@
 
 #define PRINT_INTERNAL_MODIFIED 0
 
+#define FASTIDIOUS_PARALLEL_POOL 1
+#define FASTIDIOUS_PARALLEL_CHECK 1
 
 namespace SCT_PJ {
 namespace SwarmClustering {
@@ -58,6 +60,10 @@ struct SwarmConfig {
     lenSeqs_t extraSegs;
 
     unsigned long numExplorers = 1;
+    unsigned long numGrafters = 1;
+
+    unsigned long fastidiousCheckingMode = 0;
+    unsigned long numVerifiersPerChecker = 1;
 
 };
 
@@ -177,6 +183,40 @@ struct GraftCandidate {
         parentMember = pm;
         childOtu = co;
         childMember = cm;
+
+    }
+
+};
+
+/**
+ * Representation of several pairs of potentially similar amplicons.
+ * The first component of each pair of amplicon 'ids' (like the candidate pairs during matching) is 'parent',
+ * while each entry in the 'children' vector is the second component of one pair.
+ *
+ * Additional information on the parent are stored in order to change the grafting candidate information
+ * of the children when necessary.
+ */
+struct CandidateFastidious {
+
+    numSeqs_t parent;
+    Otu* parentOtu;
+    OtuEntry* parentMember;
+
+    std::vector<numSeqs_t> children;
+
+    CandidateFastidious() {
+
+        parent = 0;
+        parentOtu =  0;
+        parentMember = 0;
+
+    }
+
+    CandidateFastidious(numSeqs_t p, Otu* po, OtuEntry* pm) {
+
+        parent = p;
+        parentOtu = po;
+        parentMember = pm;
 
     }
 
@@ -315,10 +355,27 @@ void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu
 void fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>& indices, std::unordered_map<lenSeqs_t, SegmentFilter::Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
 
 /**
+ * Verify the potentially similar amplicons arriving at a candidate buffer and,
+ * if appropriate, change the grafting candidate information of the child amplicons.
+ */
+void verifyFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, lenSeqs_t t, std::mutex& mtx);
+
+/**
  * Apply a (forward) segment filter on the amplicons from the heavy OTUs of the current pool using the indexed amplicons of light OTUs.
  * Determines the parent information of the grafting candidates.
  */
-void fastidiousCheckOtus(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
+void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& mtx, const SwarmConfig& sc);
+
+/**
+ * Check for grafting candidates using a segment filter and multiple verifier threads.
+ * Looks for grafting candidates for amplicons from 'acIndices' among the amplicons from 'acOtus'.
+ */
+void checkAndVerify(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& mtx, const SwarmConfig& sc);
+
+/**
+ * Determine the grafting candidates of the amplicons from all pools.
+ */
+void determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, std::vector<GraftCandidate>& allGraftCands, const numSeqs_t p, std::mutex& allGraftCandsMtx, const SwarmConfig& sc);
 
 /**
  *  Graft light OTUs onto heavy OTUs by "simulating virtual amplicons".
@@ -329,7 +386,7 @@ void fastidiousCheckOtus(const std::vector<Otu*>& otus, const AmpliconCollection
  *   - Each light OTU can be grafted upon at most one heavy OTU (even though there can be grafting candidates for several amplicons of the light OTU).
  *   - Grafting candidates with a higher parent amplicon abundance (and, for ties, higher child amplicon abundance) have a higher priority.
  */
-void graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc); //TODO? parallelisation (of verification), other segment filters (forward-backward etc.)
+void graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc); //TODO? other segment filters (forward-backward etc.)
 
 
 /* Implementation 2 of fastidious clustering */

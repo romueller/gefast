@@ -156,13 +156,58 @@ inline bool compareCandidates(const Amplicon& newCand, const Amplicon& oldCand) 
             ;
 }
 
-void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
+void SwarmClustering::verifyFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, lenSeqs_t t, std::mutex& mtx) {
+
+    CandidateFastidious c;
+    Buffer<CandidateFastidious> localBuffer;
+    lenSeqs_t M[std::max(acOtus.back().seq.length(), acIndices.back().seq.length()) + 1]; // reusable DP-matrix (wide enough for all possible calculations for this AmpliconCollection)
+
+    while (!buf.isClosed() || buf.syncSize() > 0) {
+
+        buf.syncSwapContents(localBuffer);
+
+        while (localBuffer.size() > 0) {
+
+            c = localBuffer.pop();
+
+            for (auto childIter = c.children.begin(); childIter != c.children.end(); childIter++) {
+
+                std::unique_lock<std::mutex> lock(mtx);
+                if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(acOtus[c.parent], acOtus[graftCands[*childIter].parentMember->id])) {
+
+                    lock.unlock();
+                    if (Verification::computeLengthAwareRow(acOtus[c.parent].seq, acIndices[*childIter].seq, t, M) <= t) {
+
+                        lock.lock();
+                        if (((graftCands[*childIter].parentOtu == 0) || compareCandidates(acOtus[c.parent], acOtus[graftCands[*childIter].parentMember->id]))) {
+
+                            graftCands[*childIter].parentOtu = c.parentOtu;
+                            graftCands[*childIter].parentMember = c.parentMember;
+
+                        }
+                        lock.unlock();
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& mtx, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
     std::vector<OtuEntry*> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     lenSeqs_t M[std::max(acOtus.back().seq.length(), acIndices.back().seq.length()) + 1];
     lenSeqs_t seqLen;
+
+    std::vector<CandidateFastidious> localCands;
 
     for (auto otuIter = otus.begin(); otuIter != otus.end(); otuIter++) {
 
@@ -193,6 +238,8 @@ void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const A
 
                 }
 
+                localCands.push_back(CandidateFastidious(memberIter->id, *otuIter, &(*memberIter)));
+
                 for (lenSeqs_t len = (seqLen > 2 * sc.threshold) * (seqLen - 2 * sc.threshold); len <= seqLen + 2 * sc.threshold; len++) { // ... search for graft candidates among the amplicons in light OTUs
 
                     for (lenSeqs_t i = 0; i < 2 * sc.threshold + sc.extraSegs; i++) {//... and apply segment filter for each segment
@@ -215,13 +262,8 @@ void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const A
                     // general pigeonhole principle: for being a candidate, at least sc.extraSegs segments have to be matched
                     for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
-                        if ((candIter->second >= sc.extraSegs)
-                            && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], acOtus[graftCands[candIter->first].parentMember->id]))
-                            && (Verification::computeLengthAwareRow(acOtus[memberIter->id].seq, acIndices[candIter->first].seq, 2 * sc.threshold, M) <= 2 * sc.threshold)) {
-
-                            graftCands[candIter->first].parentOtu = *otuIter;
-                            graftCands[candIter->first].parentMember = &(*memberIter);
-
+                        if (candIter->second >= sc.extraSegs) {
+                            localCands.back().children.push_back(candIter->first);
                         }
 
                     }
@@ -229,6 +271,9 @@ void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const A
                     candCnts = std::unordered_map<numSeqs_t, lenSeqs_t>();
 
                 }
+
+                cbs.push(localCands);
+                localCands = std::vector<CandidateFastidious>();
 
             }
 
@@ -238,60 +283,176 @@ void SwarmClustering::fastidiousCheckOtus(const std::vector<Otu*>& otus, const A
 
 }
 
-void SwarmClustering::graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc) {
+void SwarmClustering::checkAndVerify(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
-    AmpliconCollection* ac = 0;
-    RollingIndices<InvertedIndexFastidious> indices(4 * sc.threshold + 1, 2 * sc.threshold + sc.extraSegs, true, false);
-    std::vector<GraftCandidate> graftCands, allGraftCands;
-    std::unordered_map<lenSeqs_t, SegmentFilter::Segments> segmentsArchive;
+    RotatingBuffers<CandidateFastidious> cbs = RotatingBuffers<CandidateFastidious>(sc.numVerifiersPerChecker);
+    std::thread verifierThreads[sc.numVerifiersPerChecker];
 
-    numSeqs_t numGrafts = 0;
+    for (unsigned long v = 0; v < sc.numVerifiersPerChecker; v++) {
+        verifierThreads[v] = std::thread(&SwarmClustering::verifyFastidious, std::ref(acOtus), std::ref(acIndices), std::ref(graftCands), std::ref(cbs.getBuffer(v)), 2 * sc.threshold, std::ref(graftCandsMtx));
+    }
 
-    for (numSeqs_t p = 0; p < pools.numPools(); p++) {
+    fastidiousCheckOtus(cbs, otus, acOtus, indices, acIndices, graftCands, graftCandsMtx, sc);
+    cbs.close();
 
-        ac = pools.get(p);
-        indices = RollingIndices<InvertedIndexFastidious>(4 * sc.threshold + 1, 2 * sc.threshold + sc.extraSegs, true, false);
-        graftCands = std::vector<GraftCandidate>(ac->size()); // initially, graft candidates for all amplicons of the pool are "empty"
-        segmentsArchive = std::unordered_map<lenSeqs_t, SegmentFilter::Segments>();
+    for (unsigned long v = 0; v < sc.numVerifiersPerChecker; v++) {
+        verifierThreads[v].join();
+    }
 
-        // a) Index amplicons of all light OTUs of the current pool
-        for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
+}
 
-            if ((*otuIter)->mass < sc.boundary) {
-                fastidiousIndexOtu(indices, segmentsArchive, *ac, *(*otuIter), graftCands, sc);
-            }
+void SwarmClustering::determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, std::vector<GraftCandidate>& allGraftCands, const numSeqs_t p, std::mutex& allGraftCandsMtx, const SwarmConfig& sc) {
 
+    AmpliconCollection* ac = pools.get(p);
+    RollingIndices<InvertedIndexFastidious> indices = RollingIndices<InvertedIndexFastidious>(4 * sc.threshold + 1, 2 * sc.threshold + sc.extraSegs, true, false);
+    std::vector<GraftCandidate> graftCands = std::vector<GraftCandidate>(ac->size()); // initially, graft candidates for all amplicons of the pool are "empty"
+    std::unordered_map<lenSeqs_t, SegmentFilter::Segments> segmentsArchive = std::unordered_map<lenSeqs_t, SegmentFilter::Segments>();
+    std::mutex graftCandsMtx;
+
+    // a) Index amplicons of all light OTUs of the current pool
+    for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
+
+        if ((*otuIter)->mass < sc.boundary) {
+            fastidiousIndexOtu(indices, segmentsArchive, *ac, *(*otuIter), graftCands, sc);
         }
-
-        // b) Search with amplicons of all heavy OTUs of current and directly neighbouring pools
-        if (p > 0) {
-            fastidiousCheckOtus(otus[p - 1], *(pools.get(p - 1)), indices, *ac, graftCands, sc);
-        }
-
-        fastidiousCheckOtus(otus[p], *ac, indices, *ac, graftCands, sc);
-
-        if (p < pools.numPools() - 1) {
-            fastidiousCheckOtus(otus[p + 1], *(pools.get(p + 1)), indices, *ac, graftCands, sc);
-        }
-
-        // c) Collect the (actual = non-empty) graft candidates for the current pool
-        auto newEnd = std::remove_if(
-                graftCands.begin(),
-                graftCands.end(),
-                [](GraftCandidate& gc) {
-                    return gc.parentOtu == 0;
-                });
-
-        allGraftCands.reserve(allGraftCands.size() + std::distance(graftCands.begin(), newEnd));
-        std::move(graftCands.begin(), newEnd, std::back_inserter(allGraftCands));
 
     }
+
+    // b) Search with amplicons of all heavy OTUs of current and directly neighbouring pools
+#if FASTIDIOUS_PARALLEL_CHECK
+
+    switch (sc.fastidiousCheckingMode) {
+
+        case 0: {
+
+            if (p > 0) {
+                checkAndVerify(otus[p - 1], *(pools.get(p - 1)), indices, *ac, graftCands, graftCandsMtx, sc);
+            }
+
+            checkAndVerify(otus[p], *ac, indices, *ac, graftCands, graftCandsMtx, sc);
+
+            if (p < pools.numPools() - 1) {
+                checkAndVerify(otus[p + 1], *(pools.get(p + 1)), indices, *ac, graftCands, graftCandsMtx, sc);
+            }
+
+            break;
+
+        }
+
+        case 1: {
+
+            std::thread t(&SwarmClustering::checkAndVerify, std::ref(otus[p]), std::ref(*ac), std::ref(indices), std::ref(*ac), std::ref(graftCands), std::ref(graftCandsMtx), std::ref(sc));
+
+            if (p > 0) {
+                checkAndVerify(otus[p - 1], *(pools.get(p - 1)), indices, *ac, graftCands, graftCandsMtx, sc);
+            }
+
+            if (p < pools.numPools() - 1) {
+                checkAndVerify(otus[p + 1], *(pools.get(p + 1)), indices, *ac, graftCands, graftCandsMtx, sc);
+            }
+
+            t.join();
+
+            break;
+
+        }
+
+        default: {
+
+                std::thread pred, succ;
+
+                if (p > 0) {
+                    pred = std::thread(&SwarmClustering::checkAndVerify, std::ref(otus[p - 1]), std::ref(*(pools.get(p - 1))), std::ref(indices), std::ref(*ac), std::ref(graftCands), std::ref(graftCandsMtx), std::ref(sc));
+                }
+
+                if (p < pools.numPools() - 1) {
+                    succ = std::thread(&SwarmClustering::checkAndVerify, std::ref(otus[p + 1]), std::ref(*(pools.get(p + 1))), std::ref(indices), std::ref(*ac), std::ref(graftCands), std::ref(graftCandsMtx), std::ref(sc));
+                }
+
+                checkAndVerify(otus[p], *ac, indices, *ac, graftCands, graftCandsMtx, sc);
+
+                if (p > 0) {
+                    pred.join();
+                }
+                if (p < pools.numPools() - 1) {
+                    succ.join();
+                }
+
+            break;
+
+        }
+
+    }
+
+#else
+
+    if (p > 0) {
+        checkAndVerify(otus[p - 1], *(pools.get(p - 1)), indices, *ac, graftCands, graftCandsMtx, sc);
+    }
+
+    checkAndVerify(otus[p], *ac, indices, *ac, graftCands, graftCandsMtx, sc);
+
+    if (p < pools.numPools() - 1) {
+        checkAndVerify(otus[p + 1], *(pools.get(p + 1)), indices, *ac, graftCands, graftCandsMtx, sc);
+    }
+
+#endif
+
+    // c) Collect the (actual = non-empty) graft candidates for the current pool
+    auto newEnd = std::remove_if(
+            graftCands.begin(),
+            graftCands.end(),
+            [](GraftCandidate& gc) {
+                return gc.parentOtu == 0;
+            });
+
+    std::lock_guard<std::mutex> lock(allGraftCandsMtx);
+    allGraftCands.reserve(allGraftCands.size() + std::distance(graftCands.begin(), newEnd));
+    std::move(graftCands.begin(), newEnd, std::back_inserter(allGraftCands));
+
+}
+
+void SwarmClustering::graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc) {
+
+    std::vector<GraftCandidate> allGraftCands;
+    std::mutex allGraftCandsMtx;
+
+#if FASTIDIOUS_PARALLEL_POOL
+
+    std::thread grafters[sc.numGrafters];
+    unsigned long r = 0;
+    for (; r + sc.numGrafters <= pools.numPools(); r += sc.numGrafters) {
+
+        for (unsigned long g = 0; g < sc.numGrafters; g++) {
+            grafters[g] = std::thread(&SwarmClustering::determineGrafts, std::ref(pools), std::ref(otus), std::ref(allGraftCands), r + g, std::ref(allGraftCandsMtx), std::ref(sc));
+        }
+        for (unsigned long g = 0; g < sc.numGrafters; g++) {
+            grafters[g].join();
+        }
+
+    }
+
+    for (unsigned long g = 0; g < pools.numPools() % sc.numGrafters; g++) {
+        grafters[g] = std::thread(&SwarmClustering::determineGrafts, std::ref(pools), std::ref(otus), std::ref(allGraftCands), r + g, std::ref(allGraftCandsMtx), std::ref(sc));
+    }
+    for (unsigned long g = 0; g < pools.numPools() % sc.numGrafters; g++) {
+        grafters[g].join();
+    }
+
+#else
+
+    for (numSeqs_t p = 0; p < pools.numPools(); p++) {
+        determineGrafts(pools, otus, allGraftCands, p, allGraftCandsMtx, sc);
+    }
+
+#endif
 
     // Sort all graft candidates and perform actual grafting
     std::cout << "Got " << allGraftCands.size() << " graft candidates." << std::endl;
     std::sort(allGraftCands.begin(), allGraftCands.end(), CompareGraftCandidatesAbund(pools));
     Otu* parentOtu = 0;
     Otu* childOtu = 0;
+    numSeqs_t numGrafts = 0;
     for (auto graftIter = allGraftCands.begin(); graftIter != allGraftCands.end(); graftIter++) {
 
         if (!(graftIter->childOtu->attached)) {
@@ -706,7 +867,7 @@ void SwarmClustering::cluster(const AmpliconPools& pools, std::vector<Matches*>&
         if ((numLightOtus == 0) || (numLightOtus == numOtus)) {
             std::cout << "Fastidious: Only light or only heavy OTUs. No further action." << std::endl;
         } else {
-            graftOtus2(maxSize, numOtusAdjusted, pools, otus, sc);
+            graftOtus(maxSize, numOtusAdjusted, pools, otus, sc);
         }
 
     }

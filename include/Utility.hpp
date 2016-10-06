@@ -30,31 +30,35 @@ const std::string DEFAULT_JOB_NAME = "SCT-PJ";
 
 // list of configuration parameters (changes should be mirrored in method initParamNames() of Config)
 enum ConfigParameters {
-    ALPHABET,               // allowed alphabet for the amplicon sequences
-    FILE_LIST,              // file containing list of input file names
-    FILTER_ALPHABET,        // flag for the alphabet filter
-    FILTER_LENGTH,          // flag for the length filter
-    FILTER_REGEX,           // flag for the regex filter
-    INFO_FOLDER,            // name of the folder for storing files showing the configuration information of the current job
-    MATCHES_OUTPUT_FILE,    // name of the output file containing all matches found
-    MAX_LENGTH,             // maximal sequence length
-    MIN_LENGTH,             // minimal sequence length
-    NAME,                   // name of the job to be executed
-    NUM_EXTRA_SEGMENTS,     // parameter of the pigeonhole principle (segment filter)
-    NUM_THREADS_PER_WORKER, // number of parallel threads employed by each work
-    NUM_WORKERS,            // number of parallel workers
-    SEGMENT_FILTER,         // mode of the segment filter (forward, backward, forward-backward, backward-forward)
-    SEPARATOR_ABUNDANCE,    // seperator symbol (string) between ID and abundance in a FASTA header line
-    SWARM_BOUNDARY,         // minimum mass of a heavy OTU, used only during fastidious swarming
-    SWARM_DEREPLICATE,      // boolean flag indicating demand for dereplication, corresponds to swarm with -d 0
-    SWARM_FASTIDIOUS,       // boolean flag indicating demand for second, fastidious swarming phase, corresponds to swarm's -f
-    SWARM_NO_OTU_BREAKING,  // boolean flag indicating usage of OTU breaking, corresponds to swarm's option -n
-    SWARM_OUTPUT_INTERNAL,  // name of the output file corresponding to swarm's output option -i (internal structures)
-    SWARM_OUTPUT_OTUS,      // name of the output file corresponding to swarm's output option -o (OTUs)
-    SWARM_OUTPUT_STATISTICS,// name of the output file corresponding to swarm's output option -s (statistics file)
-    SWARM_OUTPUT_SEEDS,     // name of the output file corresponding to swarm's output option -w (seeds)
-    THRESHOLD,              // edit distance threshold for the clustering
-    VERSION                 // version number of the program
+    ALPHABET,                           // allowed alphabet for the amplicon sequences
+    FILE_LIST,                          // file containing list of input file names
+    FILTER_ALPHABET,                    // flag for the alphabet filter
+    FILTER_LENGTH,                      // flag for the length filter
+    FILTER_REGEX,                       // flag for the regex filter
+    INFO_FOLDER,                        // name of the folder for storing files showing the configuration information of the current job
+    MATCHES_OUTPUT_FILE,                // name of the output file containing all matches found
+    MAX_LENGTH,                         // maximal sequence length
+    MIN_LENGTH,                         // minimal sequence length
+    NAME,                               // name of the job to be executed
+    NUM_EXTRA_SEGMENTS,                 // parameter of the pigeonhole principle (segment filter)
+    NUM_THREADS_PER_WORKER,             // number of parallel threads employed by each work
+    NUM_WORKERS,                        // number of parallel workers
+    SEGMENT_FILTER,                     // mode of the segment filter (forward, backward, forward-backward, backward-forward)
+    SEPARATOR_ABUNDANCE,                // seperator symbol (string) between ID and abundance in a FASTA header line
+    SWARM_BOUNDARY,                     // minimum mass of a heavy OTU, used only during fastidious swarming
+    SWARM_DEREPLICATE,                  // boolean flag indicating demand for dereplication, corresponds to swarm with -d 0
+    SWARM_FASTIDIOUS,                   // boolean flag indicating demand for second, fastidious swarming phase, corresponds to swarm's -f
+    SWARM_FASTIDIOUS_CHECKING_MODE,     // mode of checking for grafting candidates of one pool (affects degree of parallelism)
+    SWARM_NO_OTU_BREAKING,              // boolean flag indicating usage of OTU breaking, corresponds to swarm's option -n
+    SWARM_NUM_EXPLORERS,                // number of parallel explorers (first swarm clustering phase)
+    SWARM_NUM_GRAFTERS,                 // number of parallel grafters (second swarm clustering phase)
+    SWARM_NUM_VERIFIERS_PER_CHECKER,    // number of verifying threads employed by one checker
+    SWARM_OUTPUT_INTERNAL,              // name of the output file corresponding to swarm's output option -i (internal structures)
+    SWARM_OUTPUT_OTUS,                  // name of the output file corresponding to swarm's output option -o (OTUs)
+    SWARM_OUTPUT_STATISTICS,            // name of the output file corresponding to swarm's output option -s (statistics file)
+    SWARM_OUTPUT_SEEDS,                 // name of the output file corresponding to swarm's output option -w (seeds)
+    THRESHOLD,                          // edit distance threshold for the clustering
+    VERSION                             // version number of the program
 };
 
 
@@ -149,31 +153,35 @@ private:
 
         paramNames_ = std::unordered_map<std::string, ConfigParameters>(
                 {
-                        {"ALPHABET",               ALPHABET},
-                        {"FILE_LIST",              FILE_LIST},
-                        {"FILTER_ALPHABET",        FILTER_ALPHABET},
-                        {"FILTER_LENGTH",          FILTER_LENGTH},
-                        {"FILTER_REGEX",           FILTER_REGEX},
-                        {"INFO_FOLDER",            INFO_FOLDER},
-                        {"MAX_LENGTH",             MAX_LENGTH},
-                        {"MIN_LENGTH",             MIN_LENGTH},
-                        {"NAME",                   NAME},
-                        {"NUM_EXTRA_SEGMENTS",     NUM_EXTRA_SEGMENTS},
-                        {"NUM_THREADS_PER_WORKER", NUM_THREADS_PER_WORKER},
-                        {"NUM_WORKERS",            NUM_WORKERS},
-                        {"MATCHES_OUTPUT_FILE",    MATCHES_OUTPUT_FILE},
-                        {"SEGMENT_FILTER",         SEGMENT_FILTER},
-                        {"SEPARATOR_ABUNDANCE",    SEPARATOR_ABUNDANCE},
-                        {"SWARM_BOUNDARY",         SWARM_BOUNDARY},
-                        {"SWARM_DEREPLICATE",      SWARM_DEREPLICATE},
-                        {"SWARM_FASTIDIOUS",       SWARM_FASTIDIOUS},
-                        {"SWARM_NO_OTU_BREAKING",  SWARM_NO_OTU_BREAKING},
-                        {"SWARM_OUTPUT_INTERNAL",  SWARM_OUTPUT_INTERNAL},
-                        {"SWARM_OUTPUT_OTUS",      SWARM_OUTPUT_OTUS},
-                        {"SWARM_OUTPUT_STATISTICS",SWARM_OUTPUT_STATISTICS},
-                        {"SWARM_OUTPUT_SEEDS",     SWARM_OUTPUT_SEEDS},
-                        {"THRESHOLD",              THRESHOLD},
-                        {"VERSION",                VERSION}
+                        {"ALPHABET",                          ALPHABET},
+                        {"FILE_LIST",                         FILE_LIST},
+                        {"FILTER_ALPHABET",                   FILTER_ALPHABET},
+                        {"FILTER_LENGTH",                     FILTER_LENGTH},
+                        {"FILTER_REGEX",                      FILTER_REGEX},
+                        {"INFO_FOLDER",                       INFO_FOLDER},
+                        {"MAX_LENGTH",                        MAX_LENGTH},
+                        {"MIN_LENGTH",                        MIN_LENGTH},
+                        {"NAME",                              NAME},
+                        {"NUM_EXTRA_SEGMENTS",                NUM_EXTRA_SEGMENTS},
+                        {"NUM_THREADS_PER_WORKER",            NUM_THREADS_PER_WORKER},
+                        {"NUM_WORKERS",                       NUM_WORKERS},
+                        {"MATCHES_OUTPUT_FILE",               MATCHES_OUTPUT_FILE},
+                        {"SEGMENT_FILTER",                    SEGMENT_FILTER},
+                        {"SEPARATOR_ABUNDANCE",               SEPARATOR_ABUNDANCE},
+                        {"SWARM_BOUNDARY",                    SWARM_BOUNDARY},
+                        {"SWARM_DEREPLICATE",                 SWARM_DEREPLICATE},
+                        {"SWARM_FASTIDIOUS",                  SWARM_FASTIDIOUS},
+                        {"SWARM_FASTIDIOUS_CHECKING_MODE",    SWARM_FASTIDIOUS_CHECKING_MODE},
+                        {"SWARM_NO_OTU_BREAKING",             SWARM_NO_OTU_BREAKING},
+                        {"SWARM_NUM_EXPLORERS",               SWARM_NUM_EXPLORERS},
+                        {"SWARM_NUM_GRAFTERS",                SWARM_NUM_GRAFTERS},
+                        {"SWARM_NUM_VERIFIERS_PER_CHECKER",   SWARM_NUM_VERIFIERS_PER_CHECKER},
+                        {"SWARM_OUTPUT_INTERNAL",             SWARM_OUTPUT_INTERNAL},
+                        {"SWARM_OUTPUT_OTUS",                 SWARM_OUTPUT_OTUS},
+                        {"SWARM_OUTPUT_STATISTICS",           SWARM_OUTPUT_STATISTICS},
+                        {"SWARM_OUTPUT_SEEDS",                SWARM_OUTPUT_SEEDS},
+                        {"THRESHOLD",                         THRESHOLD},
+                        {"VERSION",                           VERSION}
                 }
         );
 

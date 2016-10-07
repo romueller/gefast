@@ -52,7 +52,7 @@ enum ConfigParameters {
     SWARM_NO_OTU_BREAKING,              // boolean flag indicating usage of OTU breaking, corresponds to swarm's option -n
     SWARM_NUM_EXPLORERS,                // number of parallel explorers (first swarm clustering phase)
     SWARM_NUM_GRAFTERS,                 // number of parallel grafters (second swarm clustering phase)
-    SWARM_NUM_VERIFIERS_PER_CHECKER,    // number of verifying threads employed by one checker
+    SWARM_NUM_THREADS_PER_CHECK,        // number of parallel threads employed by (one call of) checkAndVerify()
     SWARM_OUTPUT_INTERNAL,              // name of the output file corresponding to swarm's output option -i (internal structures)
     SWARM_OUTPUT_OTUS,                  // name of the output file corresponding to swarm's output option -o (OTUs)
     SWARM_OUTPUT_STATISTICS,            // name of the output file corresponding to swarm's output option -s (statistics file)
@@ -175,7 +175,7 @@ private:
                         {"SWARM_NO_OTU_BREAKING",             SWARM_NO_OTU_BREAKING},
                         {"SWARM_NUM_EXPLORERS",               SWARM_NUM_EXPLORERS},
                         {"SWARM_NUM_GRAFTERS",                SWARM_NUM_GRAFTERS},
-                        {"SWARM_NUM_VERIFIERS_PER_CHECKER",   SWARM_NUM_VERIFIERS_PER_CHECKER},
+                        {"SWARM_NUM_THREADS_PER_CHECK",       SWARM_NUM_THREADS_PER_CHECK},
                         {"SWARM_OUTPUT_INTERNAL",             SWARM_OUTPUT_INTERNAL},
                         {"SWARM_OUTPUT_OTUS",                 SWARM_OUTPUT_OTUS},
                         {"SWARM_OUTPUT_STATISTICS",           SWARM_OUTPUT_STATISTICS},

@@ -88,7 +88,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--swarm-fastidious-checking-mode"] = 1101; // optional (has default)
     parameters["--swarm-num-explorers"] = 1102; // optional (has default)
     parameters["--swarm-num-grafters"] = 1103; // optional (has default)
-    parameters["--swarm-num-verifiers-per-checker"] = 1104; // optional (has default)
+    parameters["--swarm-num-threads-per-check"] = 1104; // optional (has default)
 
 
     std::string
@@ -117,7 +117,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             checkingMode = 0, // 1101
             numExplorers = 1, // 1102
             numGrafters = 1, // 1103
-            numVerifiersPerChecker = 1 // 1104
+            numThreadsPerCheck = 1 // 1104
     ;
 
     bool
@@ -284,7 +284,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                     break;
 
                 case 1104:
-                    numVerifiersPerChecker = std::stoul(argv[++i]);
+                    numThreadsPerCheck = std::stoul(argv[++i]);
                     flagSepAbundance = true;
                     break;
 
@@ -363,7 +363,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
     if (!config.peek(SWARM_NUM_GRAFTERS)) config.set(SWARM_NUM_GRAFTERS, std::to_string(numGrafters));
 
-    if (!config.peek(SWARM_NUM_VERIFIERS_PER_CHECKER)) config.set(SWARM_NUM_VERIFIERS_PER_CHECKER, std::to_string(numVerifiersPerChecker));
+    if (!config.peek(SWARM_NUM_THREADS_PER_CHECK)) config.set(SWARM_NUM_THREADS_PER_CHECK, std::to_string(numThreadsPerCheck));
 
     return config;
 

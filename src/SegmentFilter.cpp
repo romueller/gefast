@@ -15,6 +15,7 @@
 
 #include "../include/Relation.hpp"
 #include "../include/SegmentFilter.hpp"
+#include "../include/Verification.hpp"
 
 
 namespace SCT_PJ {
@@ -248,6 +249,110 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 }
 
 
+void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k) {
+
+    RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
+
+    std::vector<numSeqs_t> candIntIds;
+    Substrings substrs[t + 1][t + k];
+    Segments segments(t + k);
+    lenSeqs_t M[ac.back().seq.length() + 1];
+
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    lenSeqs_t seqLen = 0;
+    numSeqs_t curIntId = sp.beginIndex;
+    lenSeqs_t dist;
+
+    // process index-only amplicons
+    for (; curIntId < sp.beginMatch; curIntId++) {
+
+        if (ac[curIntId].seq.length() != seqLen) {
+
+            seqLen = ac[curIntId].seq.length();
+            indices.roll(seqLen);
+
+            selectSegments(segments, seqLen, t, k);
+
+        }
+
+        for (lenSeqs_t i = 0; i < t + k; i++) {
+            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+        }
+
+    }
+
+
+
+    // process remaining amplicons by matching and indexing
+    seqLen = 0; // ensures that the substring information are computed
+    for (; curIntId < sp.end; curIntId++) { // for every amplicon in the collection...
+
+        // on reaching new length group, open new inverted indices and discard those no longer needed ...
+        if (ac[curIntId].seq.length() != seqLen) {
+
+            seqLen = ac[curIntId].seq.length();
+            indices.roll(seqLen);
+
+            // ... and determine position information shared by all amplicons of this length
+            for (lenSeqs_t lenDiff = 0; lenDiff < t + 1; lenDiff++) {
+                for (lenSeqs_t segmentIndex = 0; segmentIndex < t + k; segmentIndex++) {
+                    substrs[lenDiff][segmentIndex] = selectSubstrs(seqLen, seqLen - lenDiff, segmentIndex, t, k);
+                }
+            }
+            selectSegments(segments, seqLen, t, k);
+
+        }
+
+
+        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { //... consider already indexed seqs with a feasible length...
+
+            candCnts.clear();
+
+            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+
+                Substrings& subs = substrs[seqLen - len][i];//selectSubstrs(amplIter->seq.length(), len, i, t, k);
+                InvertedIndex& inv = indices.getIndex(len, i);
+
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+
+                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                        candCnts[*candIter]++;
+                    }
+
+                }
+
+            }
+
+            // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+                if (candIter->second >= k) {
+
+                    dist = Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
+
+                    if (dist <= t){
+                        matches.add(curIntId, candIter->first, dist);
+                    }
+
+                }
+
+            }
+
+        }
+
+        //index sequence
+        for (lenSeqs_t i = 0; i < t + k; i++) {
+            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+        }
+
+    }
+
+}
+
+
 
 void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k) {
 
@@ -346,6 +451,112 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 
         cands.push(candColl);
         candColl = std::vector<Candidate>();
+
+    } while (curIntId != sp.beginMatch);
+
+}
+
+
+void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k) {
+
+    RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
+
+    std::vector<numSeqs_t> candIntIds;
+    Substrings substrs[t + 1][t + k];
+    Segments segments(t + k);
+    lenSeqs_t M[ac.back().seq.length() + 1];
+
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    lenSeqs_t seqLen = 0;
+    numSeqs_t curIntId = sp.end - 1;
+    lenSeqs_t dist;
+
+    // process index-only amplicons
+    for (; curIntId >= sp.beginIndex; curIntId--) {
+
+        if (ac[curIntId].seq.length() != seqLen) {
+
+            seqLen = ac[curIntId].seq.length();
+            indices.roll(seqLen);
+
+            selectSegments(segments, seqLen, t, k);
+
+        }
+
+        for (lenSeqs_t i = 0; i < t + k; i++) {
+            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+        }
+
+    }
+
+
+
+    // process remaining amplicons by matching and indexing
+    seqLen = 0; // ensures that the substring information are computed
+    curIntId++; // courtesy of do-while loop and unsigned integer type
+    do { // for every remaining amplicon in the collection...
+
+        curIntId--;
+
+        // on reaching new length group, open new inverted indices and discard those no longer needed ...
+        if (ac[curIntId].seq.length() != seqLen) {
+
+            seqLen = ac[curIntId].seq.length();
+            indices.roll(seqLen);
+
+            // ... and determine position information shared by all amplicons of this length
+            for (lenSeqs_t lenDiff = 0; lenDiff < t + 1; lenDiff++) {
+                for (lenSeqs_t segmentIndex = 0; segmentIndex < t + k; segmentIndex++) {
+                    substrs[lenDiff][segmentIndex] = selectSubstrsBackward(seqLen, seqLen + lenDiff, segmentIndex, t, k);
+                }
+            }
+            selectSegments(segments, seqLen, t, k);
+
+        }
+
+
+        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { //... consider already indexed seqs with a feasible length...
+
+            candCnts.clear();
+
+            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+
+                Substrings& subs = substrs[len - seqLen][i]; //<-- change: swapped len and seqLen
+                InvertedIndex& inv = indices.getIndex(len, i);
+
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+
+                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                        candCnts[*candIter]++;
+                    }
+
+                }
+
+            }
+
+            // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+                if (candIter->second >= k) {
+
+                    dist = Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
+
+                    if (dist <= t) {
+                        matches.add(curIntId, candIter->first, dist);
+                    }
+                }
+
+            }
+
+        }
+
+        //index sequence
+        for (lenSeqs_t i = 0; i < t + k; i++) {
+            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+        }
 
     } while (curIntId != sp.beginMatch);
 
@@ -479,6 +690,142 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 
         cands.push(candColl);
         candColl = std::vector<Candidate>();
+
+    }
+
+}
+
+
+void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k) {
+
+    RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
+
+    std::vector<numSeqs_t> candIntIds;
+    Substrings substrs[t + 1][t + k];
+    Segments segments(t + k);
+    std::vector<std::string> segmentStrs(t + k);
+    lenSeqs_t M[ac.back().seq.length() + 1];
+
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    lenSeqs_t seqLen = 0;
+    numSeqs_t curIntId = sp.beginIndex;
+    lenSeqs_t dist;
+
+    // process index-only amplicons
+    for (; curIntId < sp.beginMatch; curIntId++) {
+
+        if (ac[curIntId].seq.length() != seqLen) {
+
+            seqLen = ac[curIntId].seq.length();
+            indices.roll(seqLen);
+
+            selectSegments(segments, seqLen, t, k);
+
+        }
+
+        for (lenSeqs_t i = 0; i < t + k; i++) {
+            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+        }
+
+    }
+
+
+
+    // process remaining amplicons by matching and indexing
+    seqLen = 0; // ensures that the substring information are computed
+    for (; curIntId < sp.end; curIntId++) { // for every amplicon in the collection...
+
+        // on reaching new length group, open new inverted indices and discard those no longer needed ...
+        if (ac[curIntId].seq.length() != seqLen) {
+
+            seqLen = ac[curIntId].seq.length();
+            indices.roll(seqLen);
+
+            // ... and determine position information shared by all amplicons of this length
+            for (lenSeqs_t lenDiff = 0; lenDiff < t + 1; lenDiff++) {
+                for (lenSeqs_t segmentIndex = 0; segmentIndex < t + k; segmentIndex++) {
+                    substrs[lenDiff][segmentIndex] = selectSubstrs(seqLen, seqLen - lenDiff, segmentIndex, t, k);
+                }
+            }
+            selectSegments(segments, seqLen, t, k);
+
+        }
+
+        // compute actual segments of the current amplicon here once (used in pipelined filtering and indexing steps)
+        for (auto i = 0; i < t + k; i++) {
+            segmentStrs[i] = ac[curIntId].seq.substr(segments[i].first, segments[i].second);
+        }
+
+        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { //... consider already indexed seqs with a feasible length...
+
+            candCnts.clear();
+
+            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+
+                Substrings& subs = substrs[seqLen - len][i];
+                InvertedIndex& inv = indices.getIndex(len, i);
+
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+
+                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                        candCnts[*candIter]++;
+                    }
+
+                }
+
+            }
+
+
+            // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+            //  + pipelined backward filtering
+            //      advantages of performing it directly here:
+            //      (a) initial candidate set stays small (more precisely, there is no actual intermediate candidate set between the filtering steps)
+            //      (b) length of candidates is known and equal for all of them -> selectSubstrs() needed only once
+            //      (c) segment information of current amplicon known -> reuse
+            std::string candStr;
+            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+
+            Substrings candSubs[t + k]; // common substring information of all candidates
+            for (lenSeqs_t i = 0; i < t + k; i++) {
+                candSubs[i] = selectSubstrsBackward(len, seqLen, i, t, k);
+            }
+
+            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) { // 1st component = integer id of amplicon, 2nd component = number of substring-segment matches during first filter step
+
+                if (candIter->second >= k) { // initial candidate found -> immediate backward filtering
+
+                    candStr = ac[candIter->first].seq;
+
+                    for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                        cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                    }
+
+                    if (cnt == k) {
+
+                        dist = Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
+
+                        if (dist <= t){
+                            matches.add(curIntId, candIter->first, dist);
+                        }
+
+                    }
+
+                    cnt = 0;
+
+
+                }
+
+            }
+
+        }
+
+        //index sequence
+        for (lenSeqs_t i = 0; i < t + k; i++) {
+            indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
+        }
 
     }
 
@@ -621,6 +968,145 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 }
 
 
+void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k) {
+
+    RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
+
+    std::vector<numSeqs_t> candIntIds;
+    Substrings substrs[t + 1][t + k];
+    Segments segments(t + k);
+    std::vector<std::string> segmentStrs(t + k);
+    lenSeqs_t M[ac.back().seq.length() + 1];
+
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    lenSeqs_t seqLen = 0;
+    numSeqs_t curIntId = sp.end - 1;
+    lenSeqs_t dist;
+
+    // process index-only amplicons
+    for (; curIntId >= sp.beginIndex; curIntId--) {
+
+        if (ac[curIntId].seq.length() != seqLen) {
+
+            seqLen = ac[curIntId].seq.length();
+            indices.roll(seqLen);
+
+            selectSegments(segments, seqLen, t, k);
+
+        }
+
+        for (lenSeqs_t i = 0; i < t + k; i++) {
+            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+        }
+
+    }
+
+
+
+    // process remaining amplicons by matching and indexing
+    seqLen = 0; // ensures that the substring information are computed
+    curIntId++; // courtesy of do-while loop and unsigned integer type
+    do { // for every remaining amplicon in the collection...
+
+        curIntId--;
+
+        // on reaching new length group, open new inverted indices and discard those no longer needed ...
+        if (ac[curIntId].seq.length() != seqLen) {
+
+            seqLen = ac[curIntId].seq.length();
+            indices.roll(seqLen);
+
+            // ... and determine position information shared by all amplicons of this length
+            for (lenSeqs_t lenDiff = 0; lenDiff < t + 1; lenDiff++) {
+                for (lenSeqs_t segmentIndex = 0; segmentIndex < t + k; segmentIndex++) {
+                    substrs[lenDiff][segmentIndex] = selectSubstrsBackward(seqLen, seqLen + lenDiff, segmentIndex, t, k); //<-- change: selectSubstrsBackward, '-' to '+'
+                }
+            }
+            selectSegments(segments, seqLen, t, k);
+
+        }
+
+        // compute actual segments of the current amplicon here once (used in pipelined filtering and indexing steps)
+        for (auto i = 0; i < t + k; i++) {
+            segmentStrs[i] = ac[curIntId].seq.substr(segments[i].first, segments[i].second);
+        }
+
+        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { //... consider already indexed seqs with a feasible length...
+
+            candCnts.clear();
+
+            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+
+                Substrings& subs = substrs[len - seqLen][i]; //<-- change: swapped len and seqLen
+                InvertedIndex& inv = indices.getIndex(len, i);
+
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+
+                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                        candCnts[*candIter]++;
+                    }
+
+                }
+
+            }
+
+
+            // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+            //  + pipelined forward filtering
+            //      advantages of performing it directly here:
+            //      (a) initial candidate set stays small (more precisely, there is no actual intermediate candidate set between the filtering steps)
+            //      (b) length of candidates is known and equal for all of them -> selectSubstrs() needed only once
+            //      (c) segment information of current amplicon known -> reuse
+            std::string candStr;
+            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+
+            Substrings candSubs[t + k]; // common substring information of all candidates
+            for (lenSeqs_t i = 0; i < t + k; i++) {
+                candSubs[i] = selectSubstrs(len, seqLen, i, t, k);
+            }
+
+            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) { // 1st component = integer id of amplicon, 2nd component = number of substring-segment matches during first filter step
+
+                if (candIter->second >= k) { // initial candidate found -> immediate forward filtering
+
+                    candStr = ac[candIter->first].seq;
+
+                    for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                        cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                    }
+
+                    if (cnt == k) {
+
+                        dist = Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
+
+                        if (dist <= t){
+                            matches.add(curIntId, candIter->first, dist);
+                        }
+
+                    }
+
+                    cnt = 0;
+
+
+                }
+
+            }
+
+        }
+
+        //index sequence
+        for (lenSeqs_t i = 0; i < t + k; i++) {
+            indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
+        }
+
+    } while (curIntId != sp.beginMatch);
+
+}
+
+
 void SegmentFilter::filter(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k, const int mode) { //TODO set "best" default (see also config creation)
 
     switch (mode) {
@@ -643,6 +1129,33 @@ void SegmentFilter::filter(const AmpliconCollection& ac, const Subpool& sp, Rota
 
         default:
             filterForward(ac, sp, cands, t, k);
+
+    }
+
+}
+
+void SegmentFilter::filterDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const int mode) { //TODO set "best" default (see also config creation)
+
+    switch (mode) {
+
+        case 0:
+            filterForwardDirectly(ac, sp, matches, t, k);
+            break;
+
+        case 1:
+            filterBackwardDirectly(ac, sp, matches, t, k);
+            break;
+
+        case 2:
+            filterForwardBackwardDirectly(ac, sp, matches, t, k);
+            break;
+
+        case 3:
+            filterBackwardForwardDirectly(ac, sp, matches, t, k);
+            break;
+
+        default:
+            filterForwardDirectly(ac, sp, matches, t, k);
 
     }
 

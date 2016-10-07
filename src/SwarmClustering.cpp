@@ -199,12 +199,11 @@ void SwarmClustering::verifyFastidious(const AmpliconCollection& acOtus, const A
 
 }
 
-void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& mtx, const SwarmConfig& sc) {
+void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
     std::vector<OtuEntry*> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
-    lenSeqs_t M[std::max(acOtus.back().seq.length(), acIndices.back().seq.length()) + 1];
     lenSeqs_t seqLen;
 
     std::vector<CandidateFastidious> localCands;
@@ -283,20 +282,142 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 
 }
 
-void SwarmClustering::checkAndVerify(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
+void SwarmClustering::fastidiousCheckOtusDirectly(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
-    RotatingBuffers<CandidateFastidious> cbs = RotatingBuffers<CandidateFastidious>(sc.numVerifiersPerChecker);
-    std::thread verifierThreads[sc.numVerifiersPerChecker];
+    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
+    std::vector<OtuEntry*> candMembers;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    lenSeqs_t M[std::max(acOtus.back().seq.length(), acIndices.back().seq.length()) + 1];
+    lenSeqs_t seqLen;
 
-    for (unsigned long v = 0; v < sc.numVerifiersPerChecker; v++) {
-        verifierThreads[v] = std::thread(&SwarmClustering::verifyFastidious, std::ref(acOtus), std::ref(acIndices), std::ref(graftCands), std::ref(cbs.getBuffer(v)), 2 * sc.threshold, std::ref(graftCandsMtx));
+    for (auto otuIter = otus.begin(); otuIter != otus.end(); otuIter++) {
+
+        if ((*otuIter)->mass >= sc.boundary) { // for each heavy OTU of the pool ...
+
+            for (auto memberIter = (*otuIter)->members.begin(); memberIter != (*otuIter)->members.end(); memberIter++) { // ... consider every amplicon in the OTU and ...
+
+                seqLen = acOtus[memberIter->id].seq.length();
+
+                std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>& substrs = substrsArchive[seqLen];
+
+                // on reaching new length group, open new inverted indices
+                if (substrs.empty()) {
+
+                    // ... and determine position information shared by all amplicons of this length
+                    for (lenSeqs_t partnerLen = (seqLen > 2 * sc.threshold) * (seqLen - 2 * sc.threshold); partnerLen <= seqLen + 2 * sc.threshold; partnerLen++) {
+
+                        std::vector<SegmentFilter::Substrings>& vec = substrs[partnerLen];
+                        for (lenSeqs_t segmentIndex = 0; segmentIndex < 2 * sc.threshold + sc.extraSegs; segmentIndex++) {
+                            if (partnerLen <= seqLen) {
+                                vec.push_back(SegmentFilter::selectSubstrs(seqLen, partnerLen, segmentIndex, 2 * sc.threshold, sc.extraSegs));
+                            } else {
+                                vec.push_back(SegmentFilter::selectSubstrsBackward(seqLen, partnerLen, segmentIndex, 2 * sc.threshold, sc.extraSegs));
+                            }
+                        }
+
+                    }
+
+                }
+
+
+                for (lenSeqs_t len = (seqLen > 2 * sc.threshold) * (seqLen - 2 * sc.threshold); len <= seqLen + 2 * sc.threshold; len++) { // ... search for graft candidates among the amplicons in light OTUs
+
+                    for (lenSeqs_t i = 0; i < 2 * sc.threshold + sc.extraSegs; i++) {//... and apply segment filter for each segment
+
+                        SegmentFilter::Substrings& subs = substrs[len][i];
+                        InvertedIndexFastidious& inv = indices.getIndex(len, i);
+
+                        for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                            candMembers = inv.getLabelsOf(std::string(acOtus[memberIter->id].seq, substrPos, subs.len));
+
+                            for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
+                                candCnts[(*candIter)->id]++;
+                            }
+
+                        }
+
+                    }
+
+                    // general pigeonhole principle: for being a candidate, at least sc.extraSegs segments have to be matched
+                    for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+//                        if ((candIter->second >= sc.extraSegs)
+//                                &&((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], acOtus[graftCands[candIter->first].parentMember->id]))
+//                                && (Verification::computeLengthAwareRow(acOtus[memberIter->id].seq, acIndices[candIter->first].seq, 2 * sc.threshold, M) <= 2 * sc.threshold)) {
+//
+//                                    graftCands[candIter->first].parentOtu = *otuIter;
+//                                    graftCands[candIter->first].parentMember = &(*memberIter);
+//
+//                        }
+
+                        std::unique_lock<std::mutex> lock(graftCandsMtx);
+                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], acOtus[graftCands[candIter->first].parentMember->id]))) {
+
+                            lock.unlock();
+                            if (Verification::computeLengthAwareRow(acOtus[memberIter->id].seq, acIndices[candIter->first].seq, 2 * sc.threshold, M) <= 2 * sc.threshold) {
+
+                                lock.lock();
+                                if (((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], acOtus[graftCands[candIter->first].parentMember->id]))) {
+
+                                    graftCands[candIter->first].parentOtu = *otuIter;
+                                    graftCands[candIter->first].parentMember = &(*memberIter);
+
+                                }
+                                lock.unlock();
+
+                            }
+
+                        }
+
+                    }
+
+                    candCnts = std::unordered_map<numSeqs_t, lenSeqs_t>();
+
+                }
+
+            }
+
+        }
+
     }
 
-    fastidiousCheckOtus(cbs, otus, acOtus, indices, acIndices, graftCands, graftCandsMtx, sc);
-    cbs.close();
+}
 
-    for (unsigned long v = 0; v < sc.numVerifiersPerChecker; v++) {
-        verifierThreads[v].join();
+void SwarmClustering::checkAndVerify(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
+
+    if (sc.numThreadsPerCheck == 1) {
+
+#if 0
+
+        RotatingBuffers<CandidateFastidious> cbs = RotatingBuffers<CandidateFastidious>(1);
+        fastidiousCheckOtus(cbs, otus, acOtus, indices, acIndices, graftCands, sc);
+        cbs.close();
+
+        verifyFastidious(acOtus, acIndices, graftCands, cbs.getBuffer(0), 2 * sc.threshold, graftCandsMtx);
+
+#else
+
+        fastidiousCheckOtusDirectly(otus, acOtus, indices, acIndices, graftCands, graftCandsMtx, sc);
+
+#endif
+
+    } else {
+
+        RotatingBuffers<CandidateFastidious> cbs = RotatingBuffers<CandidateFastidious>(sc.numThreadsPerCheck);
+        std::thread verifierThreads[sc.numThreadsPerCheck];
+
+        for (unsigned long v = 0; v < sc.numThreadsPerCheck; v++) {
+            verifierThreads[v] = std::thread(&SwarmClustering::verifyFastidious, std::ref(acOtus), std::ref(acIndices), std::ref(graftCands), std::ref(cbs.getBuffer(v)), 2 * sc.threshold, std::ref(graftCandsMtx));
+        }
+
+        fastidiousCheckOtus(cbs, otus, acOtus, indices, acIndices, graftCands, sc);
+        cbs.close();
+
+        for (unsigned long v = 0; v < sc.numThreadsPerCheck; v++) {
+            verifierThreads[v].join();
+        }
+
     }
 
 }

@@ -63,7 +63,7 @@ struct SwarmConfig {
     unsigned long numGrafters = 1;
 
     unsigned long fastidiousCheckingMode = 0;
-    unsigned long numVerifiersPerChecker = 1;
+    unsigned long numThreadsPerCheck = 1;
 
 };
 
@@ -363,8 +363,11 @@ void verifyFastidious(const AmpliconCollection& acOtus, const AmpliconCollection
 /**
  * Apply a (forward) segment filter on the amplicons from the heavy OTUs of the current pool using the indexed amplicons of light OTUs.
  * Determines the parent information of the grafting candidates.
+ *
+ * The method with the suffix 'Directly' verifies the candidates itself directly when they occur and does not hand them over to verifier threads through a buffer.
  */
-void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& mtx, const SwarmConfig& sc);
+void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
+void fastidiousCheckOtusDirectly(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& graftCandsMtx, const SwarmConfig& sc);
 
 /**
  * Check for grafting candidates using a segment filter and multiple verifier threads.

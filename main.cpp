@@ -77,7 +77,7 @@ int run(int argc, const char* argv[]) {
     sc.numExplorers = std::stoul(c.get(SWARM_NUM_EXPLORERS));
     sc.numGrafters = std::stoul(c.get(SWARM_NUM_GRAFTERS));
     sc.fastidiousCheckingMode = std::stoul(c.get(SWARM_FASTIDIOUS_CHECKING_MODE));
-    sc.numVerifiersPerChecker = std::stoul(c.get(SWARM_NUM_VERIFIERS_PER_CHECKER));
+    sc.numThreadsPerCheck = std::stoul(c.get(SWARM_NUM_THREADS_PER_CHECK));
 
     if (sc.dereplicate) { // dereplication uses matching with distance 0
         c.set(THRESHOLD, "0");

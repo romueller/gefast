@@ -41,7 +41,7 @@ public:
         // nothing to do
     }
 
-    bool areRelated(O obj, L lab) {
+    bool areRelated(const O& obj, const L& lab) {
 
         bool val = false;
         auto keyIter = binRel_.find(obj);
@@ -59,7 +59,7 @@ public:
 
     }
 
-    std::vector<L> getLabelsOf(O obj) {
+    std::vector<L> getLabelsOf(const O& obj) {
 
         std::vector<L> labels;
         auto keyIter = binRel_.find(obj);
@@ -72,7 +72,7 @@ public:
 
     }
 
-    std::vector<O> getObjectsOf(L lab) {
+    std::vector<O> getObjectsOf(const L& lab) {
 
         std::vector<O> objects;
 
@@ -101,7 +101,7 @@ public:
 
     }
 
-    unsigned long countLabelsOf(O obj) {
+    unsigned long countLabelsOf(const O& obj) {
 
         unsigned long numLabels = 0;
         auto keyIter = binRel_.find(obj);
@@ -114,7 +114,7 @@ public:
 
     }
 
-    unsigned long countObjectsOf(L lab) {
+    unsigned long countObjectsOf(const L& lab) {
 
         unsigned long sum = 0;
 
@@ -127,7 +127,7 @@ public:
     }
 
 
-    void add(O obj, L lab) {
+    void add(const O& obj, const L& lab) {
 
         // at() not necessary because creating new entry for s should be done anyway if it is not already included
 //        auto labels = &(binRel_[obj]);
@@ -146,7 +146,7 @@ public:
 
     }
 
-    void remove(O obj, L lab) {
+    void remove(const O& obj, const L& lab) {
 
         auto keyIter = binRel_.find(obj);
 
@@ -164,19 +164,19 @@ public:
     }
 
 
-    void addObject(O obj) {
+    void addObject(const O& obj) {
         binRel_[obj];
     }
 
-    void removeObject(O obj) {
+    void removeObject(const O& obj) {
         binRel_.erase(obj);
     }
 
-    void addLabel(L lab) {
+    void addLabel(const L& lab) {
         //nothing to do
     }
 
-    void removeLabel(L lab) {
+    void removeLabel(const L& lab) {
 
         for (auto iter = binRel_.begin(); iter != binRel_.end(); iter++) {
 
@@ -190,7 +190,7 @@ public:
 
     }
 
-    void join(SimpleBinaryRelation<O, L>& sbr) {
+    void join(const SimpleBinaryRelation<O, L>& sbr) {
 
         for (auto iter = sbr.binRel_.begin(); iter != sbr.binRel_.end(); iter++) {
 
@@ -236,7 +236,7 @@ public:
 
 
     // return whether the pair (obj,lab) is recorded as a pair
-    bool contains(T& t1, T& t2) {
+    bool contains(const T& t1, const T& t2) {
 
         bool found = false;
 
@@ -249,7 +249,7 @@ public:
     }
 
     // add a match
-    void add(T& t1, T& t2, K& d) {
+    void add(const T& t1, const T& t2, const K& d) {
 
         matches_[d].add(t1, t2);
         matches_[d].add(t2, t1); //NEW for symmetry
@@ -257,7 +257,7 @@ public:
     }
 
     // remove (a) match
-    void remove(T& t1, T& t2) {
+    void remove(const T& t1, const T& t2) {
 
         for (auto iter = matches_.begin(); iter != matches_.end(); iter++) {
             iter->second.remove(t1, t2);
@@ -268,7 +268,7 @@ public:
 
 
     // return all matches of the specified element
-    std::vector<T> getMatchesOf(T& t) {
+    std::vector<T> getMatchesOf(const T& t) {
 
         std::vector<T> res;
         std::vector<T> m;
@@ -286,7 +286,7 @@ public:
 
 
     // return whether the pair (obj,lab) is recorded as a pair (1st component) and, if yes, what is their distance (2nd component)
-    std::pair<bool, K> containsAugmented(T& t1, T& t2) {
+    std::pair<bool, K> containsAugmented(const T& t1, const T& t2) {
 
         bool found = false;
         K d = 0;
@@ -301,7 +301,7 @@ public:
     }
 
     // return all matches (and their distances) of the specified element
-    std::vector<std::pair<T, K>> getMatchesOfAugmented(T& t) {
+    std::vector<std::pair<T, K>> getMatchesOfAugmented(const T& t) {
 
         std::vector<std::pair<T, K>> res;
         std::vector<T> m;
@@ -335,7 +335,7 @@ public:
     }
 
     // count the number of matches of the specified element
-    unsigned long countMatchesOf(T& t) {
+    unsigned long countMatchesOf(const T& t) {
 
         unsigned long sum = 0;
 
@@ -347,7 +347,7 @@ public:
 
     }
 
-    void join(SimpleMatches<T, T>& sm) {
+    void join(const SimpleMatches<T, T>& sm) {
 
         for (auto iter = sm.matches_.begin(); iter != sm.matches_.end(); iter++) {
             matches_[iter->first].join(iter->second);
@@ -356,42 +356,42 @@ public:
     }
 
 
-    bool syncContains(T& t1, T& t2) {
+    bool syncContains(const T& t1, const T& t2) {
 
         std::lock_guard<std::mutex> lock(mtx_);
         return contains(t1, t2);
 
     }
 
-    void syncAdd(T& t1, T& t2, K& d) {
+    void syncAdd(const T& t1, const T& t2, const K& d) {
 
         std::lock_guard<std::mutex> lock(mtx_);
         add(t1, t2, d);
 
     }
 
-    void syncRemove(T& t1, T& t2) {
+    void syncRemove(const T& t1, const T& t2) {
 
         std::lock_guard<std::mutex> lock(mtx_);
         remove(t1, t2);
 
     }
 
-    std::vector<T> syncGetMatchesOf(T& t) {
+    std::vector<T> syncGetMatchesOf(const T& t) {
 
         std::lock_guard<std::mutex> lock(mtx_);
         return getMatchesOf(t);
 
     }
 
-    std::pair<bool, K> syncContainsAugmented(T& t1, T& t2) {
+    std::pair<bool, K> syncContainsAugmented(const T& t1, const T& t2) {
 
         std::lock_guard<std::mutex> lock(mtx_);
         return containsAugmented(t1, t2);
 
     }
 
-    std::vector<std::pair<T, K>> syncGetMatchesOfAugmented(T& t) {
+    std::vector<std::pair<T, K>> syncGetMatchesOfAugmented(const T& t) {
 
         std::lock_guard<std::mutex> lock(mtx_);
         return getMatchesOfAugmented(t);
@@ -405,14 +405,14 @@ public:
 
     }
 
-    unsigned long syncCountMatchesOf(T& t) {
+    unsigned long syncCountMatchesOf(const T& t) {
 
         std::lock_guard<std::mutex> lock(mtx_);
         return countMatchesOf(t);
 
     }
 
-    void syncJoin(SimpleMatches<T, T>& sm) {//assumption: no concurrent accesses on sm
+    void syncJoin(const SimpleMatches<T, T>& sm) {//assumption: no concurrent accesses on sm
 
         std::lock_guard<std::mutex> lock(mtx_);
         join(sm);
@@ -426,111 +426,6 @@ private:
 
 };
 
-
-
-/*
- * Sync wrapper of SimpleMatches [probably not needed: sync-methods in SimpleMatches]
- */
-/*template<typename K, typename T>
-class SyncSimpleMatches {
-
-public:
-    SyncSimpleMatches() {
-        // nothing to do
-    }
-
-    ~SyncSimpleMatches() {
-        // nothing to do
-    }
-
-
-    // return whether the pair (obj,lab) is recorded as a pair
-    bool contains(T t1, T t2) {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        return matches_.contains(t1, t2);
-
-    }
-
-    // add a match
-    void add(T t1, T t2, K d) {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        matches_.add(t1, t2, d);
-
-    }
-
-    // remove (a) match
-    void remove(T t1, T t2) {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        matches_.remove(t1, t2);
-
-    }
-
-
-    // return all matches of the specified element
-    std::vector<T> getMatchesOf(T t) {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        return matches_.getMatchesOf(t);
-
-    }
-
-
-    // return whether the pair (obj,lab) is recorded as a pair (1st component) and, if yes, what is their distance (2nd component)
-    std::pair<bool, K> containsAugmented(T t1, T t2) {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        return matches_.containsAugmented(t1, t2);
-
-    }
-
-
-    // return all matches (and their distances) of the specified element
-    std::vector<std::pair<T, K>> getMatchesOfAugmented(T t) {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        return matches_.getMatchesOfAugmented(t);
-
-    }
-
-    // count the total number of matches
-    unsigned long countMatches() {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        return matches_.countMatches();
-
-    }
-
-    // count the number of matches of the specified element
-    unsigned long countMatchesOf(T t)  {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        return matches_.countMatchesOf(t);
-
-    }
-
-    void join(SyncSimpleMatches<K, T>& ssm) {
-
-        std::lock_guard<std::mutex> lock(mtx_);
-
-        matches_.join(ssm.matches_);
-    }
-
-private:
-    SimpleMatches<K, T> matches_;
-    std::mutex mtx_;
-
-};*/
 
 // minimum interface: contains, add, remove
 typedef SimpleMatches<lenSeqs_t, numSeqs_t> Matches;

@@ -28,19 +28,29 @@ Worker::~Worker() {
 
 void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
 
-    RotatingBuffers<Candidate> cbs;
-
     if (numThreads_ == 1) { // completey sequential
 
-        cbs = RotatingBuffers<Candidate>(1);
+        Matches localMatches;
+
+#if 0
+
+        RotatingBuffers<Candidate> cbs = RotatingBuffers<Candidate>(1);
         SegmentFilter::filter(ac_, sp_, cbs, threshold, numExtraSegments, mode_);
         cbs.close();
 
-        Verification::verify(ac_, matches_, cbs.getBuffer(0), threshold);
+        Verification::verify(ac_, localMatches, cbs.getBuffer(0), threshold);
+
+#else
+
+        SegmentFilter::filterDirectly(ac_, sp_, localMatches, threshold, numExtraSegments, mode_);
+
+#endif
+
+        matches_.syncJoin(localMatches);
 
     } else { // worker thread + (numThreads - 1) verifier threads
 
-        cbs = RotatingBuffers<Candidate>(numThreads_ - 1);
+        RotatingBuffers<Candidate> cbs = RotatingBuffers<Candidate>(numThreads_ - 1);
 
         Matches* matchesPerThread[numThreads_ - 1];
         for (unsigned long v = 0; v < numThreads_ - 1; v++) {

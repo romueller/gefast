@@ -82,7 +82,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--max-length"] = 1002; // optional
     parameters["--per-worker"] = 1003; // optional (has default)
     parameters["--workers"] = 1004; // optional (has default)
-    parameters["--info-file"] = 1005; // optional
+    parameters["--info-folder"] = 1005; // optional
     parameters["--sep-abundance"] = 1006; // optional (has default)
 
     parameters["--swarm-fastidious-checking-mode"] = 1101; // optional (has default)
@@ -92,66 +92,70 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
 
     std::string
-            alphabet = "", // 1,2
             name = DEFAULT_JOB_NAME, // 5,6
-            configFile = "", // 9,10
-            fileList = "", // 11,12
-            outputFile = "", // 15,16
-            oFileSwarmInternal = "", // 101,102
-            oFileSwarmOutput = "", // 103,104
-            oFileSwarmStatistics = "", // 105,106
-            oFileSwarmSeeds = "", // 107,108
-            infoFile = "", // 1005
-            sepAbundance = ";" // 1006 //TODO choose "best" default (underscore as in swarm?)
+            configFile = DEFAULT_CONFIG_FILE // 9,10
     ;
 
-    unsigned long long
-            extraSegs = 1, // 3,4
-            threshold = 1, // 7,8
-            segFilter = 0, // 13,14 //TODO set "best" version of segment filter as default
-            minLength = 0, // 1001
-            maxLength = 0, // 1002
-            numThreadsPerWorker = 1, // 1003
-            numWorkers = 1, // 1004
-            boundary = 3, // 115,116,
-            checkingMode = 0, // 1101
-            numExplorers = 1, // 1102
-            numGrafters = 1, // 1103
-            numThreadsPerCheck = 1 // 1104
-    ;
+    unsigned long long val;
 
-    bool
-            filterAlphabet = false, // 1,2
-            filterMinLength = false, // 1001
-            filterMaxLength = false, // 1002
-            flagExtraSegs = false, // (3,4)
-            flagThreshold = false, // (7,8)
-            flagSegFilter = false, // (13,14)
-            flagNumThreadsPerWorker = false, // (1003)
-            flagNumWorkers = false, // (1004)
-            flagDereplicate = false, // 111,112
-            flagSepAbundance = false, // 1006
-            flagFastidious = false, // 113,114
-            flagBoundary = false // 115,116
-    ;
+    Config<std::string> config;
+    config.set(VERSION, "1.0");
 
-    int flagNoOtuBreaking = -1; // (109,110)
+    /* Set default values */
 
+    config.set(FILTER_ALPHABET, "0");
+    config.set(FILTER_LENGTH, "0");
+    config.set(NUM_EXTRA_SEGMENTS, "1");
+    config.set(NUM_THREADS_PER_WORKER, "1");
+    config.set(NUM_WORKERS, "1");
+    config.set(SEGMENT_FILTER, "0"); //TODO set "best" version of segment filter as default
+    config.set(SEPARATOR_ABUNDANCE, "_");
+    config.set(THRESHOLD, "1");
+
+    config.set(SWARM_BOUNDARY, "3");
+    config.set(SWARM_DEREPLICATE, "0");
+    config.set(SWARM_FASTIDIOUS, "0");
+    config.set(SWARM_FASTIDIOUS_CHECKING_MODE, "0");
+    config.set(SWARM_NO_OTU_BREAKING, "0");
+    config.set(SWARM_NUM_EXPLORERS, "1");
+    config.set(SWARM_NUM_GRAFTERS, "1");
+    config.set(SWARM_NUM_THREADS_PER_CHECK, "1");
 
     /* Determine parameter values */
 
+    // determine used config file and load basic configuration
+    for (int i = 1; i < argc; i++) {
+
+        if (parameters[argv[i]] == 9 || parameters[argv[i]] == 10) {
+
+            configFile = argv[++i];
+            break;
+
+        }
+
+    }
+
+    config.read(configFile, true);
+
+    // read remaining configuration from command line (potentially overwriting values from the config file)
+    // converting back and forth between string and integer values is used to "detect" (some) meaningless inputs
     for (int i = 1; i < argc; i++) {
 
         // one-part parameters
         switch (parameters[argv[i]]) {
+            case 109: //fallthrough -sn to --swarm-no-otu-breaking
+            case 110:
+                config.set(SWARM_NO_OTU_BREAKING, "1");
+                break;
+
             case 111: //fallthrough -sd to --swarm-dereplicate
             case 112:
-                flagDereplicate = true;
+                config.set(SWARM_DEREPLICATE, "1");
                 break;
 
             case 113: //fallthrough -sf to --swarm-fastidious
             case 114:
-                flagFastidious = true;
+                config.set(SWARM_FASTIDIOUS, "1");
                 break;
 
             default:
@@ -164,128 +168,117 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             switch (parameters[argv[i]]) {
                 case 1: //fallthrough -a to --alphabet
                 case 2:
-                    alphabet = argv[++i];
-                    filterAlphabet = true;
+                    config.set(FILTER_ALPHABET, std::to_string(true));
+                    config.set(ALPHABET, argv[++i]);
                     break;
 
                 case 3: //fallthrough -e to --extra-segments
                 case 4:
-                    extraSegs = std::stoul(argv[++i]);
-                    flagExtraSegs = true;
+                    val = std::stoul(argv[++i]);
+                    config.set(NUM_EXTRA_SEGMENTS, std::to_string(val));
                     break;
 
                 case 5: //fallthrough -n to --name
                 case 6:
-                    name = argv[++i];
+                    name = argv[++i]; // further handling after reading all parameters
                     break;
 
                 case 7: //fallthrough -t to --threshold
                 case 8:
-                    threshold = std::stoul(argv[++i]);
-                    flagThreshold = true;
-                    break;
-
-                case 9: //fallthrough -c to --config
-                case 10:
-                    configFile = argv[++i];
+                    val = std::stoul(argv[++i]);
+                    config.set(THRESHOLD, std::to_string(val));
                     break;
 
                 case 11: //fallthrough -i to --input-files
                 case 12:
-                    fileList = argv[++i];
+                    config.set(FILE_LIST, argv[++i]);
                     break;
 
                 case 13: //fallthrough -s to --seg-filter
                 case 14:
-                    segFilter = std::stoul(argv[++i]);
-                    flagSegFilter = true;
+                    val = std::stoul(argv[++i]);
+                    config.set(SEGMENT_FILTER, std::to_string(val));
                     break;
 
                 case 15: //fallthrough -o to --output-file
                 case 16:
-                    outputFile = argv[++i];
+                    config.set(MATCHES_OUTPUT_FILE, argv[++i]);
                     break;
 
 
                 case 101: //fallthrough -si to --swarm-internal
                 case 102:
-                    oFileSwarmInternal = argv[++i];
+                    config.set(SWARM_OUTPUT_INTERNAL, argv[++i]);
                     break;
 
                 case 103: //fallthrough -so to --swarm-output
                 case 104:
-                    oFileSwarmOutput = argv[++i];
+                    config.set(SWARM_OUTPUT_OTUS, argv[++i]);
                     break;
 
                 case 105: //fallthrough -ss to --swarm-statistics
                 case 106:
-                    oFileSwarmStatistics = argv[++i];
+                    config.set(SWARM_OUTPUT_STATISTICS, argv[++i]);
                     break;
-
 
                 case 107: //fallthrough -sw to --swarm-seeds
                 case 108:
-                    oFileSwarmSeeds = argv[++i];
-                    break;
-
-                case 109: //fallthrough -sn to --swarm-no-otu-breaking
-                case 110:
-                    flagNoOtuBreaking = std::stoi(argv[++i]);
+                    config.set(SWARM_OUTPUT_SEEDS, argv[++i]);
                     break;
 
                 case 115: //fallthrough -sb to --swarm-boundary
                 case 116:
-                    boundary = std::stoul(argv[++i]);
-                    flagBoundary = true;
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_BOUNDARY, std::to_string(val));
                     break;
 
                 // parameters without abbreviation
                 case 1001:
-                    minLength = std::stoul(argv[++i]);
-                    filterMinLength = true;
+                    val = std::stoul(argv[++i]); // further handling after reading all parameters
+                    config.set(MIN_LENGTH, std::to_string(val));
                     break;
 
                 case 1002:
-                    maxLength = std::stoul(argv[++i]);
-                    filterMaxLength = true;
+                    val = std::stoul(argv[++i]); // further handling after reading all parameters
+                    config.set(MAX_LENGTH, std::to_string(val));
                     break;
 
                 case 1003:
-                    numThreadsPerWorker = std::stoul(argv[++i]);
-                    flagNumThreadsPerWorker = true;
+                    val = std::stoul(argv[++i]);
+                    config.set(NUM_THREADS_PER_WORKER, std::to_string(val));
                     break;
 
                 case 1004:
-                    numWorkers = std::stoul(argv[++i]);
-                    flagNumWorkers = true;
+                    val = std::stoul(argv[++i]);
+                    config.set(NUM_WORKERS, std::to_string(val));
                     break;
 
                 case 1005:
-                    infoFile = std::stoul(argv[++i]);
+                    config.set(INFO_FOLDER, argv[++i]);
                     break;
 
                 case 1006:
-                    sepAbundance = argv[++i];
-                    flagSepAbundance = true;
+                    config.set(SEPARATOR_ABUNDANCE, argv[++i]);
                     break;
 
                 case 1101:
-                    checkingMode = std::stoul(argv[++i]);
-                    flagNumThreadsPerWorker = true;
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_FASTIDIOUS_CHECKING_MODE, std::to_string(val));
                     break;
 
                 case 1102:
-                    numExplorers = std::stoul(argv[++i]);
-                    flagNumWorkers = true;
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_NUM_EXPLORERS, std::to_string(val));
                     break;
 
                 case 1103:
-                    numGrafters = std::stoul(argv[++i]);
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_NUM_GRAFTERS, std::to_string(val));
                     break;
 
                 case 1104:
-                    numThreadsPerCheck = std::stoul(argv[++i]);
-                    flagSepAbundance = true;
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_NUM_THREADS_PER_CHECK, std::to_string(val));
                     break;
 
                 default:
@@ -297,23 +290,12 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     }
 
 
-    /* Populate configuration */
-    // load (basic) parameters from config file
-    Config<std::string> config = Config<std::string>((configFile == "") ? DEFAULT_CONFIG_FILE : configFile);
-
-    // overwrite with / add command-line inputs
-    config.set(FILTER_ALPHABET, std::to_string(filterAlphabet || config.peek(ALPHABET)));
-    if (alphabet != "") config.set(ALPHABET, alphabet);
-
-    if (fileList != "") config.set(FILE_LIST, fileList);
-
+    // further handling of some parameters
     config.set(FILTER_LENGTH, std::to_string(
             0
-            + (filterMaxLength || config.peek(MAX_LENGTH))
-            + 2 * (filterMinLength || config.peek(MIN_LENGTH))
+            + config.peek(MAX_LENGTH)
+            + 2 * config.peek(MIN_LENGTH)
     ));
-    if (maxLength != 0) config.set(MAX_LENGTH, std::to_string(maxLength));
-    if (minLength != 0) config.set(MIN_LENGTH, std::to_string(minLength));
 
     if (name == DEFAULT_JOB_NAME) { // append current time / date to default name
 
@@ -325,45 +307,6 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
     }
     config.set(NAME, name);
-
-    if (flagExtraSegs || !config.peek(NUM_EXTRA_SEGMENTS)) config.set(NUM_EXTRA_SEGMENTS, std::to_string(extraSegs));
-
-    if (flagNumThreadsPerWorker || !config.peek(NUM_THREADS_PER_WORKER)) config.set(NUM_THREADS_PER_WORKER, std::to_string(numThreadsPerWorker));
-
-    if (flagNumWorkers || !config.peek(NUM_WORKERS)) config.set(NUM_WORKERS, std::to_string(numWorkers));
-
-    if (flagThreshold || !config.peek(THRESHOLD)) config.set(THRESHOLD, std::to_string(threshold));
-
-    if (flagSegFilter || !config.peek(SEGMENT_FILTER)) config.set(SEGMENT_FILTER, std::to_string(segFilter));
-
-    if (outputFile != "") config.set(MATCHES_OUTPUT_FILE, outputFile);
-
-
-    if (oFileSwarmInternal != "") config.set(SWARM_OUTPUT_INTERNAL, oFileSwarmInternal);
-
-    if (oFileSwarmOutput != "") config.set(SWARM_OUTPUT_OTUS, oFileSwarmOutput);
-
-    if (oFileSwarmStatistics != "") config.set(SWARM_OUTPUT_STATISTICS, oFileSwarmStatistics);
-
-    if (oFileSwarmSeeds != "") config.set(SWARM_OUTPUT_SEEDS, oFileSwarmSeeds);
-
-    if (flagNoOtuBreaking != -1) config.set(SWARM_NO_OTU_BREAKING, std::to_string(flagNoOtuBreaking));
-
-    if (flagDereplicate) config.set(SWARM_DEREPLICATE, "1");
-
-    if (flagSepAbundance || !config.peek(SEPARATOR_ABUNDANCE)) config.set(SEPARATOR_ABUNDANCE, sepAbundance);
-
-    if (flagFastidious) config.set(SWARM_FASTIDIOUS, "1");
-
-    if (flagBoundary || !config.peek(SWARM_BOUNDARY)) config.set(SWARM_BOUNDARY, std::to_string(boundary));
-
-    if (!config.peek(SWARM_FASTIDIOUS_CHECKING_MODE)) config.set(SWARM_FASTIDIOUS_CHECKING_MODE, std::to_string(checkingMode));
-
-    if (!config.peek(SWARM_NUM_EXPLORERS)) config.set(SWARM_NUM_EXPLORERS, std::to_string(numExplorers));
-
-    if (!config.peek(SWARM_NUM_GRAFTERS)) config.set(SWARM_NUM_GRAFTERS, std::to_string(numGrafters));
-
-    if (!config.peek(SWARM_NUM_THREADS_PER_CHECK)) config.set(SWARM_NUM_THREADS_PER_CHECK, std::to_string(numThreadsPerCheck));
 
     return config;
 

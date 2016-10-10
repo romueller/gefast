@@ -31,6 +31,7 @@ const std::string DEFAULT_JOB_NAME = "SCT-PJ";
 // list of configuration parameters (changes should be mirrored in method initParamNames() of Config)
 enum ConfigParameters {
     ALPHABET,                           // allowed alphabet for the amplicon sequences
+    CONFIG_FILE,                        // config file used to load (parts of) the configuration
     FILE_LIST,                          // file containing list of input file names
     FILTER_ALPHABET,                    // flag for the alphabet filter
     FILTER_LENGTH,                      // flag for the length filter
@@ -99,20 +100,7 @@ public:
 
         initParamNames();
 
-        std::ifstream iStream(file);
-        std::string line;
-        unsigned long delimPos;
-
-        while (std::getline(iStream, line).good()) {
-
-            if (line.empty() || line.front() == '#') continue;
-
-            delimPos = line.find('=');
-            conf_[paramNames_[line.substr(0, delimPos)]] = line.substr(delimPos + 1);
-
-        }
-
-        iStream.close();
+        read(file, true);
 
     }
 
@@ -143,6 +131,31 @@ public:
 
     }
 
+    void read(const std::string file, const bool overwrite) {
+
+        std::ifstream iStream(file);
+        std::string line;
+        unsigned long delimPos;
+
+        while (std::getline(iStream, line).good()) {
+
+            if (line.empty() || line.front() == '#') continue;
+
+            delimPos = line.find('=');
+
+            if (overwrite || (conf_.find(paramNames_[line.substr(0, delimPos)]) == conf_.end())) {
+                conf_[paramNames_[line.substr(0, delimPos)]] = line.substr(delimPos + 1);
+            }
+
+
+        }
+
+        iStream.close();
+
+        set(CONFIG_FILE, file);
+
+    }
+
 
 private:
     std::unordered_map<ConfigParameters, V, EnumClassHash> conf_;
@@ -154,6 +167,7 @@ private:
         paramNames_ = std::unordered_map<std::string, ConfigParameters>(
                 {
                         {"ALPHABET",                          ALPHABET},
+                        {"CONFIG_FILE",                       CONFIG_FILE},
                         {"FILE_LIST",                         FILE_LIST},
                         {"FILTER_ALPHABET",                   FILTER_ALPHABET},
                         {"FILTER_LENGTH",                     FILTER_LENGTH},

@@ -70,8 +70,8 @@ int run(int argc, const char* argv[]) {
     if (sc.outOtus) sc.oFileOtus = c.get(SWARM_OUTPUT_OTUS);
     if (sc.outStatistics) sc.oFileStatistics = c.get(SWARM_OUTPUT_STATISTICS);
     if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
-    if (c.peek(SWARM_NO_OTU_BREAKING)) sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
-    if (c.peek(SWARM_DEREPLICATE)) sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
+    sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
+    sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
     sc.sepAbundance = c.get(SEPARATOR_ABUNDANCE);
     sc.extraSegs = std::stoul(c.get(NUM_EXTRA_SEGMENTS));
     sc.numExplorers = std::stoul(c.get(SWARM_NUM_EXPLORERS));
@@ -92,8 +92,14 @@ int run(int argc, const char* argv[]) {
 
     }
 
-    if (c.peek(SWARM_FASTIDIOUS)) sc.fastidious = (c.get(SWARM_FASTIDIOUS) == "1");
-    if (sc.fastidious) sc.boundary = std::stoul(c.get(SWARM_BOUNDARY));
+    sc.fastidious = (c.get(SWARM_FASTIDIOUS) == "1");
+    sc.boundary = std::stoul(c.get(SWARM_BOUNDARY));
+
+    sc.useScore = (c.get(USE_SCORE) == "1");
+    sc.matchReward = std::stoul(c.get(SWARM_MATCH_REWARD));
+    sc.mismatchPenalty = std::stoul(c.get(SWARM_MISMATCH_PENALTY));
+    sc.gapOpeningPenalty = std::stoul(c.get(SWARM_GAP_OPENING_PENALTY));
+    sc.gapExtensionPenalty = std::stoul(c.get(SWARM_GAP_EXTENSION_PENALTY));
 
 
     //TODO remove or redirect to logger

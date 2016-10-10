@@ -77,6 +77,14 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--swarm-fastidious"] = 114;
     parameters["-sb"] = 115;
     parameters["--swarm-boundary"] = 116;
+    parameters["-sm"] = 117;
+    parameters["--swarm-match-reward"] = 118;
+    parameters["-sp"] = 119;
+    parameters["--swarm-mismatch-penalty"] = 120;
+    parameters["-sg"] = 121;
+    parameters["--swarm-gap-opening-penalty"] = 122;
+    parameters["-se"] = 123;
+    parameters["--swarm-gap-extension-penalty"] = 124;
 
     parameters["--min-length"] = 1001;
     parameters["--max-length"] = 1002;
@@ -84,6 +92,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--workers"] = 1004;
     parameters["--info-folder"] = 1005;
     parameters["--sep-abundance"] = 1006;
+    parameters["--use-score"] = 1007;
 
     parameters["--swarm-fastidious-checking-mode"] = 1101;
     parameters["--swarm-num-explorers"] = 1102;
@@ -111,11 +120,16 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     config.set(SEGMENT_FILTER, "0"); //TODO set "best" version of segment filter as default
     config.set(SEPARATOR_ABUNDANCE, "_");
     config.set(THRESHOLD, "1");
+    config.set(USE_SCORE, "0");
 
     config.set(SWARM_BOUNDARY, "3");
     config.set(SWARM_DEREPLICATE, "0");
     config.set(SWARM_FASTIDIOUS, "0");
     config.set(SWARM_FASTIDIOUS_CHECKING_MODE, "0");
+    config.set(SWARM_GAP_EXTENSION_PENALTY, "4");
+    config.set(SWARM_GAP_OPENING_PENALTY, "12");
+    config.set(SWARM_MATCH_REWARD, "5");
+    config.set(SWARM_MISMATCH_PENALTY, "4");
     config.set(SWARM_NO_OTU_BREAKING, "0");
     config.set(SWARM_NUM_EXPLORERS, "1");
     config.set(SWARM_NUM_GRAFTERS, "1");
@@ -158,6 +172,10 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                 config.set(SWARM_FASTIDIOUS, "1");
                 break;
 
+            case 1007:
+                config.set(USE_SCORE, "1");
+                break;
+
             default:
                 // do nothing
                 break;
@@ -187,6 +205,11 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                 case 8:
                     val = std::stoul(argv[++i]);
                     config.set(THRESHOLD, std::to_string(val));
+                    break;
+
+                case 9: //fallthrough -c to --config
+                case 10:
+                    config.set(CONFIG_FILE, argv[++i]);
                     break;
 
                 case 11: //fallthrough -i to --input-files
@@ -230,6 +253,30 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                 case 116:
                     val = std::stoul(argv[++i]);
                     config.set(SWARM_BOUNDARY, std::to_string(val));
+                    break;
+
+                case 117: //fallthrough -sm to --swarm-match-reward
+                case 118:
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_MATCH_REWARD, std::to_string(val));
+                    break;
+
+                case 119: //fallthrough -sp to --swarm-mismatch-penalty
+                case 120:
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_MISMATCH_PENALTY, std::to_string(val));
+                    break;
+
+                case 121: //fallthrough -sg to --swarm-gap-opening-penalty
+                case 122:
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_GAP_OPENING_PENALTY, std::to_string(val));
+                    break;
+
+                case 123: //fallthrough -se to --swarm-gap-extension-penalty
+                case 124:
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_GAP_EXTENSION_PENALTY, std::to_string(val));
                     break;
 
                 // parameters without abbreviation

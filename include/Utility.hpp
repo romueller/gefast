@@ -50,6 +50,10 @@ enum ConfigParameters {
     SWARM_DEREPLICATE,                  // boolean flag indicating demand for dereplication, corresponds to swarm with -d 0
     SWARM_FASTIDIOUS,                   // boolean flag indicating demand for second, fastidious swarming phase, corresponds to swarm's -f
     SWARM_FASTIDIOUS_CHECKING_MODE,     // mode of checking for grafting candidates of one pool (affects degree of parallelism)
+    SWARM_GAP_EXTENSION_PENALTY,        // penalty for extending a gap
+    SWARM_GAP_OPENING_PENALTY,          // penalty for opening a gap
+    SWARM_MATCH_REWARD,                 // reward for a nucleotide match
+    SWARM_MISMATCH_PENALTY,             // penalty for a nucleotide mismatch
     SWARM_NO_OTU_BREAKING,              // boolean flag indicating usage of OTU breaking, corresponds to swarm's option -n
     SWARM_NUM_EXPLORERS,                // number of parallel explorers (first swarm clustering phase)
     SWARM_NUM_GRAFTERS,                 // number of parallel grafters (second swarm clustering phase)
@@ -59,6 +63,7 @@ enum ConfigParameters {
     SWARM_OUTPUT_STATISTICS,            // name of the output file corresponding to swarm's output option -s (statistics file)
     SWARM_OUTPUT_SEEDS,                 // name of the output file corresponding to swarm's output option -w (seeds)
     THRESHOLD,                          // edit distance threshold for the clustering
+    USE_SCORE,                          // flag indicating whether to use an actual scoring function (not the edit distance)
     VERSION                             // version number of the program
 };
 
@@ -152,8 +157,6 @@ public:
 
         iStream.close();
 
-        set(CONFIG_FILE, file);
-
     }
 
 
@@ -186,6 +189,10 @@ private:
                         {"SWARM_DEREPLICATE",                 SWARM_DEREPLICATE},
                         {"SWARM_FASTIDIOUS",                  SWARM_FASTIDIOUS},
                         {"SWARM_FASTIDIOUS_CHECKING_MODE",    SWARM_FASTIDIOUS_CHECKING_MODE},
+                        {"SWARM_GAP_EXTENSION_PENALTY",       SWARM_GAP_EXTENSION_PENALTY},
+                        {"SWARM_GAP_OPENING_PENALTY",         SWARM_GAP_OPENING_PENALTY},
+                        {"SWARM_MATCH_REWARD",                SWARM_MATCH_REWARD},
+                        {"SWARM_MISMATCH_PENALTY",            SWARM_MISMATCH_PENALTY},
                         {"SWARM_NO_OTU_BREAKING",             SWARM_NO_OTU_BREAKING},
                         {"SWARM_NUM_EXPLORERS",               SWARM_NUM_EXPLORERS},
                         {"SWARM_NUM_GRAFTERS",                SWARM_NUM_GRAFTERS},
@@ -195,6 +202,7 @@ private:
                         {"SWARM_OUTPUT_STATISTICS",           SWARM_OUTPUT_STATISTICS},
                         {"SWARM_OUTPUT_SEEDS",                SWARM_OUTPUT_SEEDS},
                         {"THRESHOLD",                         THRESHOLD},
+                        {"USE_SCORE",                         USE_SCORE},
                         {"VERSION",                           VERSION}
                 }
         );

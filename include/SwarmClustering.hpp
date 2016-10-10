@@ -55,6 +55,13 @@ struct SwarmConfig {
     bool fastidious = false; //-f
     numSeqs_t boundary; //-b
 
+    // scoring
+    bool useScore = false;
+    lenSeqs_t matchReward; //-m
+    lenSeqs_t mismatchPenalty; //-p
+    lenSeqs_t gapOpeningPenalty; //-g
+    lenSeqs_t gapExtensionPenalty; //-e
+
     // misc
     lenSeqs_t threshold;
     lenSeqs_t extraSegs;

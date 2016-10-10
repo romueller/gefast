@@ -45,50 +45,50 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     /* Set-up of parameter variables */
     std::map<std::string, short> parameters;
     parameters["-a"] = 1;
-    parameters["--alphabet"] = 2; // optional
+    parameters["--alphabet"] = 2;
     parameters["-e"] = 3;
-    parameters["--extra-segments"] = 4; // optional (has default)
+    parameters["--extra-segments"] = 4;
     parameters["-n"] = 5;
-    parameters["--name"] = 6; // optional (has default)
+    parameters["--name"] = 6;
     parameters["-t"] = 7;
-    parameters["--threshold"] = 8; // optional (has default)
+    parameters["--threshold"] = 8;
     parameters["-c"] = 9;
-    parameters["--config"] = 10; // optional (has default)
+    parameters["--config"] = 10;
     parameters["-i"] = 11;
-    parameters["--input-files"] = 12; // (optional)
+    parameters["--input-files"] = 12;
     parameters["-s"] = 13;
-    parameters["--seg-filter"] = 14; // optional (has default)
+    parameters["--seg-filter"] = 14;
     parameters["-o"] = 15;
-    parameters["--output-file"] = 16; // (optional)
+    parameters["--output-file"] = 16;
 
     parameters["-si"] = 101;
-    parameters["--swarm-internal"] = 102; // (optional)
+    parameters["--swarm-internal"] = 102;
     parameters["-so"] = 103;
-    parameters["--swarm-output"] = 104; // (optional)
+    parameters["--swarm-output"] = 104;
     parameters["-ss"] = 105;
-    parameters["--swarm-statistics"] = 106; // (optional)
+    parameters["--swarm-statistics"] = 106;
     parameters["-sw"] = 107;
-    parameters["--swarm-seeds"] = 108; // (optional)
+    parameters["--swarm-seeds"] = 108;
     parameters["-sn"] = 109;
-    parameters["--swarm-no-otu-breaking"] = 110; // (optional)
+    parameters["--swarm-no-otu-breaking"] = 110;
     parameters["-sd"] = 111;
-    parameters["--swarm-dereplicate"] = 112; // optional
+    parameters["--swarm-dereplicate"] = 112;
     parameters["-sf"] = 113;
-    parameters["--swarm-fastidious"] = 114; // optional
+    parameters["--swarm-fastidious"] = 114;
     parameters["-sb"] = 115;
-    parameters["--swarm-boundary"] = 116; // optional
+    parameters["--swarm-boundary"] = 116;
 
-    parameters["--min-length"] = 1001; // optional
-    parameters["--max-length"] = 1002; // optional
-    parameters["--per-worker"] = 1003; // optional (has default)
-    parameters["--workers"] = 1004; // optional (has default)
-    parameters["--info-folder"] = 1005; // optional
-    parameters["--sep-abundance"] = 1006; // optional (has default)
+    parameters["--min-length"] = 1001;
+    parameters["--max-length"] = 1002;
+    parameters["--per-worker"] = 1003;
+    parameters["--workers"] = 1004;
+    parameters["--info-folder"] = 1005;
+    parameters["--sep-abundance"] = 1006;
 
-    parameters["--swarm-fastidious-checking-mode"] = 1101; // optional (has default)
-    parameters["--swarm-num-explorers"] = 1102; // optional (has default)
-    parameters["--swarm-num-grafters"] = 1103; // optional (has default)
-    parameters["--swarm-num-threads-per-check"] = 1104; // optional (has default)
+    parameters["--swarm-fastidious-checking-mode"] = 1101;
+    parameters["--swarm-num-explorers"] = 1102;
+    parameters["--swarm-num-grafters"] = 1103;
+    parameters["--swarm-num-threads-per-check"] = 1104;
 
 
     std::string

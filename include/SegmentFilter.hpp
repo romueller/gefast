@@ -15,6 +15,7 @@
 
 #include "Base.hpp"
 #include "Buffer.hpp"
+#include "VerificationGotoh.hpp"
 
 
 namespace SCT_PJ {
@@ -70,33 +71,28 @@ namespace SegmentFilter {
 
     // (forward) segment filter for the general pigeonhole principle (t + k segments, k segments must be matched)
     void filterForward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);
-    void filterForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k);
+    void filterForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring);
 
     // (backward) segment filter for the general pigeonhole principle (t + k segments, k segments must be matched)
     void filterBackward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);
-    void filterBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k);
+    void filterBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring);
 
     // (forward) segment filter for the general pigeonhole principle (t + k segments, k segments must be matched) + pipelined backward filtering
     void filterForwardBackward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);
-    void filterForwardBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k);
+    void filterForwardBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring);
 
     // (backward) segment filter for the general pigeonhole principle (t + k segments, k segments must be matched) + pipelined forward filtering
     void filterBackwardForward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);
-    void filterBackwardForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k);
+    void filterBackwardForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring);
 
     void filter(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k, const int mode);
-    void filterDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const int mode);
+    void filterDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const int mode, const bool useScore, const Verification::Scoring& scoring);
 
 
     void writeMatches(std::string oFile, AmpliconPools& pools, std::vector<Matches*>& allMatches);
 
     void writeMatchesOneWay(std::string oFile, AmpliconPools& pools, std::vector<Matches*>& allMatches);
 
-//    //old methods not capable of dealing with subpools
-//    void filterForward(AmpliconCollection& ac, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);
-//    void filterBackward(AmpliconCollection& ac, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);
-//    void filterForwardBackward(AmpliconCollection& ac, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);
-//    void filterBackwardForward(AmpliconCollection& ac, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k);
 }
 }
 

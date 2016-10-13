@@ -15,11 +15,8 @@
 
 namespace SCT_PJ {
 
-Worker::Worker(AmpliconCollection& ac, Subpool& sp, Matches& matches, unsigned long numThreads, int mode) : ac_(ac), sp_(sp), matches_(matches) {
-
-    mode_ = mode;
-    numThreads_ = numThreads;
-
+Worker::Worker(AmpliconCollection& ac, Subpool& sp, Matches& matches, Config<std::string>& config) : ac_(ac), sp_(sp), matches_(matches), config_(config) {
+    // nothing else to do
 }
 
 Worker::~Worker() {
@@ -28,21 +25,30 @@ Worker::~Worker() {
 
 void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
 
-    if (numThreads_ == 1) { // completey sequential
+    unsigned long numThreads = std::stoul(config_.get(NUM_THREADS_PER_WORKER));
+    int mode = std::stoi(config_.get(SEGMENT_FILTER));
+    bool useScore = (config_.get(USE_SCORE) == "1");
+    Verification::Scoring scoring(std::stol(config_.get(SWARM_MATCH_REWARD)), std::stol(config_.get(SWARM_MISMATCH_PENALTY)), std::stol(config_.get(SWARM_GAP_OPENING_PENALTY)), std::stol(config_.get(SWARM_GAP_EXTENSION_PENALTY)));
+
+    if (numThreads == 1) { // completely sequential
 
         Matches localMatches;
 
 #if 0
 
         RotatingBuffers<Candidate> cbs = RotatingBuffers<Candidate>(1);
-        SegmentFilter::filter(ac_, sp_, cbs, threshold, numExtraSegments, mode_);
+        SegmentFilter::filter(ac_, sp_, cbs, threshold, numExtraSegments, mode);
         cbs.close();
 
-        Verification::verify(ac_, localMatches, cbs.getBuffer(0), threshold);
+        if (useScore) {
+            Verification::verifyGotoh(ac_, localMatches, cbs.getBuffer(0), threshold, scoring);
+        } else {
+            Verification::verify(ac_, localMatches, cbs.getBuffer(0), threshold);
+        }
 
 #else
 
-        SegmentFilter::filterDirectly(ac_, sp_, localMatches, threshold, numExtraSegments, mode_);
+        SegmentFilter::filterDirectly(ac_, sp_, localMatches, threshold, numExtraSegments, mode, useScore, scoring);
 
 #endif
 
@@ -50,22 +56,24 @@ void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
 
     } else { // worker thread + (numThreads - 1) verifier threads
 
-        RotatingBuffers<Candidate> cbs = RotatingBuffers<Candidate>(numThreads_ - 1);
+        RotatingBuffers<Candidate> cbs = RotatingBuffers<Candidate>(numThreads - 1);
 
-        Matches* matchesPerThread[numThreads_ - 1];
-        for (unsigned long v = 0; v < numThreads_ - 1; v++) {
+        Matches* matchesPerThread[numThreads - 1];
+        for (unsigned long v = 0; v < numThreads - 1; v++) {
             matchesPerThread[v] = new Matches();
         }
 
-        std::thread verifierThreads[numThreads_ - 1];
-        for (unsigned long v = 0; v < numThreads_ - 1; v++) {
-            verifierThreads[v] = std::thread(&Verification::verify, std::ref(ac_), std::ref(*(matchesPerThread[v])), std::ref(cbs.getBuffer(v)), threshold);
+        std::thread verifierThreads[numThreads - 1];
+        for (unsigned long v = 0; v < numThreads - 1; v++) {
+            verifierThreads[v] = useScore ?
+                                   std::thread(&Verification::verifyGotoh, std::ref(ac_), std::ref(*(matchesPerThread[v])), std::ref(cbs.getBuffer(v)), threshold, std::ref(scoring))
+                                 : std::thread(&Verification::verify, std::ref(ac_), std::ref(*(matchesPerThread[v])), std::ref(cbs.getBuffer(v)), threshold);
         }
 
-        SegmentFilter::filter(ac_, sp_, cbs, threshold, numExtraSegments, mode_);
+        SegmentFilter::filter(ac_, sp_, cbs, threshold, numExtraSegments, mode);
         cbs.close();
 
-        for (unsigned long v = 0; v < numThreads_ - 1; v++) {
+        for (unsigned long v = 0; v < numThreads - 1; v++) {
 
             verifierThreads[v].join();
 

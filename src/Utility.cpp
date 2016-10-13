@@ -106,6 +106,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     ;
 
     unsigned long long val;
+    long long signedVal;
 
     Config<std::string> config;
     config.set(VERSION, "1.0");
@@ -126,10 +127,10 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     config.set(SWARM_DEREPLICATE, "0");
     config.set(SWARM_FASTIDIOUS, "0");
     config.set(SWARM_FASTIDIOUS_CHECKING_MODE, "0");
-    config.set(SWARM_GAP_EXTENSION_PENALTY, "4");
-    config.set(SWARM_GAP_OPENING_PENALTY, "12");
+    config.set(SWARM_GAP_EXTENSION_PENALTY, "-4");
+    config.set(SWARM_GAP_OPENING_PENALTY, "-12");
     config.set(SWARM_MATCH_REWARD, "5");
-    config.set(SWARM_MISMATCH_PENALTY, "4");
+    config.set(SWARM_MISMATCH_PENALTY, "-4");
     config.set(SWARM_NO_OTU_BREAKING, "0");
     config.set(SWARM_NUM_EXPLORERS, "1");
     config.set(SWARM_NUM_GRAFTERS, "1");
@@ -263,20 +264,20 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
                 case 119: //fallthrough -sp to --swarm-mismatch-penalty
                 case 120:
-                    val = std::stoul(argv[++i]);
-                    config.set(SWARM_MISMATCH_PENALTY, std::to_string(val));
+                    signedVal = std::stoll(argv[++i]);
+                    config.set(SWARM_MISMATCH_PENALTY, std::to_string(signedVal));
                     break;
 
                 case 121: //fallthrough -sg to --swarm-gap-opening-penalty
                 case 122:
-                    val = std::stoul(argv[++i]);
-                    config.set(SWARM_GAP_OPENING_PENALTY, std::to_string(val));
+                    signedVal = std::stoll(argv[++i]);
+                    config.set(SWARM_GAP_OPENING_PENALTY, std::to_string(signedVal));
                     break;
 
                 case 123: //fallthrough -se to --swarm-gap-extension-penalty
                 case 124:
-                    val = std::stoul(argv[++i]);
-                    config.set(SWARM_GAP_EXTENSION_PENALTY, std::to_string(val));
+                    signedVal = std::stoll(argv[++i]);
+                    config.set(SWARM_GAP_EXTENSION_PENALTY, std::to_string(signedVal));
                     break;
 
                 // parameters without abbreviation

@@ -129,7 +129,7 @@ public:
         for (auto iter = paramNames_.begin(); iter != paramNames_.end(); iter++) {
 
             if (peek(iter->second)) {
-                stream << iter->first << " = " << conf_.at(iter->second) << std::endl;
+                stream << iter->first << "=" << conf_.at(iter->second) << std::endl;
             }
 
         }

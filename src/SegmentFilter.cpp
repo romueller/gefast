@@ -249,14 +249,22 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 }
 
 
-void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k) {
+void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
     std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
-    lenSeqs_t M[ac.back().seq.length() + 1];
+
+    lenSeqs_t M[useScore ? 1 : ac.back().seq.length() + 1];
+    Verification::val_t D[useScore? ac.back().seq.length() + 1 : 1];
+    Verification::val_t P[useScore? ac.back().seq.length() + 1 : 1];
+    Verification::val_t Q[useScore? ac.back().seq.length() + 1 : 1];
+//    char BT[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffs[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffsP[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffsQ[useScore? ac.back().seq.length() + 1 : 1];
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
@@ -331,7 +339,9 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
                 if (candIter->second >= k) {
 
-                    dist = Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
+                    dist = useScore ?
+                             Verification::computeGotohLengthAwareEarlyRow6(ac[curIntId].seq, ac[candIter->first].seq, t, scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ)
+                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
 
                     if (dist <= t){
                         matches.add(curIntId, candIter->first, dist);
@@ -457,14 +467,22 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 }
 
 
-void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k) {
+void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
     std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
-    lenSeqs_t M[ac.back().seq.length() + 1];
+
+    lenSeqs_t M[useScore ? 1 : ac.back().seq.length() + 1];
+    Verification::val_t D[useScore? ac.back().seq.length() + 1 : 1];
+    Verification::val_t P[useScore? ac.back().seq.length() + 1 : 1];
+    Verification::val_t Q[useScore? ac.back().seq.length() + 1 : 1];
+//    char BT[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffs[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffsP[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffsQ[useScore? ac.back().seq.length() + 1 : 1];
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
@@ -542,7 +560,9 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
                 if (candIter->second >= k) {
 
-                    dist = Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
+                    dist = useScore ?
+                             Verification::computeGotohLengthAwareEarlyRow6(ac[curIntId].seq, ac[candIter->first].seq, t, scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ)
+                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
 
                     if (dist <= t) {
                         matches.add(curIntId, candIter->first, dist);
@@ -696,7 +716,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 }
 
 
-void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k) {
+void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
@@ -704,7 +724,15 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
     std::vector<std::string> segmentStrs(t + k);
-    lenSeqs_t M[ac.back().seq.length() + 1];
+
+    lenSeqs_t M[useScore ? 1 : ac.back().seq.length() + 1];
+    Verification::val_t D[useScore? ac.back().seq.length() + 1 : 1];
+    Verification::val_t P[useScore? ac.back().seq.length() + 1 : 1];
+    Verification::val_t Q[useScore? ac.back().seq.length() + 1 : 1];
+//    char BT[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffs[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffsP[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffsQ[useScore? ac.back().seq.length() + 1 : 1];
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
@@ -805,7 +833,9 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
                     if (cnt == k) {
 
-                        dist = Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
+                        dist = useScore ?
+                                 Verification::computeGotohLengthAwareEarlyRow6(ac[curIntId].seq, ac[candIter->first].seq, t, scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ)
+                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
 
                         if (dist <= t){
                             matches.add(curIntId, candIter->first, dist);
@@ -968,7 +998,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 }
 
 
-void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k) {
+void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
@@ -976,7 +1006,15 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
     std::vector<std::string> segmentStrs(t + k);
-    lenSeqs_t M[ac.back().seq.length() + 1];
+
+    lenSeqs_t M[useScore ? 1 : ac.back().seq.length() + 1];
+    Verification::val_t D[useScore? ac.back().seq.length() + 1 : 1];
+    Verification::val_t P[useScore? ac.back().seq.length() + 1 : 1];
+    Verification::val_t Q[useScore? ac.back().seq.length() + 1 : 1];
+//    char BT[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffs[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffsP[useScore? ac.back().seq.length() + 1 : 1];
+    lenSeqs_t cntDiffsQ[useScore? ac.back().seq.length() + 1 : 1];
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
@@ -1080,7 +1118,9 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 
                     if (cnt == k) {
 
-                        dist = Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
+                        dist = useScore ?
+                                 Verification::computeGotohLengthAwareEarlyRow6(ac[curIntId].seq, ac[candIter->first].seq, t, scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ)
+                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[candIter->first].seq, t, M);
 
                         if (dist <= t){
                             matches.add(curIntId, candIter->first, dist);
@@ -1134,28 +1174,28 @@ void SegmentFilter::filter(const AmpliconCollection& ac, const Subpool& sp, Rota
 
 }
 
-void SegmentFilter::filterDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const int mode) { //TODO set "best" default (see also config creation)
+void SegmentFilter::filterDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const int mode, const bool useScore, const Verification::Scoring& scoring) { //TODO set "best" default (see also config creation)
 
     switch (mode) {
 
         case 0:
-            filterForwardDirectly(ac, sp, matches, t, k);
+            filterForwardDirectly(ac, sp, matches, t, k, useScore, scoring);
             break;
 
         case 1:
-            filterBackwardDirectly(ac, sp, matches, t, k);
+            filterBackwardDirectly(ac, sp, matches, t, k, useScore, scoring);
             break;
 
         case 2:
-            filterForwardBackwardDirectly(ac, sp, matches, t, k);
+            filterForwardBackwardDirectly(ac, sp, matches, t, k, useScore, scoring);
             break;
 
         case 3:
-            filterBackwardForwardDirectly(ac, sp, matches, t, k);
+            filterBackwardForwardDirectly(ac, sp, matches, t, k, useScore, scoring);
             break;
 
         default:
-            filterForwardDirectly(ac, sp, matches, t, k);
+            filterForwardDirectly(ac, sp, matches, t, k, useScore, scoring);
 
     }
 

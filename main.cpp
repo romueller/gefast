@@ -90,16 +90,16 @@ int run(int argc, const char* argv[]) {
         c.set(SWARM_FASTIDIOUS, "0");
         sc.fastidious = false;
 
+        c.set(USE_SCORE, "0");
+        sc.useScore = false;
+
     }
 
     sc.fastidious = (c.get(SWARM_FASTIDIOUS) == "1");
     sc.boundary = std::stoul(c.get(SWARM_BOUNDARY));
 
     sc.useScore = (c.get(USE_SCORE) == "1");
-    sc.matchReward = std::stoul(c.get(SWARM_MATCH_REWARD));
-    sc.mismatchPenalty = std::stoul(c.get(SWARM_MISMATCH_PENALTY));
-    sc.gapOpeningPenalty = std::stoul(c.get(SWARM_GAP_OPENING_PENALTY));
-    sc.gapExtensionPenalty = std::stoul(c.get(SWARM_GAP_EXTENSION_PENALTY));
+    sc.scoring = Verification::Scoring(std::stoul(c.get(SWARM_MATCH_REWARD)), std::stoll(c.get(SWARM_MISMATCH_PENALTY)), std::stoll(c.get(SWARM_GAP_OPENING_PENALTY)), std::stoll(c.get(SWARM_GAP_EXTENSION_PENALTY)));
 
 
     //TODO remove or redirect to logger
@@ -143,7 +143,7 @@ int run(int argc, const char* argv[]) {
         }
 
         for (unsigned long w = 0; w < subpools.size(); w++) {
-            workers[w] = std::thread(&Worker::run, Worker(*(pools->get(p)), subpools[w], *(allMatches[p]), numThreadsPerWorkers, mode), threshold, numExtraSegments);
+            workers[w] = std::thread(&Worker::run, Worker(*(pools->get(p)), subpools[w], *(allMatches[p]), c), threshold, numExtraSegments);
         }
 
         for (unsigned long w = 0; w < subpools.size(); w++) {

@@ -18,6 +18,7 @@
 #include "Base.hpp"
 #include "Relation.hpp"
 #include "SegmentFilter.hpp"
+#include "Utility.hpp"
 #include "Verification.hpp"
 
 
@@ -26,7 +27,7 @@ namespace SCT_PJ {
 class Worker {
 
 public:
-    Worker(AmpliconCollection& ac, Subpool& sp, Matches& matches, unsigned long numThreads, int mode);
+    Worker(AmpliconCollection& ac, Subpool& sp, Matches& matches, Config<std::string>& config);
 
     ~Worker();
 
@@ -37,8 +38,7 @@ private:
     AmpliconCollection& ac_;
     Subpool& sp_;
     Matches& matches_;
-    unsigned long numThreads_;
-    int mode_;
+    Config<std::string>& config_;
 
 };
 

@@ -17,6 +17,7 @@
 #include "Relation.hpp"
 #include "SegmentFilter.hpp"
 #include "Verification.hpp"
+#include "VerificationGotoh.hpp"
 
 #define PRINT_INTERNAL_MODIFIED 0
 
@@ -57,10 +58,7 @@ struct SwarmConfig {
 
     // scoring
     bool useScore = false;
-    lenSeqs_t matchReward; //-m
-    lenSeqs_t mismatchPenalty; //-p
-    lenSeqs_t gapOpeningPenalty; //-g
-    lenSeqs_t gapExtensionPenalty; //-e
+    Verification::Scoring scoring; //-m, -p, -g, -e
 
     // misc
     lenSeqs_t threshold;
@@ -364,8 +362,17 @@ void fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>& indices, std::u
 /**
  * Verify the potentially similar amplicons arriving at a candidate buffer and,
  * if appropriate, change the grafting candidate information of the child amplicons.
+ * Amplicons are similar if their edit distance is below the given threshold.
  */
-void verifyFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, lenSeqs_t t, std::mutex& mtx);
+void verifyFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t t, std::mutex& mtx);
+
+/**
+ * Verify the potentially similar amplicons arriving at a candidate buffer and,
+ * if appropriate, change the grafting candidate information of the child amplicons.
+ * Amplicons are similar if the number of differences (mismatches, insertions, deletions)
+ * in the optimal alignment for the given scoring function is below the given threshold.
+ */
+void verifyGotohFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t t, const Verification::Scoring& scoring, std::mutex& mtx);
 
 /**
  * Apply a (forward) segment filter on the amplicons from the heavy OTUs of the current pool using the indexed amplicons of light OTUs.

@@ -131,7 +131,7 @@ LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string f
 
 LengthGroups& Preprocessor::filterMinLength(LengthGroups& lg, const numSeqs_t minLen) {
 
-    auto groups = lg.getGroups();
+    auto& groups = lg.getGroups();
     auto endIter = groups.begin();
     for (; endIter != groups.end() && endIter->first < minLen; endIter++) {}
 
@@ -144,7 +144,7 @@ LengthGroups& Preprocessor::filterMinLength(LengthGroups& lg, const numSeqs_t mi
 
 LengthGroups& Preprocessor::filterMaxLength(LengthGroups& lg, const numSeqs_t maxLen) {
 
-    auto groups = lg.getGroups();
+    auto& groups = lg.getGroups();
     auto beginIter = groups.begin();
     for (; beginIter != groups.end() && beginIter->first <= maxLen; beginIter++) {}
 
@@ -166,7 +166,7 @@ LengthGroups& Preprocessor::filterMinMaxLength(LengthGroups& lg, const numSeqs_t
 // regex_search() mit negiertem Alphabet bedeutend langsamer
 LengthGroups& Preprocessor::filterAlphabet(LengthGroups& lg, const std::string& alph) {
 
-    auto groups = lg.getGroups();
+    auto& groups = lg.getGroups();
 
     // remove (in each length group) all amplicons with unsuitable sequences
     for (auto groupIter = groups.begin(); groupIter != groups.end(); groupIter++) {
@@ -201,7 +201,7 @@ LengthGroups& Preprocessor::filterAlphabet(LengthGroups& lg, const std::string& 
 // e.g. filterRegex(*ampls, std::regex("[^aAcCgGtTuU]"));
 LengthGroups& Preprocessor::filterRegex(LengthGroups& lg, const std::regex& expr) {
 
-    auto groups = lg.getGroups();
+    auto& groups = lg.getGroups();
 
     // remove (in each length group) all amplicons with unsuitable sequences
     for (auto groupIter = groups.begin(); groupIter != groups.end(); groupIter++) {

@@ -497,16 +497,17 @@ void SwarmClustering::determineGrafts(const AmpliconPools& pools, const std::vec
     AmpliconCollection* ac = pools.get(p);
     RollingIndices<InvertedIndexFastidious> indices = RollingIndices<InvertedIndexFastidious>(4 * sc.threshold + 1, 2 * sc.threshold + sc.extraSegs, true, false);
     std::vector<GraftCandidate> graftCands = std::vector<GraftCandidate>(ac->size()); // initially, graft candidates for all amplicons of the pool are "empty"
-    std::unordered_map<lenSeqs_t, SegmentFilter::Segments> segmentsArchive = std::unordered_map<lenSeqs_t, SegmentFilter::Segments>();
-    std::mutex graftCandsMtx;
 
     // a) Index amplicons of all light OTUs of the current pool
-    for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
+    {
+        std::unordered_map<lenSeqs_t, SegmentFilter::Segments> segmentsArchive = std::unordered_map<lenSeqs_t, SegmentFilter::Segments>();
+        for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
 
-        if ((*otuIter)->mass < sc.boundary) {
-            fastidiousIndexOtu(indices, segmentsArchive, *ac, *(*otuIter), graftCands, sc);
+            if ((*otuIter)->mass < sc.boundary) {
+                fastidiousIndexOtu(indices, segmentsArchive, *ac, *(*otuIter), graftCands, sc);
+            }
+
         }
-
     }
 
     // determine maximum sequence length to adjust data structures in subsequently called methods
@@ -516,6 +517,7 @@ void SwarmClustering::determineGrafts(const AmpliconPools& pools, const std::vec
     }
 
     // b) Search with amplicons of all heavy OTUs of current and directly neighbouring pools
+    std::mutex graftCandsMtx;
 #if FASTIDIOUS_PARALLEL_CHECK
 
     switch (sc.fastidiousCheckingMode) {

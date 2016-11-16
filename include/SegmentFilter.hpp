@@ -67,6 +67,8 @@ namespace SegmentFilter {
      * Therefore, multiple counting is not prevented (as it also has no influence on the final result).
      *
      * The methods with the suffix 'Directly' verify the candidates themselves directly when they occur and do not hand them over to verifier threads through a buffer.
+     *
+     * All filter methods assume that the amplicons are sorted by increasing sequence length.
      */
 
     // (forward) segment filter for the general pigeonhole principle (t + k segments, k segments must be matched)

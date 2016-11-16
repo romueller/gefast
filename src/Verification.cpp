@@ -708,12 +708,12 @@ lenSeqs_t Verification::computeLengthAwareRowSlim(const std::string& s, const st
 }
 
 
-void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t t) {
+void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t width, lenSeqs_t t) {
 
 //    numSeqs_t matches = 0; //TODO remove
     Candidate c;
     Buffer<Candidate> localBuffer;
-    lenSeqs_t M[ac.back().seq.length() + 1]; // reusable DP-matrix (wide enough for all possible calculations for this AmpliconCollection)
+    lenSeqs_t M[width]; // reusable DP-matrix (wide enough for all possible calculations for this AmpliconCollection)
 
     while (!buf.isClosed() || buf.syncSize() > 0) {
 

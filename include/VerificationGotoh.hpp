@@ -204,7 +204,7 @@ lenSeqs_t computeGotohLengthAwareEarlyRow6(const std::string& s, const std::stri
 
 // compute differences in best alignments of all incoming candidates
 // verification lasts until everything in the buffer is worked off and it signals that no new candidates will be inserted
-void verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t t, const Scoring& scoring);
+void verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t width, lenSeqs_t t, const Scoring& scoring);
 }
 }
 

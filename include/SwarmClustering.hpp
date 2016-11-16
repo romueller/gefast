@@ -64,7 +64,10 @@ struct SwarmConfig {
     lenSeqs_t threshold;
     lenSeqs_t extraSegs;
 
+    bool filterTwoWay = false;
+
     unsigned long numExplorers = 1;
+    unsigned long numThreadsPerExplorer = 1;
     unsigned long numGrafters = 1;
 
     unsigned long fastidiousCheckingMode = 0;
@@ -364,7 +367,7 @@ void fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>& indices, std::u
  * if appropriate, change the grafting candidate information of the child amplicons.
  * Amplicons are similar if their edit distance is below the given threshold.
  */
-void verifyFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t t, std::mutex& mtx);
+void verifyFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t, std::mutex& mtx);
 
 /**
  * Verify the potentially similar amplicons arriving at a candidate buffer and,
@@ -372,7 +375,7 @@ void verifyFastidious(const AmpliconCollection& acOtus, const AmpliconCollection
  * Amplicons are similar if the number of differences (mismatches, insertions, deletions)
  * in the optimal alignment for the given scoring function is below the given threshold.
  */
-void verifyGotohFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t t, const Verification::Scoring& scoring, std::mutex& mtx);
+void verifyGotohFastidious(const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t, const Verification::Scoring& scoring, std::mutex& mtx);
 
 /**
  * Apply a (forward) segment filter on the amplicons from the heavy OTUs of the current pool using the indexed amplicons of light OTUs.
@@ -381,13 +384,13 @@ void verifyGotohFastidious(const AmpliconCollection& acOtus, const AmpliconColle
  * The method with the suffix 'Directly' verifies the candidates itself directly when they occur and does not hand them over to verifier threads through a buffer.
  */
 void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
-void fastidiousCheckOtusDirectly(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& graftCandsMtx, const SwarmConfig& sc);
+void fastidiousCheckOtusDirectly(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc);
 
 /**
  * Check for grafting candidates using a segment filter and multiple verifier threads.
  * Looks for grafting candidates for amplicons from 'acIndices' among the amplicons from 'acOtus'.
  */
-void checkAndVerify(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, std::mutex& mtx, const SwarmConfig& sc);
+void checkAndVerify(const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& mtx, const SwarmConfig& sc);
 
 /**
  * Determine the grafting candidates of the amplicons from all pools.
@@ -405,7 +408,7 @@ void determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<O
  */
 void graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc); //TODO? other segment filters (forward-backward etc.)
 
-
+#if 0
 /* Implementation 2 of fastidious clustering */
 
 /**
@@ -421,8 +424,7 @@ void prepareGraftInfos(const numSeqs_t poolSize, const std::vector<Otu*>& otus, 
  * However, the indexing iterator can only move ahead one pool, because the pools are separated by "gaps" (in terms of sequence length) of at least sc.threshold
  * and doubling the threshold for the fastidious stage thus cannot lead to matches beyond the directly neighbouring pools.
  */
-AmpliconCollection::iterator shiftIndexWindow(RollingIndices<InvertedIndexFastidious2>& indices, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const numSeqs_t poolIndex, const AmpliconCollection::iterator indexIter,
-                                              std::vector<GraftCandidate>& curGraftCands, std::vector<GraftCandidate>& nextGraftCands, const lenSeqs_t len, const bool forerunning, const SwarmConfig& sc);
+AmpliconCollection::iterator shiftIndexWindow(RollingIndices<InvertedIndexFastidious2>& indices, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const numSeqs_t poolIndex, const AmpliconCollection::iterator indexIter, std::vector<GraftCandidate>& curGraftCands, std::vector<GraftCandidate>& nextGraftCands, const lenSeqs_t len, const bool forerunning, const SwarmConfig& sc);
 
 /**
  *  Graft light OTUs onto heavy OTUs by "simulating virtual amplicons".
@@ -436,12 +438,22 @@ AmpliconCollection::iterator shiftIndexWindow(RollingIndices<InvertedIndexFastid
  *   - Grafting candidates with a higher parent amplicon abundance (and, for ties, higher child amplicon abundance) have a higher priority.
  */
 void graftOtus2(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc);
+#endif
+
+/**
+ * Determine overall statistics, start fastidious clustering phase (if requested) and output the results.
+ */
+void processOtus(const AmpliconPools& pools, std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc);
 
 /**
  * Cluster amplicons according to swarm's iterative strategy (based on the provided matching information) and generates the requested outputs.
  * Supports also swarm's dereplication and fastidious clustering options.
+ *
+ * Version one uses the iterative segment filter (as proposed by Li et al.) and determines the OTUs from all matches.
+ * Version two uses a "full index" version of the segment filter and directly determines the OTUs (like swarm).
  */
 void cluster(const AmpliconPools& pools, std::vector<Matches*>& allMatches, const SwarmConfig& sc);
+void cluster(const AmpliconPools& pools, const SwarmConfig& sc);
 
 
 /**

@@ -1609,16 +1609,16 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
 
 }
 
-void Verification::verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t t, const Scoring& scoring) {
+void Verification::verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t width, lenSeqs_t t, const Scoring& scoring) {
 
     Candidate c;
     Buffer<Candidate> localBuffer;
-    Verification::val_t D[ac.back().seq.length() + 1];
-    Verification::val_t P[ac.back().seq.length() + 1];
-    Verification::val_t Q[ac.back().seq.length() + 1];
-    lenSeqs_t cntDiffs[ac.back().seq.length() + 1];
-    lenSeqs_t cntDiffsP[ac.back().seq.length() + 1];
-    lenSeqs_t cntDiffsQ[ac.back().seq.length() + 1];
+    Verification::val_t D[width];
+    Verification::val_t P[width];
+    Verification::val_t Q[width];
+    lenSeqs_t cntDiffs[width];
+    lenSeqs_t cntDiffsP[width];
+    lenSeqs_t cntDiffsQ[width];
 
     while (!buf.isClosed() || buf.syncSize() > 0) {
 

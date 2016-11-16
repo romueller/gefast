@@ -74,7 +74,9 @@ int run(int argc, const char* argv[]) {
     sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
     sc.sepAbundance = c.get(SEPARATOR_ABUNDANCE);
     sc.extraSegs = std::stoul(c.get(NUM_EXTRA_SEGMENTS));
+    sc.filterTwoWay = (std::stoul(c.get(SEGMENT_FILTER)) == 2) || (std::stoul(c.get(SEGMENT_FILTER)) == 3);
     sc.numExplorers = std::stoul(c.get(SWARM_NUM_EXPLORERS));
+    sc.numThreadsPerExplorer = std::stoul(c.get(SWARM_NUM_THREADS_PER_CHECK));
     sc.numGrafters = std::stoul(c.get(SWARM_NUM_GRAFTERS));
     sc.fastidiousCheckingMode = std::stoul(c.get(SWARM_FASTIDIOUS_CHECKING_MODE));
     sc.numThreadsPerCheck = std::stoul(c.get(SWARM_NUM_THREADS_PER_CHECK));
@@ -113,17 +115,41 @@ int run(int argc, const char* argv[]) {
 
     /* Preprocessing */
     std::cout << "Preprocessing..." << std::flush;
-//    auto prepStart = clock();
     auto pools = Preprocessor::run(c, files);
-//    auto prepStop = clock();
+#if 1 // full index, direct swarming
+    AmpliconCollection* ac;
+    for (numSeqs_t p = 0; p < pools->numPools(); p++) {
+
+        ac = pools->get(p);
+        sort(ac->begin(), ac->end(), [](const Amplicon& amplA, const Amplicon& amplB) {
+            return (amplA.abundance > amplB.abundance)
+#if INPUT_RANK
+                   || ((amplA.abundance == amplB.abundance) && (amplA.rank < amplB.rank))
+#endif
+                    ;
+        });
+
+    }
+
     std::cout << "DONE" << std::endl;
-//    std::cout << "Preprocessing: " << (prepStop - prepStart) / CLOCKS_PER_SEC << std::endl;
+
+    /* Swarming */
+
+    std::cout << "Swarming results..." << std::endl;
+    // parallel computation of swarm clusters & subsequent generation of outputs
+    SwarmClustering::cluster(*pools, sc);
+    std::cout << "Swarming results...DONE" << std::endl;
+
+    /* Cleaning up */
+    std::cout << "Cleaning up..." << std::flush;
+    delete pools;
+    std::cout << "DONE" << std::endl;
+#else // iterative index, swarming via matches
+    std::cout << "DONE" << std::endl;
 
     /* Matching */
     std::cout << "Matching..." << std::flush;
-//    auto matchStart = clock();
     unsigned long numWorkers = std::stoul(c.get(NUM_WORKERS));
-    unsigned long numThreadsPerWorkers = std::stoul(c.get(NUM_THREADS_PER_WORKER));
     int mode = std::stoi(c.get(SEGMENT_FILTER));
 
     lenSeqs_t threshold = std::stoul(c.get(THRESHOLD));
@@ -133,7 +159,7 @@ int run(int argc, const char* argv[]) {
     std::vector<Subpool> subpools; // subpools of one pool
     std::thread workers[numWorkers]; // at most numWorkers per pool
 
-    for (numSeqs_t p = 0; p < pools->numPools(); p++) {// std::cout << "Pool #" << p << std::endl; //TODO remove print
+    for (numSeqs_t p = 0; p < pools->numPools(); p++) {
 
         allMatches[p] = new Matches();
         if (mode % 2 == 0) {
@@ -151,13 +177,10 @@ int run(int argc, const char* argv[]) {
         }
 
     }
-//    auto matchStop = clock();
+
     std::cout << "DONE" << std::endl;
-//    std::cout << "Matching: " << (matchStop - matchStart) / CLOCKS_PER_SEC << std::endl;
 
     /* Postprocessing */
-//    std::cout << "Postprocessing..." << std::endl;
-//    auto postpStart = clock();
     if (c.peek(MATCHES_OUTPUT_FILE)) {
 
         std::cout << "Writing matches..." << std::flush;
@@ -170,8 +193,6 @@ int run(int argc, const char* argv[]) {
     // parallel computation of swarm clusters & subsequent generation of outputs
     SwarmClustering::cluster(*pools, allMatches, sc);
     std::cout << "Swarming results...DONE" << std::endl;
-//    auto postpStop = clock();
-//    std::cout << "Postprocessing: " << (postpStop - postpStart) / CLOCKS_PER_SEC << std::endl;
 
 
     /* Cleaning up */
@@ -181,6 +202,7 @@ int run(int argc, const char* argv[]) {
     }
     delete pools;
     std::cout << "DONE" << std::endl;
+#endif
 
     return 0;
 

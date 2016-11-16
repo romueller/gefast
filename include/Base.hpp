@@ -122,6 +122,8 @@ private:
 // Amplicons with an index in [beginIndex, end) are used for indexing only, while those with an index in [beginMatch, beginIndex)
 // have to be filtered. Here, starting at index end-1 and going down to beginIndex (inclusive) we are only indexing.
 // Then, starting at beginIndex-1 and going down to beginMatch (inclusive) we are filtering and indexing.
+//
+// Both getSubpoolBoundaries(...) and getSubpoolBoundariesBackward(...) assume that the amplicons are sorted by increasing sequence length.
 struct Subpool {
 
     numSeqs_t beginIndex; // inclusive
@@ -289,6 +291,14 @@ public:
 
         }
 
+    }
+
+    bool contains(const lenSeqs_t len) {
+        return (indices_.find(len) != indices_.end());
+    }
+
+    lenSeqs_t maxLength() const {
+        return indices_.rbegin()->first;
     }
 
 

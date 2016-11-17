@@ -98,6 +98,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--swarm-num-explorers"] = 1102;
     parameters["--swarm-num-grafters"] = 1103;
     parameters["--swarm-num-threads-per-check"] = 1104;
+    parameters["--swarm-fastidious-threshold"] = 1105;
 
 
     std::string
@@ -135,6 +136,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     config.set(SWARM_NUM_EXPLORERS, "1");
     config.set(SWARM_NUM_GRAFTERS, "1");
     config.set(SWARM_NUM_THREADS_PER_CHECK, "1");
+    config.set(SWARM_FASTIDIOUS_THRESHOLD, "0");
 
     /* Determine parameter values */
 
@@ -327,6 +329,11 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                 case 1104:
                     val = std::stoul(argv[++i]);
                     config.set(SWARM_NUM_THREADS_PER_CHECK, std::to_string(val));
+                    break;
+
+                case 1105:
+                    val = std::stoul(argv[++i]);
+                    config.set(SWARM_FASTIDIOUS_THRESHOLD, std::to_string(val));
                     break;
 
                 default:

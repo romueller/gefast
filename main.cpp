@@ -87,6 +87,15 @@ int run(int argc, const char* argv[]) {
 
     sc.threshold = std::stoul(c.get(THRESHOLD));
 
+    if (c.get(SWARM_FASTIDIOUS_THRESHOLD) == "0") { // "default" corresponds to swarm postulating one virtual linking amplicon
+
+        c.set(SWARM_FASTIDIOUS_THRESHOLD, std::to_string(2 * sc.threshold));
+        sc.fastidiousThreshold = 2 * sc.threshold;
+
+    } else {
+        sc.fastidiousThreshold = std::stoul(c.get(SWARM_FASTIDIOUS_THRESHOLD));
+    }
+
     if (sc.dereplicate || (c.get(THRESHOLD) == "0")) { // fastidious option pointless when dereplicating or matching with distance 0
 
         c.set(SWARM_FASTIDIOUS, "0");

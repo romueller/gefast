@@ -55,6 +55,7 @@ struct SwarmConfig {
     bool dereplicate = false; //-d 0
     bool fastidious = false; //-f
     numSeqs_t boundary; //-b
+    lenSeqs_t fastidiousThreshold;
 
     // scoring
     bool useScore = false;
@@ -417,7 +418,7 @@ void graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pool
 void prepareGraftInfos(const numSeqs_t poolSize, const std::vector<Otu*>& otus, std::vector<GraftCandidate>& curGraftCands, std::vector<GraftCandidate>& nextGraftCands, const SwarmConfig& sc);
 
 /**
- * Shifts the indexing window so that afterwards all amplicons with a length in [len - 2 * sc.threshold : len + 2 * sc.threshold] are indexed.
+ * Shifts the indexing window so that afterwards all amplicons with a length in [len - sc.fastidiousThreshold : len + sc.fastidiousThreshold] are indexed.
  * This may advances the indexing iterator beyond the pool containing the amplicons we are currently filtering.
  * In this case, the vector containing child information of grafting candidates for the next pool is (and has to be) initialised,
  * because these information are also used to decide whether an amplicon comes from a light or a heavy OTU.
@@ -429,7 +430,7 @@ AmpliconCollection::iterator shiftIndexWindow(RollingIndices<InvertedIndexFastid
 /**
  *  Graft light OTUs onto heavy OTUs by "simulating virtual amplicons".
  *  To this end, we iterate over the amplicons of all pools (in the order of increasing length).
- *  For threshold T (of the first clustering phase) and an amplicon of length L, we have to consider all other amplicons with a length in [L - 2 * T : L + 2 * T].
+ *  For fastidious threshold T and an amplicon of length L, we have to consider all other amplicons with a length in [L - T : L + T].
  *  While iterating, we therefore keep the relevant amplicons in the inverted indices by shifting an indexing window appropriately whenever moving on to longer amplicons.
  *  Here, we are indexing amplicons from heavy OTUs and filter amplicons from light OTUs.
  *  Based on the resulting grafting candidates, light OTUs are grafted upon heavy ones:

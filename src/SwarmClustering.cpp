@@ -1105,7 +1105,11 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 #if PRINT_INTERNAL_MODIFIED
         if (sc.outInternals) outputInternalStructures(sc.oFileInternals, pools, flattened, sc.sepInternals);
 #endif
-        if (sc.outOtus) outputOtus(sc.oFileOtus, pools, flattened, sc.sepOtus, sc.sepAbundance);
+        if (sc.outOtus) {
+            (sc.outMothur) ?
+              outputOtusMothur(sc.oFileOtus, pools, flattened, sc.threshold, numOtusAdjusted, sc.sepMothur, sc.sepMothurOtu, sc.sepAbundance)
+            : outputOtus(sc.oFileOtus, pools, flattened, sc.sepOtus, sc.sepAbundance);
+        }
         if (sc.outStatistics) outputStatistics(sc.oFileStatistics, pools, flattened, sc.sepStatistics);
         if (sc.outSeeds) outputSeeds(sc.oFileSeeds, pools, flattened, sc.sepAbundance);
 
@@ -1251,6 +1255,42 @@ void SwarmClustering::outputOtus(const std::string oFile, const AmpliconPools& p
 
 }
 
+void SwarmClustering::outputOtusMothur(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const lenSeqs_t threshold, const numSeqs_t numOtusAdjusted, const char sep, const std::string sepOtu, const std::string sepAbundance) {
+
+    std::ofstream oStream(oFile);
+    std::stringstream sStream;
+
+    AmpliconCollection* ac = 0;
+    Otu* otu = 0;
+
+    oStream << "swarm_" << threshold << "\t" << numOtusAdjusted;
+
+    for (auto i = 0; i < otus.size(); i++) {
+
+        otu = otus[i];
+        ac = pools.get(otu->poolId);
+
+        if (!otu->attached) {
+
+            sStream << sepOtu << (*ac)[otu->seedId].id << sepAbundance << (*ac)[otu->seedId].abundance;
+
+            for (auto memberIter = otu->members.begin() + 1; memberIter != otu->members.end(); memberIter++) {
+                sStream << sep << (*ac)[memberIter->id].id << sepAbundance << (*ac)[memberIter->id].abundance;
+            }
+
+            oStream << sStream.rdbuf();
+            sStream.str(std::string());
+
+        }
+
+    }
+
+    oStream << std::endl;
+
+    oStream.close();
+
+}
+
 void SwarmClustering::outputStatistics(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep) {
 
     std::ofstream oStream(oFile);
@@ -1313,6 +1353,8 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
     if (sc.outStatistics) oStreamStatistics.open(sc.oFileStatistics);
     if (sc.outSeeds) oStreamSeeds.open(sc.oFileSeeds);
 
+    if (sc.outOtus && sc.outMothur) oStreamOtus << "swarm_" << sc.threshold << "\t" << otus.size();
+
     for (auto i = 0; i < otus.size(); i++) {
 
         Otu& otu = *(otus[i]);
@@ -1332,15 +1374,30 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
 
         if (sc.outOtus) {
 
-            sStreamOtus << ac[otu.seedId].id << sc.sepAbundance << ac[otu.seedId].abundance;
+            if (sc.outMothur) {
 
-            for (auto memberIter = otu.members.begin() + 1; memberIter != otu.members.end(); memberIter++) {
-                sStreamOtus << sc.sepOtus << ac[memberIter->id].id << sc.sepAbundance << ac[memberIter->id].abundance;
+                sStreamOtus << sc.sepMothurOtu << ac[otu.seedId].id << sc.sepAbundance << ac[otu.seedId].abundance;
+
+                for (auto memberIter = otu.members.begin() + 1; memberIter != otu.members.end(); memberIter++) {
+                    sStreamOtus << sc.sepMothur << ac[memberIter->id].id << sc.sepAbundance << ac[memberIter->id].abundance;
+                }
+
+                oStreamOtus << sStreamOtus.rdbuf();
+                sStreamOtus.str(std::string());
+
+            } else {
+
+                sStreamOtus << ac[otu.seedId].id << sc.sepAbundance << ac[otu.seedId].abundance;
+
+                for (auto memberIter = otu.members.begin() + 1; memberIter != otu.members.end(); memberIter++) {
+                    sStreamOtus << sc.sepOtus << ac[memberIter->id].id << sc.sepAbundance << ac[memberIter->id].abundance;
+                }
+
+                sStreamOtus << std::endl;
+                oStreamOtus << sStreamOtus.rdbuf();
+                sStreamOtus.str(std::string());
+
             }
-
-            sStreamOtus << std::endl;
-            oStreamOtus << sStreamOtus.rdbuf();
-            sStreamOtus.str(std::string());
 
         }
 
@@ -1361,6 +1418,8 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
         }
 
     }
+
+    if (sc.outOtus && sc.outMothur) oStreamOtus << std::endl;
 
     if (sc.outInternals) oStreamInternals.close();
     if (sc.outOtus) oStreamOtus.close();

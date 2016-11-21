@@ -64,6 +64,7 @@ int run(int argc, const char* argv[]) {
     SwarmClustering::SwarmConfig sc;
     sc.outInternals = c.peek(SWARM_OUTPUT_INTERNAL);
     sc.outOtus = c.peek(SWARM_OUTPUT_OTUS);
+    sc.outMothur = c.peek(SWARM_MOTHUR);
     sc.outStatistics = c.peek(SWARM_OUTPUT_STATISTICS);
     sc.outSeeds = c.peek(SWARM_OUTPUT_SEEDS);
     if (sc.outInternals) sc.oFileInternals = c.get(SWARM_OUTPUT_INTERNAL);

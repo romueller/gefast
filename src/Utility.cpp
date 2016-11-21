@@ -85,6 +85,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--swarm-gap-opening-penalty"] = 122;
     parameters["-se"] = 123;
     parameters["--swarm-gap-extension-penalty"] = 124;
+    parameters["-sr"] = 125;
+    parameters["--swarm-mothur"] = 126;
 
     parameters["--min-length"] = 1001;
     parameters["--max-length"] = 1002;
@@ -173,6 +175,11 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
             case 113: //fallthrough -sf to --swarm-fastidious
             case 114:
                 config.set(SWARM_FASTIDIOUS, "1");
+                break;
+
+            case 125: //fallthrough -sr to --swarm-mothur
+            case 126:
+                config.set(SWARM_MOTHUR, "1");
                 break;
 
             case 1007:

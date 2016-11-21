@@ -55,6 +55,7 @@ enum ConfigParameters {
     SWARM_GAP_OPENING_PENALTY,          // penalty for opening a gap
     SWARM_MATCH_REWARD,                 // reward for a nucleotide match
     SWARM_MISMATCH_PENALTY,             // penalty for a nucleotide mismatch
+    SWARM_MOTHUR,                       // boolean flag indicating demand for output format compatible with mothur, corresponds to swarm's option -r
     SWARM_NO_OTU_BREAKING,              // boolean flag indicating usage of OTU breaking, corresponds to swarm's option -n
     SWARM_NUM_EXPLORERS,                // number of parallel explorers (first swarm clustering phase)
     SWARM_NUM_GRAFTERS,                 // number of parallel grafters (second swarm clustering phase)
@@ -195,6 +196,7 @@ private:
                         {"SWARM_GAP_OPENING_PENALTY",         SWARM_GAP_OPENING_PENALTY},
                         {"SWARM_MATCH_REWARD",                SWARM_MATCH_REWARD},
                         {"SWARM_MISMATCH_PENALTY",            SWARM_MISMATCH_PENALTY},
+                        {"SWARM_MOTHUR",                      SWARM_MOTHUR},
                         {"SWARM_NO_OTU_BREAKING",             SWARM_NO_OTU_BREAKING},
                         {"SWARM_NUM_EXPLORERS",               SWARM_NUM_EXPLORERS},
                         {"SWARM_NUM_GRAFTERS",                SWARM_NUM_GRAFTERS},

@@ -37,6 +37,7 @@ struct SwarmConfig {
     std::string oFileInternals;
 
     bool outOtus; //-o
+    bool outMothur; //-r
     std::string oFileOtus;
 
     bool outStatistics; //-s
@@ -48,6 +49,8 @@ struct SwarmConfig {
     char sepInternals = '\t';
     char sepOtus = ' ';
     char sepStatistics = '\t';
+    char sepMothur = ','; // for mothur-compatible output
+    std::string sepMothurOtu = "\t"; // for mothur-compatible output
     std::string sepAbundance;
 
     // clustering options
@@ -475,6 +478,13 @@ void outputInternalStructures(const std::string oFile, const AmpliconPools& pool
  * The members are separated via sep, while id and abundance are separated via sepAbundance.
  */
 void outputOtus(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep, const std::string sepAbundance);
+
+/**
+ * Writes the members of the given OTUs to file (corresponds to output of swarm's option -o with -r).
+ * On a single line, the members of all OTUs are represented through amplicon id and abundance.
+ * The members of one OTU and the OTUs themselves are separated via sep resp. sepOtu, while id and abundance are separated via sepAbundance.
+ */
+void outputOtusMothur(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const lenSeqs_t threshold, const numSeqs_t numOtusAdjusted, const char sep, const std::string sepOtu, const std::string sepAbundance);
 
 /**
  * Write the statistics of the given OTUs to file (corresponds to output of swarm's option -s).

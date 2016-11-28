@@ -11,7 +11,9 @@
  */
 
 #include <algorithm>
+#include <cstring>
 #include <iostream>
+#include <sstream>
 
 #include "../include/VerificationGotoh.hpp"
 
@@ -1644,5 +1646,452 @@ void Verification::verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffe
 
 }
 
+
+
+Verification::AlignmentInformation Verification::computeGotohCigarFull(const std::string &s, const std::string &t, const Scoring& scoring) {
+
+    ValArray D(s.size() + 1, std::vector<val_t>(t.size() + 1));
+    ValArray P(s.size() + 1, std::vector<val_t>(t.size() + 1));
+    ValArray Q(s.size() + 1, std::vector<val_t>(t.size() + 1));
+    BacktrackingArray BT(s.size() + 1, std::vector<char>(t.size() + 1));
+
+    std::vector<std::pair<char, lenSeqs_t >> cigarSegs;
+    lenSeqs_t len = 0;
+    lenSeqs_t numDiffs = 0;
+
+    // initialisation
+    D[0][0] = scoring.penOpen;
+    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+
+        D[i][0] = D[i - 1][0] + scoring.penExtend;
+        BT[i][0] = UP_IN_P;
+        Q[i][0] = NEG_INF;
+
+    }
+    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+
+        D[0][j] = D[0][j - 1] + scoring.penExtend;
+        BT[0][j] = LEFT_IN_Q;
+        P[0][j] = NEG_INF;
+
+    }
+    D[0][0] = 0;
+    BT[1][0] = UP_TO_D;
+    BT[0][1] = LEFT_TO_D;
+
+    // fill matrix
+    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+
+        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+
+            P[i][j] = std::max({
+                                       D[i - 1][j] + scoring.penOpen + scoring.penExtend,
+                                       P[i - 1][j] + scoring.penExtend
+                               });
+
+            Q[i][j] = std::max({
+                                       D[i][j - 1] + scoring.penOpen + scoring.penExtend,
+                                       Q[i][j - 1] + scoring.penExtend
+                               });
+
+            D[i][j] = std::max({
+                                       D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                                       P[i][j],
+                                       Q[i][j]
+                               });
+
+            BT[i][j] = (D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == D[i][j])
+                       | ((Q[i][j] == D[i][j]) << 1)
+                       | ((P[i][j] == D[i][j]) << 2)
+                       | (((D[i - 1][j] + scoring.penOpen + scoring.penExtend) == P[i][j]) << 3)
+                       | (((P[i - 1][j] + scoring.penExtend) == P[i][j]) << 4)
+                       | (((D[i][j - 1] + scoring.penOpen + scoring.penExtend) == Q[i][j]) << 5)
+                       | (((Q[i][j - 1] + scoring.penExtend) == Q[i][j]) << 6);
+
+        }
+
+    }
+
+    // backtracking (priorities: left > up > diagonal)
+    lenSeqs_t i = s.size();
+    lenSeqs_t j = t.size();
+
+    long MATRIX = 0;
+
+    while (i != 0 && j != 0) {
+
+        switch (MATRIX) {
+
+            case IN_D: {
+
+                if (BT[i][j] & JUMP_TO_Q) {
+
+                    MATRIX = IN_Q;
+
+                } else if (BT[i][j] & JUMP_TO_P) {
+
+                    MATRIX = IN_P;
+
+                } else if (BT[i][j] & DIAGONAL_IN_D) {
+
+                    len++;
+                    numDiffs += (s[i - 1] != t[j - 1]);
+                    if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'M')) {
+                        cigarSegs.back().second++;
+                    } else {
+                        cigarSegs.push_back(std::make_pair('M', 1));
+                    }
+
+                    i--;
+                    j--;
+
+                }
+
+                break;
+
+            }
+
+            case IN_P: {
+
+                /*if (BT[i][j] & UP_IN_P) {
+
+                } else*/ if (BT[i][j] & UP_TO_D) {
+
+                    MATRIX = IN_D;
+
+                }
+
+                len++;
+                numDiffs++;
+                if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'D')) {
+                    cigarSegs.back().second++;
+                } else {
+                    cigarSegs.push_back(std::make_pair('D', 1));
+                }
+
+                i--;
+
+                break;
+
+            }
+
+            case IN_Q: {
+
+                /*if (BT[i][j] & LEFT_IN_Q) {
+
+                } else*/ if (BT[i][j] & LEFT_TO_D) {
+
+                    MATRIX = IN_D;
+                }
+
+                len++;
+                numDiffs++;
+                if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'I')) {
+                    cigarSegs.back().second++;
+                } else {
+                    cigarSegs.push_back(std::make_pair('I', 1));
+                }
+
+                j--;
+
+                break;
+
+            }
+
+            default: {
+                // do nothing (should not occur)
+            }
+
+        }
+
+    }
+
+    while (i > 0) {
+
+        len++;
+        numDiffs++;
+        if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'd')) {
+            cigarSegs.back().second++;
+        } else {
+            cigarSegs.push_back(std::make_pair('d', 1));
+        }
+
+        i--;
+
+    }
+
+    while (j > 0) {
+
+        len++;
+        numDiffs++;
+        if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'i')) {
+            cigarSegs.back().second++;
+        } else {
+            cigarSegs.push_back(std::make_pair('i', 1));
+        }
+
+        j--;
+
+    }
+
+    std::stringstream sStream;
+    for (auto iter = cigarSegs.rbegin(); iter != cigarSegs.rend(); iter++) {
+
+        if (iter->second > 1) sStream << iter->second;
+        sStream << iter->first;
+
+    }
+
+    return AlignmentInformation(sStream.str(), len, numDiffs);
+
+}
+
+
+// Slightly adapted nw(...) code taken from swarm.
+// TODO Reimplement properly or change above method computeGotohCigarFull(...).
+void pushop(char newop, char ** cigarendp, char * op, int * count)
+{
+    if (newop == *op)
+        (*count)++;
+    else
+    {
+        *--*cigarendp = *op;
+        if (*count > 1)
+        {
+            char buf[25];
+            int len = sprintf(buf, "%d", *count);
+            *cigarendp -= len;
+            strncpy(*cigarendp, buf, len);
+        }
+        *op = newop;
+        *count = 1;
+    }
+}
+
+void finishop(char ** cigarendp, char * op, int * count)
+{
+    if ((op) && (count))
+    {
+        *--*cigarendp = *op;
+        if (*count > 1)
+        {
+            char buf[25];
+            int len = sprintf(buf, "%d", *count);
+            *cigarendp -= len;
+            strncpy(*cigarendp, buf, len);
+        }
+        *op = 0;
+        *count = 0;
+    }
+}
+
+Verification::AlignmentInformation Verification::computeGotohCigarSwarm(const std::string &s, const std::string &t, const Scoring& scoring) {
+//begin - "external"
+    unsigned char maskup      = 1;
+    unsigned char maskleft    = 2;
+    unsigned char maskextup   = 4;
+    unsigned char maskextleft = 8;
+
+    unsigned long gapopen = 12;
+    unsigned long gapextend = 4;
+    unsigned long penalty_mismatch = 9;
+
+
+
+    char map_nt[256] =
+            {
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1,  1, -1,  2, -1, -1, -1,  3, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1,  4,  4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1,  1, -1,  2, -1, -1, -1,  3, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1,  4,  4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+            };
+    std::vector<long> score_matrix(32 * 32);
+    for (int a = 0; a < 16; a++) {
+        for (int b = 0; b < 16; b++) {
+            score_matrix[(a << 5) + b] = (((a == b) && (a > 0) && (b > 0)) ? 0 : penalty_mismatch);
+        }
+    }
+
+
+    long longestamplicon = std::max(s.length(), t.length());
+    unsigned char * dir = new unsigned char[longestamplicon * longestamplicon];
+    unsigned long * hearray = new unsigned long[2 * longestamplicon];
+
+//end - "external"
+
+    /* dir must point to at least qlen*dlen bytes of allocated memory
+    hearray must point to at least 2*qlen longs of allocated memory (8*qlen bytes) */
+
+    long n, e;
+    long unsigned *hep;
+
+    long qlen = s.length();
+    long dlen = t.length();
+
+    memset(dir, 0, qlen*dlen);
+
+    long i, j;
+
+    for(i=0; i<qlen; i++)
+    {
+        hearray[2*i]   = 1 * gapopen + (i+1) * gapextend; // H (N)
+        hearray[2*i+1] = 2 * gapopen + (i+2) * gapextend; // E
+    }
+
+    for(j=0; j<dlen; j++)
+    {
+        hep = &(hearray[0]);
+        long f = 2 * gapopen + (j+2) * gapextend;
+        long h = (j == 0) ? 0 : (gapopen + j * gapextend);
+
+        for(i=0; i<qlen; i++)
+        {
+            long index = qlen*j+i;
+
+            n = *hep;
+            e = *(hep+1);
+            h += score_matrix[(map_nt[t[j]]<<5) + map_nt[s[i]]]; //h += score_matrix[(t[j]<<5) + s[i]];
+
+
+            dir[index] |= (f < h ? maskup : 0);
+            h = std::min(h, f);
+            h = std::min(h, e);
+            dir[index] |= (e == h ? maskleft : 0);
+
+            *hep = h;
+
+            h += gapopen + gapextend;
+            e += gapextend;
+            f += gapextend;
+
+            dir[index] |= (f < h ? maskextup : 0);
+            dir[index] |= (e < h ? maskextleft : 0);
+            f = std::min(h,f);
+            e = std::min(h,e);
+
+            *(hep+1) = e;
+            h = n;
+            hep += 2;
+        }
+    }
+
+    long dist = hearray[2*qlen-2];
+
+    /* backtrack: count differences and save alignment in cigar string */
+
+    long score = 0;
+    long alength = 0;
+    long matches = 0;
+
+    char * cigar = new char[qlen + dlen + 1];//(char *) xmalloc(qlen + dlen + 1);
+    char * cigarend = cigar+qlen+dlen+1;
+
+
+    char op = 0;
+    int count = 0;
+    *(--cigarend) = 0;
+
+    i = qlen;
+    j = dlen;
+
+    while ((i>0) && (j>0))
+    {
+        int d = dir[qlen*(j-1)+(i-1)];
+
+        alength++;
+
+        if ((op == 'I') && (d & maskextleft))
+        {
+            score += gapextend;
+            j--;
+            pushop('I', &cigarend, &op, &count);
+        }
+        else if ((op == 'D') && (d & maskextup))
+        {
+            score += gapextend;
+            i--;
+            pushop('D', &cigarend, &op, &count);
+        }
+        else if (d & maskleft)
+        {
+            score += gapextend;
+            if (op != 'I')
+                score += gapopen;
+            j--;
+            pushop('I', &cigarend, &op, &count);
+        }
+        else if (d & maskup)
+        {
+            score += gapextend;
+            if (op != 'D')
+                score +=gapopen;
+            i--;
+            pushop('D', &cigarend, &op, &count);
+        }
+        else
+        {
+            score += score_matrix[(map_nt[t[j-1]] << 5) + map_nt[s[i-1]]]; //score += score_matrix[(t[j-1] << 5) + s[i-1]];
+            if (s[i-1] == t[j-1])
+                matches++;
+            i--;
+            j--;
+            pushop('M', &cigarend, &op, &count);
+        }
+    }
+
+    while(i>0)
+    {
+        alength++;
+        score += gapextend;
+        if (op != 'D')
+            score += gapopen;
+        i--;
+        pushop('D', &cigarend, &op, &count);
+    }
+
+    while(j>0)
+    {
+        alength++;
+        score += gapextend;
+        if (op != 'I')
+            score += gapopen;
+        j--;
+        pushop('I', &cigarend, &op, &count);
+
+    }
+
+    finishop(&cigarend, &op, &count);
+
+
+    /* move and reallocate cigar */
+
+    long cigarlength = cigar+qlen+dlen-cigarend;
+//    memmove(cigar, cigarend, cigarlength+1);
+//    cigar = (char*) xrealloc(cigar, cigarlength+1);
+    char* finalCigar = new char[cigarlength + 1];
+    memmove(finalCigar, cigarend, cigarlength + 1);
+
+    std::string cigStr = std::string(finalCigar);
+
+    delete[] cigar;
+    delete[] finalCigar;
+    delete[] dir;
+    delete[] hearray;
+
+    return AlignmentInformation(cigStr, alength, alength - matches);
+
+}
 
 }

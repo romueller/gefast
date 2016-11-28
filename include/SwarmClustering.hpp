@@ -46,10 +46,14 @@ struct SwarmConfig {
     bool outSeeds; //-w
     std::string oFileSeeds;
 
+    bool outUclust; //-u
+    std::string oFileUclust;
+
     char sepInternals = '\t';
     char sepOtus = ' ';
     char sepStatistics = '\t';
     char sepMothur = ','; // for mothur-compatible output
+    char sepUclust = '\t';
     std::string sepMothurOtu = "\t"; // for mothur-compatible output
     std::string sepAbundance;
 
@@ -509,14 +513,20 @@ void outputStatistics(const std::string oFile, const AmpliconPools& pools, const
 void outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const std::string sepAbundance);
 
 /**
+ * Writes the clustering results in a uclust-like format to file (corresponds to output of swarm's option -u).
+ */
+void outputUclust(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc);
+
+/**
  * Write the requested dereplication outputs to file (SwarmConfig stores information on which are requested).
- * The outputs correspond to swarm's outputs (-i, -o, -s, -w) when running it with -d 0.
+ * The outputs correspond to swarm's outputs (-i, -o, -s, -w, -u) when running it with -d 0.
  *
  * Minor differences to non-dereplicating output options:
  * -i: generation of child amplicons is also (always) 0
  * -o: <no differences>
  * -s: first column describes the number of amplicons in the OTU (not the number of unique sequences)
  * -w: <no differences>
+ * -u: <no differences>
  */
 void outputDereplicate(const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc);
 }

@@ -64,6 +64,7 @@ enum ConfigParameters {
     SWARM_OUTPUT_OTUS,                  // name of the output file corresponding to swarm's output option -o (OTUs)
     SWARM_OUTPUT_STATISTICS,            // name of the output file corresponding to swarm's output option -s (statistics file)
     SWARM_OUTPUT_SEEDS,                 // name of the output file corresponding to swarm's output option -w (seeds)
+    SWARM_OUTPUT_UCLUST,                // name of the output file corresponding to swarm's output option -u (uclust)
     THRESHOLD,                          // (edit distance) threshold for the clustering
     USE_SCORE,                          // flag indicating whether to use an actual scoring function (not the edit distance)
     VERSION                             // version number of the program
@@ -205,6 +206,7 @@ private:
                         {"SWARM_OUTPUT_OTUS",                 SWARM_OUTPUT_OTUS},
                         {"SWARM_OUTPUT_STATISTICS",           SWARM_OUTPUT_STATISTICS},
                         {"SWARM_OUTPUT_SEEDS",                SWARM_OUTPUT_SEEDS},
+                        {"SWARM_OUTPUT_UCLUST",               SWARM_OUTPUT_UCLUST},
                         {"THRESHOLD",                         THRESHOLD},
                         {"USE_SCORE",                         USE_SCORE},
                         {"VERSION",                           VERSION}

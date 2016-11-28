@@ -14,6 +14,7 @@
 #include "../include/SwarmingSegmentFilter.hpp"
 
 #include <fstream>
+#include <iomanip>
 #include <set>
 #include <sstream>
 #include <thread>
@@ -1112,6 +1113,7 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
         }
         if (sc.outStatistics) outputStatistics(sc.oFileStatistics, pools, flattened, sc.sepStatistics);
         if (sc.outSeeds) outputSeeds(sc.oFileSeeds, pools, flattened, sc.sepAbundance);
+        if (sc.outUclust) outputUclust(sc.oFileUclust, pools, flattened, sc);
 
     }
 
@@ -1343,15 +1345,64 @@ void SwarmClustering::outputSeeds(const std::string oFile, const AmpliconPools& 
 
 }
 
+void SwarmClustering::outputUclust(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc) {
+
+    std::ofstream oStream(oFile);
+    std::stringstream sStream;
+    sStream << std::fixed << std::setprecision(1);
+
+    AmpliconCollection* ac = 0;
+    Otu* otu = 0;
+
+    for (auto i = 0; i < otus.size(); i++) {
+
+        otu = otus[i];
+        ac = pools.get(otu->poolId);
+
+        if (!otu->attached) {
+
+            auto& seed = (*ac)[otu->seedId];
+
+            sStream << 'C' << sc.sepUclust << i << sc.sepUclust << otu->members.size() << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
+                    << seed.id << sc.sepAbundance << seed.abundance << sc.sepUclust << '*' << '\n';
+            sStream << 'S' << sc.sepUclust << i << sc.sepUclust << seed.seq.length() << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
+                    << seed.id << sc.sepAbundance << seed.abundance << sc.sepUclust << '*' << '\n';
+            oStream << sStream.rdbuf();
+            sStream.str(std::string());
+
+            for (auto memberIter = otu->members.begin() + 1; memberIter != otu->members.end(); memberIter++) {
+
+                auto& member = (*ac)[memberIter->id];
+//                auto ai = Verification::computeGotohCigarFull(seed.seq, member.seq, sc.scoring);
+                auto ai = Verification::computeGotohCigarSwarm(seed.seq, member.seq, sc.scoring);
+
+                sStream << 'H' << sc.sepUclust << i << sc.sepUclust << member.seq.length() << sc.sepUclust << (100.0 * (ai.length - ai.numDiffs) / ai.length) << sc.sepUclust << '+' << sc.sepUclust << '0' << sc.sepUclust << '0' << sc.sepUclust << ((ai.numDiffs == 0) ? "=" : ai.cigar) << sc.sepUclust
+                        << member.id << sc.sepAbundance << member.abundance << sc.sepUclust
+                        << seed.id << sc.sepAbundance << seed.abundance << '\n';
+                oStream << sStream.rdbuf();
+                sStream.str(std::string());
+
+            }
+
+        }
+
+    }
+
+    oStream.close();
+
+}
+
 void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc) {
 
-    std::ofstream oStreamInternals, oStreamOtus, oStreamStatistics, oStreamSeeds;
-    std::stringstream sStreamInternals, sStreamOtus, sStreamStatistics, sStreamSeeds;
+    std::ofstream oStreamInternals, oStreamOtus, oStreamStatistics, oStreamSeeds, oStreamUclust;
+    std::stringstream sStreamInternals, sStreamOtus, sStreamStatistics, sStreamSeeds, sStreamUclust;
+    sStreamUclust << std::fixed << std::setprecision(1);
 
     if (sc.outInternals) oStreamInternals.open(sc.oFileInternals);
     if (sc.outOtus) oStreamOtus.open(sc.oFileOtus);
     if (sc.outStatistics) oStreamStatistics.open(sc.oFileStatistics);
     if (sc.outSeeds) oStreamSeeds.open(sc.oFileSeeds);
+    if (sc.outUclust) oStreamUclust.open(sc.oFileUclust);
 
     if (sc.outOtus && sc.outMothur) oStreamOtus << "swarm_" << sc.threshold << "\t" << otus.size();
 
@@ -1417,6 +1468,27 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
 
         }
 
+        if (sc.outUclust) {
+
+            auto& seed = ac[otu.seedId];
+
+            sStreamUclust << 'C' << sc.sepUclust << i << sc.sepUclust << otu.members.size() << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
+                          << seed.id << sc.sepAbundance << seed.abundance << sc.sepUclust << '*' << '\n';
+            sStreamUclust << 'S' << sc.sepUclust << i << sc.sepUclust << seed.seq.length() << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
+                          << seed.id << sc.sepAbundance << seed.abundance << sc.sepUclust << '*' << '\n';
+            oStreamUclust << sStreamUclust.rdbuf();
+            sStreamUclust.str(std::string());
+
+            for (auto memberIter = otu.members.begin() + 1; memberIter != otu.members.end(); memberIter++) {
+                sStreamOtus << 'H' << sc.sepUclust << i << sc.sepUclust << ac[memberIter->id].seq.length() << sc.sepUclust << "100.0" << sc.sepUclust << '+' << sc.sepUclust << '0' << sc.sepUclust << '0' << sc.sepUclust << '=' << sc.sepUclust
+                            << ac[memberIter->id].id << sc.sepAbundance << ac[memberIter->id].abundance << sc.sepUclust
+                            << seed.id << sc.sepAbundance << seed.abundance << '\n';
+            }
+            oStreamUclust << sStreamUclust.rdbuf();
+            sStreamUclust.str(std::string());
+
+        }
+
     }
 
     if (sc.outOtus && sc.outMothur) oStreamOtus << std::endl;
@@ -1425,6 +1497,7 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
     if (sc.outOtus) oStreamOtus.close();
     if (sc.outStatistics) oStreamStatistics.close();
     if (sc.outSeeds) oStreamSeeds.close();
+    if (sc.outUclust) oStreamUclust.close();
 
 }
 

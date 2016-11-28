@@ -87,6 +87,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--swarm-gap-extension-penalty"] = 124;
     parameters["-sr"] = 125;
     parameters["--swarm-mothur"] = 126;
+    parameters["-su"] = 127;
+    parameters["--swarm-uclust"] = 128;
 
     parameters["--min-length"] = 1001;
     parameters["--max-length"] = 1002;
@@ -287,6 +289,11 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                 case 124:
                     signedVal = std::stoll(argv[++i]);
                     config.set(SWARM_GAP_EXTENSION_PENALTY, std::to_string(signedVal));
+                    break;
+
+                case 127: //fallthrough -su to --swarm-uclust
+                case 128:
+                    config.set(SWARM_OUTPUT_UCLUST, argv[++i]);
                     break;
 
                 // parameters without abbreviation

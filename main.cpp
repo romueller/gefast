@@ -54,7 +54,7 @@ int run(int argc, const char* argv[]) {
         return 1;
 
     }
-    if (!c.peek(MATCHES_OUTPUT_FILE) && !c.peek(SWARM_OUTPUT_INTERNAL) && !c.peek(SWARM_OUTPUT_OTUS) && !c.peek(SWARM_OUTPUT_STATISTICS) && !c.peek(SWARM_OUTPUT_SEEDS)) {
+    if (!c.peek(MATCHES_OUTPUT_FILE) && !c.peek(SWARM_OUTPUT_INTERNAL) && !c.peek(SWARM_OUTPUT_OTUS) && !c.peek(SWARM_OUTPUT_STATISTICS) && !c.peek(SWARM_OUTPUT_SEEDS) && !c.peek(SWARM_OUTPUT_UCLUST)) {
 
         std::cerr << "ERROR: No output file specified." << std::endl;
         return 1;
@@ -64,13 +64,15 @@ int run(int argc, const char* argv[]) {
     SwarmClustering::SwarmConfig sc;
     sc.outInternals = c.peek(SWARM_OUTPUT_INTERNAL);
     sc.outOtus = c.peek(SWARM_OUTPUT_OTUS);
-    sc.outMothur = c.peek(SWARM_MOTHUR);
+    sc.outMothur = (c.peek(SWARM_MOTHUR) && (c.get(SWARM_MOTHUR) == "1"));
     sc.outStatistics = c.peek(SWARM_OUTPUT_STATISTICS);
     sc.outSeeds = c.peek(SWARM_OUTPUT_SEEDS);
+    sc.outUclust = c.peek(SWARM_OUTPUT_UCLUST);
     if (sc.outInternals) sc.oFileInternals = c.get(SWARM_OUTPUT_INTERNAL);
     if (sc.outOtus) sc.oFileOtus = c.get(SWARM_OUTPUT_OTUS);
     if (sc.outStatistics) sc.oFileStatistics = c.get(SWARM_OUTPUT_STATISTICS);
     if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
+    if (sc.outUclust) sc.oFileUclust = c.get(SWARM_OUTPUT_UCLUST);
     sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
     sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
     sc.sepAbundance = c.get(SEPARATOR_ABUNDANCE);

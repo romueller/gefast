@@ -205,6 +205,36 @@ lenSeqs_t computeGotohLengthAwareEarlyRow6(const std::string& s, const std::stri
 // compute differences in best alignments of all incoming candidates
 // verification lasts until everything in the buffer is worked off and it signals that no new candidates will be inserted
 void verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t width, lenSeqs_t t, const Scoring& scoring);
+
+
+
+//===========================================================
+//                  CIGAR computation
+//===========================================================
+
+struct AlignmentInformation {
+
+    std::string cigar;
+    lenSeqs_t length;
+    lenSeqs_t numDiffs;
+
+    AlignmentInformation(const std::string& c, const lenSeqs_t l, const lenSeqs_t n) {
+
+        cigar = c;
+        length = l;
+        numDiffs = n;
+
+    }
+
+};
+
+/**
+ * Computes one optimal global alignment with affine gap costs and returns that alignment in the CIGAR format,
+ * its length and the number of differences (mismatches, insertions, deletions) in it.
+ */
+AlignmentInformation computeGotohCigarFull(const std::string& s, const std::string& t, const Scoring& scoring);
+
+AlignmentInformation computeGotohCigarSwarm(const std::string& s, const std::string& t, const Scoring& scoring);
 }
 }
 

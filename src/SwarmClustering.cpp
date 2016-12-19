@@ -1008,13 +1008,13 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 
     // make OTU IDs unique over all pools (so far IDs start at 1 in each pool) (currently commented out)
     // add pool IDs and determine some overall statistics
-    numSeqs_t numOtus = otus[0].size();
+    numSeqs_t numOtus = 0;
     numSeqs_t numOtusAdjusted = 0;
-    numSeqs_t numAmplicons = pools.get(0)->size();
+    numSeqs_t numAmplicons = 0;
     numSeqs_t maxSize = 0;
     numSeqs_t maxGen = 0;
 
-    for (numSeqs_t p = 1; p < pools.numPools(); p++) {
+    for (numSeqs_t p = 0; p < pools.numPools(); p++) {
 
         for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
 

@@ -15,15 +15,13 @@
 
 namespace SCT_PJ {
 
-SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, Verification::val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
 
     M_ = M;
     D_ = D;
     P_ = P;
-    Q_ = Q;
     cntDiffs_ = cntDiffs;
     cntDiffsP_ = cntDiffsP;
-    cntDiffsQ_ = cntDiffsQ;
 
 }
 
@@ -64,7 +62,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
             if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
 
                 dist = sc_.useScore ?
-                         Verification::computeGotohLengthAwareEarlyRow6(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, Q_, cntDiffs_, cntDiffsP_, cntDiffsQ_)
+                         Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
                        : Verification::computeLengthAwareRow(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, M_);
 
                 if (dist <= sc_.threshold) {
@@ -119,7 +117,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
             if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
 
                 dist = sc_.useScore ?
-                         Verification::computeGotohLengthAwareEarlyRow6(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, Q_, cntDiffs_, cntDiffsP_, cntDiffsQ_)
+                         Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
                        : Verification::computeLengthAwareRow(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, M_);
 
                 if (dist <= sc_.threshold) {
@@ -192,7 +190,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
                 if (cnt == sc_.extraSegs) {
 
                     dist = sc_.useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow6(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, Q_, cntDiffs_, cntDiffsP_, cntDiffsQ_)
+                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
                            : Verification::computeLengthAwareRow(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, M_);
 
                     if (dist <= sc_.threshold) {
@@ -272,7 +270,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
                 if (cnt == sc_.extraSegs) {
 
                     dist = sc_.useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow6(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, Q_, cntDiffs_, cntDiffsP_, cntDiffsQ_)
+                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
                            : Verification::computeLengthAwareRow(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, M_);
 
                     if (dist <= sc_.threshold) {
@@ -331,7 +329,7 @@ void SegmentFilter::ParallelChildrenFinder::verify(std::vector<std::pair<numSeqs
 
             c = localBuffer.pop();
 
-            lenSeqs_t d = Verification::computeLengthAwareRow(ac_[c.first].seq, ac_[c.second].seq, sc_.threshold, M); //TODO choose "best" implementation
+            lenSeqs_t d = Verification::computeLengthAwareRow(ac_[c.first].seq, ac_[c.second].seq, sc_.threshold, M);
 
             if (d <= sc_.threshold) {
 
@@ -357,10 +355,8 @@ void SegmentFilter::ParallelChildrenFinder::verifyGotoh(std::vector<std::pair<nu
     Buffer<Candidate> localBuffer;
     Verification::val_t D[width]; // reusable DP-matrix (wide enough for all possible calculations for this AmpliconCollection)
     Verification::val_t P[width];
-    Verification::val_t Q[width];
     lenSeqs_t cntDiffs[width];
     lenSeqs_t cntDiffsP[width];
-    lenSeqs_t cntDiffsQ[width];
 
     while (!buf.isClosed() || buf.syncSize() > 0) {
 
@@ -370,7 +366,7 @@ void SegmentFilter::ParallelChildrenFinder::verifyGotoh(std::vector<std::pair<nu
 
             c = localBuffer.pop();
 
-            lenSeqs_t d = Verification::computeGotohLengthAwareEarlyRow6(ac_[c.first].seq, ac_[c.second].seq, sc_.threshold, sc_.scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ); //TODO choose "best" implementation
+            lenSeqs_t d = Verification::computeGotohLengthAwareEarlyRow8(ac_[c.first].seq, ac_[c.second].seq, sc_.threshold, sc_.scoring, D, P, cntDiffs, cntDiffsP);
 
             if (d <= sc_.threshold) {
 
@@ -742,7 +738,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
 
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t M[], Verification::val_t D[], Verification::val_t P[], Verification::val_t Q[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[], const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
@@ -778,7 +774,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
             if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
 
                 dist = sc.useScore ?
-                                  Verification::computeGotohLengthAwareEarlyRow6(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ)
+                                  Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
                                 : Verification::computeLengthAwareRow(amplicon.seq, ac[candIter->first].seq, sc.threshold, M);
 
                 if (dist <= sc.threshold) {
@@ -795,7 +791,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 }
 
-void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t M[], Verification::val_t D[], Verification::val_t P[], Verification::val_t Q[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[], const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
     std::vector<numSeqs_t> candIntIds;
@@ -830,7 +826,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
             if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
 
                 dist = sc.useScore ?
-                                  Verification::computeGotohLengthAwareEarlyRow6(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ)
+                                  Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
                                 : Verification::computeLengthAwareRow(amplicon.seq, ac[candIter->first].seq, sc.threshold, M);
 
                 if (dist <= sc.threshold) {
@@ -845,7 +841,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
 }
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t M[], Verification::val_t D[], Verification::val_t P[], Verification::val_t Q[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[], const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
@@ -901,7 +897,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
                 if (cnt == sc.extraSegs) {
 
                     dist = sc.useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow6(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ)
+                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
                            : Verification::computeLengthAwareRow(amplicon.seq, ac[candIter->first].seq, sc.threshold, M);
 
                     if (dist <= sc.threshold) {
@@ -922,7 +918,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 }
 
-void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t M[], Verification::val_t D[], Verification::val_t P[], Verification::val_t Q[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[], const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
     std::vector<numSeqs_t> candIntIds;
@@ -976,7 +972,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
                 if (cnt == sc.extraSegs) {
 
                     dist = sc.useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow6(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ)
+                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
                            : Verification::computeLengthAwareRow(amplicon.seq, ac[candIter->first].seq, sc.threshold, M);
 
                     if (dist <= sc.threshold) {
@@ -1216,13 +1212,10 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
     lenSeqs_t M[sc.useScore ? 1 : indices.maxLength() + 1];
     Verification::val_t D[sc.useScore ? indices.maxLength() + 1 : 1];
     Verification::val_t P[sc.useScore ? indices.maxLength() + 1 : 1];
-    Verification::val_t Q[sc.useScore ? indices.maxLength() + 1 : 1];
-//    char BT[sc.useScore ? indices.maxLength() + 1 : 1];
     lenSeqs_t cntDiffs[sc.useScore ? indices.maxLength() + 1 : 1];
     lenSeqs_t cntDiffsP[sc.useScore ? indices.maxLength() + 1 : 1];
-    lenSeqs_t cntDiffsQ[sc.useScore ? indices.maxLength() + 1 : 1];
 #if CHILDREN_FINDER
-    ChildrenFinder cf(ac, indices, substrsArchive, sc, M, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ);
+    ChildrenFinder cf(ac, indices, substrsArchive, sc, M, D, P, cntDiffs, cntDiffsP);
 #endif
 
     // open new OTU for the amplicon with the highest abundance that is not yet included in an OTU
@@ -1273,8 +1266,8 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
                 next = sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.id) : cf.getChildren(curSeed.id);
 //                sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.id, next) : cf.getChildren(curSeed.id, next);
 #else
-                next = sc.filterTwoWay ? getChildrenTwoWay(curSeed.id, next, ac, indices, substrsArchive, M, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ, sc) : getChildren(curSeed.id, ac, indices, substrsArchive, M, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ, sc);
-//                sc.filterTwoWay ? getChildrenTwoWay(curSeed.id, next, ac, indices, substrsArchive, M, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ, sc) : getChildren(curSeed.id, ac, indices, substrsArchive, M, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ, sc);
+                next = sc.filterTwoWay ? getChildrenTwoWay(curSeed.id, next, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc) : getChildren(curSeed.id, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc);
+//                sc.filterTwoWay ? getChildrenTwoWay(curSeed.id, next, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc) : getChildren(curSeed.id, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc);
 #endif
                 for (auto matchIter = next.begin(); matchIter != next.end(); matchIter++) {
 

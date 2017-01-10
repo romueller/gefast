@@ -113,8 +113,7 @@ int run(int argc, const char* argv[]) {
     sc.boundary = std::stoul(c.get(SWARM_BOUNDARY));
 
     sc.useScore = (c.get(USE_SCORE) == "1");
-    sc.scoring = Verification::Scoring(std::stoul(c.get(SWARM_MATCH_REWARD)), std::stoll(c.get(SWARM_MISMATCH_PENALTY)), std::stoll(c.get(SWARM_GAP_OPENING_PENALTY)), std::stoll(c.get(SWARM_GAP_EXTENSION_PENALTY)));
-
+    sc.scoring = Verification::Scoring(std::stoull(c.get(SWARM_MATCH_REWARD)), std::stoll(c.get(SWARM_MISMATCH_PENALTY)), std::stoll(c.get(SWARM_GAP_OPENING_PENALTY)), std::stoll(c.get(SWARM_GAP_EXTENSION_PENALTY)));
 
     //TODO remove or redirect to logger
     std::cout << "===== Configuration =====" << std::endl;

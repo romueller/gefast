@@ -232,6 +232,9 @@ Config<std::string> getConfiguration(int argc, const char* argv[]);
 // write job parameters to file
 void writeJobParameters(const std::string oFile, const Config<std::string>& conf, const std::vector<std::string>& inputFiles);
 
+// compute gcd of two non-negative integers
+unsigned long long gcd(unsigned long long a, unsigned long long b);
+
 }
 
 #endif //SCT_PJ_UTILITY_HPP

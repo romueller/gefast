@@ -399,4 +399,8 @@ void writeJobParameters(const std::string oFile, const Config<std::string>& conf
     oStream.close();
 }
 
+unsigned long long gcd(unsigned long long a, unsigned long long b) {
+    return (b == 0) ? a : gcd(b, a % b);
+}
+
 }

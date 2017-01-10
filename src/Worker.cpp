@@ -28,7 +28,7 @@ void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
     unsigned long numThreads = std::stoul(config_.get(NUM_THREADS_PER_WORKER));
     int mode = std::stoi(config_.get(SEGMENT_FILTER));
     bool useScore = (config_.get(USE_SCORE) == "1");
-    Verification::Scoring scoring(std::stol(config_.get(SWARM_MATCH_REWARD)), std::stol(config_.get(SWARM_MISMATCH_PENALTY)), std::stol(config_.get(SWARM_GAP_OPENING_PENALTY)), std::stol(config_.get(SWARM_GAP_EXTENSION_PENALTY)));
+    Verification::Scoring scoring(std::stoull(config_.get(SWARM_MATCH_REWARD)), std::stoll(config_.get(SWARM_MISMATCH_PENALTY)), std::stoll(config_.get(SWARM_GAP_OPENING_PENALTY)), std::stoll(config_.get(SWARM_GAP_EXTENSION_PENALTY)));
 
     if (numThreads == 1) { // completely sequential
 

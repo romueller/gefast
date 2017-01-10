@@ -49,7 +49,7 @@ lenSeqs_t Verification::computeClassicFull(const std::string& s, const std::stri
 }
 
 
-lenSeqs_t Verification::computeClassicRow(const std::string& s, const std::string& t, lenSeqs_t M[]) {
+lenSeqs_t Verification::computeClassicRow(const std::string& s, const std::string& t, lenSeqs_t* M) {
 
 //    lenSeqs_t M[t.size() + 1];
     lenSeqs_t match, tmp;
@@ -163,7 +163,7 @@ lenSeqs_t Verification::computeBoundedFull(const std::string& s, const std::stri
 
 }
 
-lenSeqs_t Verification::computeBoundedRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t M[]) {
+lenSeqs_t Verification::computeBoundedRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -305,7 +305,7 @@ lenSeqs_t Verification::computeBoundedFullSlim(const std::string& s, const std::
 
 }
 
-lenSeqs_t Verification::computeBoundedRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t M[]) {
+lenSeqs_t Verification::computeBoundedRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -465,7 +465,7 @@ lenSeqs_t Verification::computeLengthAwareFull(const std::string& s, const std::
 
 }
 
-lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t M[]) {
+lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -625,7 +625,7 @@ lenSeqs_t Verification::computeLengthAwareFullSlim(const std::string& s, const s
 
 }
 
-lenSeqs_t Verification::computeLengthAwareRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t M[]) {
+lenSeqs_t Verification::computeLengthAwareRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -710,7 +710,6 @@ lenSeqs_t Verification::computeLengthAwareRowSlim(const std::string& s, const st
 
 void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t width, lenSeqs_t t) {
 
-//    numSeqs_t matches = 0; //TODO remove
     Candidate c;
     Buffer<Candidate> localBuffer;
     lenSeqs_t M[width]; // reusable DP-matrix (wide enough for all possible calculations for this AmpliconCollection)
@@ -725,9 +724,9 @@ void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Can
 
             if (!mat.contains(c.first, c.second)) {
 
-                lenSeqs_t d = computeLengthAwareRow(ac[c.first].seq, ac[c.second].seq, t, M); //TODO choose "best" implementation
+                lenSeqs_t d = computeLengthAwareRow(ac[c.first].seq, ac[c.second].seq, t, M);
 
-                if (d <= t) {// matches++; //TODO remove
+                if (d <= t) {
                     mat.add(c.first, c.second, d);
                 }
 
@@ -736,8 +735,6 @@ void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Can
         }
 
     }
-
-//    std::cout << "#matches = " << matches << std::endl; //TODO remove
 
 }
 

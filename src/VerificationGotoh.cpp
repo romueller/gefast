@@ -22,22 +22,22 @@ namespace SCT_PJ {
 
 Verification::val_t Verification::computeGotohScoreFull(const std::string &s, const std::string &t, const Scoring& scoring) {
 
-    ValArray D(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    ValArray P(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    ValArray Q(s.size() + 1, std::vector<val_t>(t.size() + 1));
+    val_t D[s.size() + 1][t.size() + 1];
+    val_t P[s.size() + 1][t.size() + 1];
+    val_t Q[s.size() + 1][t.size() + 1];
 
     // initialisation
     D[0][0] = scoring.penOpen;
     for (lenSeqs_t i = 1; i <= s.size(); i++) {
 
         D[i][0] = D[i - 1][0] + scoring.penExtend;
-        Q[i][0] = NEG_INF;
+        Q[i][0] = POS_INF;
 
     }
     for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
         D[0][j] = D[0][j - 1] + scoring.penExtend;
-        P[0][j] = NEG_INF;
+        P[0][j] = POS_INF;
 
     }
     D[0][0] = 0;
@@ -47,18 +47,18 @@ Verification::val_t Verification::computeGotohScoreFull(const std::string &s, co
 
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
-            P[i][j] = std::max({
+            P[i][j] = std::min({
                                        D[i - 1][j] + scoring.penOpen + scoring.penExtend,
                                        P[i - 1][j] + scoring.penExtend
                                });
 
-            Q[i][j] = std::max({
+            Q[i][j] = std::min({
                                        D[i][j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[i][j - 1] + scoring.penExtend
                                });
 
-            D[i][j] = std::max({
-                                       D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+            D[i][j] = std::min({
+                                       D[i - 1][j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch,
                                        P[i][j],
                                        Q[i][j]
                                });
@@ -73,10 +73,10 @@ Verification::val_t Verification::computeGotohScoreFull(const std::string &s, co
 
 std::pair<Verification::val_t, std::string> Verification::computeGotohAlignmentFull(const std::string &s, const std::string &t, const Scoring& scoring) {
 
-    ValArray D(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    ValArray P(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    ValArray Q(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    BacktrackingArray BT(s.size() + 1, std::vector<char>(t.size() + 1));
+    val_t D[s.size() + 1][t.size() + 1];
+    val_t P[s.size() + 1][t.size() + 1];
+    val_t Q[s.size() + 1][t.size() + 1];
+    char BT[s.size() + 1][t.size() + 1];
 
     // initialisation
     D[0][0] = scoring.penOpen;
@@ -84,14 +84,14 @@ std::pair<Verification::val_t, std::string> Verification::computeGotohAlignmentF
 
         D[i][0] = D[i - 1][0] + scoring.penExtend;
         BT[i][0] = UP_IN_P;
-        Q[i][0] = NEG_INF;
+        Q[i][0] = POS_INF;
 
     }
     for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
         D[0][j] = D[0][j - 1] + scoring.penExtend;
         BT[0][j] = LEFT_IN_Q;
-        P[0][j] = NEG_INF;
+        P[0][j] = POS_INF;
 
     }
     D[0][0] = 0;
@@ -103,23 +103,23 @@ std::pair<Verification::val_t, std::string> Verification::computeGotohAlignmentF
 
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
-            P[i][j] = std::max({
+            P[i][j] = std::min({
                                        D[i - 1][j] + scoring.penOpen + scoring.penExtend,
                                        P[i - 1][j] + scoring.penExtend
                                });
 
-            Q[i][j] = std::max({
+            Q[i][j] = std::min({
                                        D[i][j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[i][j - 1] + scoring.penExtend
                                });
 
-            D[i][j] = std::max({
-                                       D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+            D[i][j] = std::min({
+                                       D[i - 1][j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch,
                                        P[i][j],
                                        Q[i][j]
                                });
 
-            BT[i][j] = (D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == D[i][j])
+            BT[i][j] = (D[i - 1][j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch == D[i][j])
                        | ((Q[i][j] == D[i][j]) << 1)
                        | ((P[i][j] == D[i][j]) << 2)
                        | (((D[i - 1][j] + scoring.penOpen + scoring.penExtend) == P[i][j]) << 3)
@@ -214,13 +214,13 @@ std::pair<Verification::val_t, std::string> Verification::computeGotohAlignmentF
 
 lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string &t, const Scoring& scoring) {
 
-    ValArray D(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    ValArray P(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    ValArray Q(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    BacktrackingArray BT(s.size() + 1, std::vector<char>(t.size() + 1));
-    CountArray cntDiffs(s.size() + 1, std::vector<lenSeqs_t>(t.size() + 1));
-    CountArray cntDiffsP(s.size() + 1, std::vector<lenSeqs_t>(t.size() + 1));
-    CountArray cntDiffsQ(s.size() + 1, std::vector<lenSeqs_t>(t.size() + 1));
+    val_t D[s.size() + 1][t.size() + 1];
+    val_t P[s.size() + 1][t.size() + 1];
+    val_t Q[s.size() + 1][t.size() + 1];
+    char BT[s.size() + 1][t.size() + 1];
+    lenSeqs_t cntDiffs[s.size() + 1][t.size() + 1];
+    lenSeqs_t cntDiffsP[s.size() + 1][t.size() + 1];
+    lenSeqs_t cntDiffsQ[s.size() + 1][t.size() + 1];
 
     // initialisation
     D[0][0] = scoring.penOpen;
@@ -228,7 +228,7 @@ lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string
 
         D[i][0] = D[i - 1][0] + scoring.penExtend;
         BT[i][0] = UP_IN_P;
-        Q[i][0] = NEG_INF;
+        Q[i][0] = POS_INF;
         cntDiffs[i][0] = i;
 
     }
@@ -236,7 +236,7 @@ lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string
 
         D[0][j] = D[0][j - 1] + scoring.penExtend;
         BT[0][j] = LEFT_IN_Q;
-        P[0][j] = NEG_INF;
+        P[0][j] = POS_INF;
         cntDiffs[0][j] = j;
 
     }
@@ -251,23 +251,23 @@ lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string
 
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
-            P[i][j] = std::max({
+            P[i][j] = std::min({
                                        D[i - 1][j] + scoring.penOpen + scoring.penExtend,
                                        P[i - 1][j] + scoring.penExtend
                                });
 
-            Q[i][j] = std::max({
+            Q[i][j] = std::min({
                                        D[i][j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[i][j - 1] + scoring.penExtend
                                });
 
-            D[i][j] = std::max({
-                                       D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+            D[i][j] = std::min({
+                                       D[i - 1][j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch,
                                        P[i][j],
                                        Q[i][j]
                                });
 
-            BT[i][j] = (D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == D[i][j])
+            BT[i][j] = (D[i - 1][j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch == D[i][j])
                        | ((Q[i][j] == D[i][j]) << 1)
                        | ((P[i][j] == D[i][j]) << 2)
                        | (((D[i - 1][j] + scoring.penOpen + scoring.penExtend) == P[i][j]) << 3)
@@ -358,24 +358,13 @@ lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string
         std::cout << std::endl;
     }
     std::cout << "========================" << std::endl;
-    if (s ==
-        "agctccaatagcgaatactaattctgctgcagttaaaaagctcgtagttgaacttttggtaggacgtgcccagccttagagtgaactctctttgtgttctgtgtgtacgtttggccatactctgcctttgcaaaagggtagtctttcactgtaaaaaaattagggtgtttcaagcaaaagatttttggaatatattagtatgggatgataagataggctctgagtgctattttgttggtttgtacatttagagaatgattaacagggacagttgggggtattcatatttacatgtcagaggtgaaattcttgggatttttggaaagatgaacgactgcgaaggcatttaccaaggatgttttca" &&
-        t ==
-        "agctccaatagcgaatactaattctgctgcagttaaaaagctcgtagttgaacttttggtaggacgtgcccagccttagagtgaactctctttgtgttctgtgtgtacgtttggccatactctgcctttgcaaaagggtagtctttcactgtaaaaaaattagggtgtttcaagcaaaagatttttggaatatattagtatgggatgataagataggctctgagtgctattttgttggtttgtacatttagagaatgattaacagggacagttgggggtattcatatttacatgtcagaggtgaaattcttggattttggaaagatgaacgactgcgaaggcatttaccaaggatgttttca" ||
-        t ==
-        "agctccaatagcgaatactaattctgctgcagttaaaaagctcgtagttgaacttttggtaggacgtgcccagccttagagtgaactctctttgtgttctgtgtgtacgtttggccatactctgcctttgcaaaagggtagtctttcactgtaaaaaaattagggtgtttcaagcaaaagatttttggaatatattagtatgggatgataagataggctctgagtgctattttgttggtttgtacatttagagaatgattaacagggacagttgggggtattcatatttacatgtcagaggtgaaattcttgggatttttggaaagatgaacgactgcgaaggcatttaccaaggatgttttca" &&
-        s ==
-        "agctccaatagcgaatactaattctgctgcagttaaaaagctcgtagttgaacttttggtaggacgtgcccagccttagagtgaactctctttgtgttctgtgtgtacgtttggccatactctgcctttgcaaaagggtagtctttcactgtaaaaaaattagggtgtttcaagcaaaagatttttggaatatattagtatgggatgataagataggctctgagtgctattttgttggtttgtacatttagagaatgattaacagggacagttgggggtattcatatttacatgtcagaggtgaaattcttggattttggaaagatgaacgactgcgaaggcatttaccaaggatgttttca")
-        std::cout << "GotohFull: s = " << s << "; t = " << t << std::endl << "D = " << D[s.size()][t.size()]
-                  << "; P = " << P[s.size()][t.size()] << "; Q = " << Q[s.size()][t.size()] << "; cntDiffs = "
-                  << cntDiffs[s.size()][t.size()] << std::endl;
 #endif
 
     return cntDiffs[s.size()][t.size()];
 
 }
 
-lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string &t, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], char BT[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string &t, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // initialise first row
     D[0] = scoring.penOpen;
@@ -383,7 +372,7 @@ lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string 
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
@@ -398,8 +387,8 @@ lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string 
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
-        match = D[0] - scoring.penExtend - (i == 1) * scoring.penOpen;
-        Q[0] = NEG_INF;
+        match = (i > 1) * (D[0] - scoring.penExtend);
+        Q[0] = POS_INF;
         BT[0] = (i == 1) ? UP_TO_D : UP_IN_P;
         diff = i - 1;
         cntDiffs[0] = i;
@@ -408,23 +397,23 @@ lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string 
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
             // arrays D, P, Q, BT
-            tmpP = std::max({
+            tmpP = std::min({
                                        D[j] + scoring.penOpen + scoring.penExtend,
                                        P[j] + scoring.penExtend
                             });
 
-            Q[j] = std::max({
+            Q[j] = std::min({
                                        D[j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[j - 1] + scoring.penExtend
                                    });
 
-            tmpD = std::max({
-                                       match + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+            tmpD = std::min({
+                                       match + (s[i - 1] != t[j - 1]) * scoring.penMismatch,
                                        tmpP,
                                        Q[j]
                            });
 
-            BT[j] = (match + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == tmpD)
+            BT[j] = (match + (s[i - 1] != t[j - 1]) * scoring.penMismatch == tmpD)
                            | ((Q[j] == tmpD) << 1)
                            | ((tmpP == tmpD) << 2)
                            | (((D[j] + scoring.penOpen + scoring.penExtend) == tmpP) << 3)
@@ -477,7 +466,7 @@ lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string 
 
 }
 
-lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], char BT[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // initialise first row
     D[0] = scoring.penOpen;
@@ -485,7 +474,7 @@ lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::st
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
@@ -501,8 +490,8 @@ lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::st
 
         //handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
-        match = D[0] - scoring.penExtend - (i == 1) * scoring.penOpen;
-        Q[0] = NEG_INF;
+        match = (i > 1) * (D[0] - scoring.penExtend);
+        Q[0] = POS_INF;
         BT[0] = (i == 1) ? UP_TO_D : UP_IN_P;
         diff = i - 1;
         cntDiffs[0] = i;
@@ -513,23 +502,23 @@ lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::st
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
             // arrays D, P, Q, BT
-            tmpP = std::max({
+            tmpP = std::min({
                                        D[j] + scoring.penOpen + scoring.penExtend,
                                        P[j] + scoring.penExtend
                             });
 
-            Q[j] = std::max({
+            Q[j] = std::min({
                                        D[j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[j - 1] + scoring.penExtend
                                    });
 
-            tmpD = std::max({
-                                       match + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+            tmpD = std::min({
+                                       match + (s[i - 1] != t[j - 1]) * scoring.penMismatch,
                                        tmpP,
                                        Q[j]
                            });
 
-            BT[j] = (match + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == tmpD)
+            BT[j] = (match + (s[i - 1] != t[j - 1]) * scoring.penMismatch == tmpD)
                            | ((Q[j] == tmpD) << 1)
                            | ((tmpP == tmpD) << 2)
                            | (((D[j] + scoring.penOpen + scoring.penExtend) == tmpP) << 3)
@@ -588,7 +577,8 @@ lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::st
 
 }
 
-lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], char BT[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+#if 0
+lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -605,7 +595,7 @@ lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const 
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
@@ -622,7 +612,7 @@ lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
         match = (i <= bound + 1) * (D[0] - scoring.penExtend - (i == 1) * scoring.penOpen) + (i > bound + 1) * D[i - bound - 1];
-        Q[0] = NEG_INF;
+        Q[0] = POS_INF;
         BT[0] = (i == 1) ? UP_TO_D : UP_IN_P;
         diff = (i <= bound + 1) * (i - 1) + (i > bound + 1) * cntDiffs[i - bound - 1];
         cntDiffs[0] = i;
@@ -635,53 +625,53 @@ lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const 
             // arrays D, P, Q, BT
             if (j == ((i > bound) * (i - bound))) {
 
-                tmpP = std::max({
+                tmpP = std::min({
                                         D[j] + scoring.penOpen + scoring.penExtend,
                                         P[j] + scoring.penExtend
                                 });
 
-                Q[j] = NEG_INF;
+                Q[j] = POS_INF;
 
-                tmpD = std::max({
-                                       match + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (s[i - 1] != t[j - 1]) * scoring.penMismatch,
                                        tmpP
                                });
 
             } else if (j == (i + bound)) {
 
-                tmpP = NEG_INF;
+                tmpP = POS_INF;
 
-                Q[j] = std::max({
+                Q[j] = std::min({
                                        D[j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[j - 1] + scoring.penExtend
                                 });
 
-                tmpD = std::max({
-                                       match + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (s[i - 1] != t[j - 1]) * scoring.penMismatch,
                                        Q[j]
                                });
 
             } else {
 
-                tmpP = std::max({
+                tmpP = std::min({
                                         D[j] + scoring.penOpen + scoring.penExtend,
                                         P[j] + scoring.penExtend
                                 });
 
-                Q[j] = std::max({
+                Q[j] = std::min({
                                         D[j - 1] + scoring.penOpen + scoring.penExtend,
                                         Q[j - 1] + scoring.penExtend
                                 });
 
-                tmpD = std::max({
-                                       match + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (s[i - 1] != t[j - 1]) * scoring.penMismatch,
                                        tmpP,
                                        Q[j]
                                });
 
             }
 
-            BT[j] = (match + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == tmpD)
+            BT[j] = (match + (s[i - 1] != t[j - 1]) * scoring.penMismatch == tmpD)
                     | (j != ((i > bound) * (i - bound))) * ((Q[j] == tmpD) << 1)
                     | (j != (i + bound)) * ((tmpP == tmpD) << 2)
                     | (((D[j] + scoring.penOpen + scoring.penExtend) == tmpP) << 3)
@@ -740,7 +730,7 @@ lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const 
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], char BT[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -764,7 +754,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
@@ -772,7 +762,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
     BT[1] = LEFT_TO_D;
 
     // compute remaining rows
-    val_t match, tmpD, tmpP = NEG_INF;
+    val_t match, tmpD, tmpP = POS_INF;
     lenSeqs_t diff, tmp;
     bool early;
 
@@ -781,7 +771,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
         match = (i <= (bound - delta) / 2 + 1) * (D[0] - scoring.penExtend - (i == 1) * scoring.penOpen) + (i > (bound - delta) / 2 + 1) * D[i - (bound - delta) / 2 - 1];
-        Q[0] = NEG_INF;
+        Q[0] = POS_INF;
         BT[0] = (i == 1) ? UP_TO_D : UP_IN_P;
         diff = (i <= (bound - delta) / 2 + 1) * (i - 1) + (i > (bound - delta) / 2 + 1) * cntDiffs[i - (bound - delta) / 2 - 1];
         cntDiffs[0] = i;
@@ -794,57 +784,57 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
             // arrays D, P, Q, BT
             if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
 
-                tmpD = match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch); // (mis)match is only possibility since we have to consider only one diagonal
+                tmpD = match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch; // (mis)match is only possibility since we have to consider only one diagonal
 
             } else if (j == ((i > (bound - delta) / 2) * (i - (bound - delta) / 2))) {
 
-                tmpP = std::max({
+                tmpP = std::min({
                                         D[j] + scoring.penOpen + scoring.penExtend,
                                         P[j] + scoring.penExtend
                                 });
 
-                Q[j] = NEG_INF;
+                Q[j] = POS_INF;
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        tmpP
                                });
 
             } else if (j == (i + (bound + delta) / 2)) {
 
-                tmpP = NEG_INF;
+                tmpP = POS_INF;
 
-                Q[j] = std::max({
+                Q[j] = std::min({
                                         D[j - 1] + scoring.penOpen + scoring.penExtend,
                                         Q[j - 1] + scoring.penExtend
                                 });
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        Q[j]
                                });
 
             } else {
 
-                tmpP = std::max({
+                tmpP = std::min({
                                         D[j] + scoring.penOpen + scoring.penExtend,
                                         P[j] + scoring.penExtend
                                 });
 
-                Q[j] = std::max({
+                Q[j] = std::min({
                                         D[j - 1] + scoring.penOpen + scoring.penExtend,
                                         Q[j - 1] + scoring.penExtend
                                 });
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        tmpP,
                                        Q[j]
                                });
 
             }
 
-            BT[j] = (match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == tmpD)
+            BT[j] = (match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch) == tmpD
                            | ((bound - delta) / 2 != 0 || (bound + delta) / 2 != 0) * (j != ((i > (bound - delta) / 2) * (i - (bound - delta) / 2))) * ((Q[j] == tmpD) << 1)
                            | ((bound - delta) / 2 != 0 || (bound + delta) / 2 != 0) * (j != (i + (bound + delta) / 2)) * ((tmpP == tmpD) << 2)
                            | ((bound - delta) / 2 != 0 || (bound + delta) / 2 != 0) * (((D[j] + scoring.penOpen + scoring.penExtend) == tmpP) << 3)
@@ -902,7 +892,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], char BT[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -936,7 +926,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
@@ -953,7 +943,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
         match = (i <= (bound - delta) / 2 + 1) * (D[0] - scoring.penExtend - (i == 1) * scoring.penOpen) + (i > (bound - delta) / 2 + 1) * D[i - (bound - delta) / 2 - 1];
-        Q[0] = NEG_INF;
+        Q[0] = POS_INF;
         BT[0] = (i == 1) ? UP_TO_D : UP_IN_P;
         diff = (i <= (bound - delta) / 2 + 1) * (i - 1) + (i > (bound - delta) / 2 + 1) * cntDiffs[i - (bound - delta) / 2 - 1];
         cntDiffs[0] = i;
@@ -966,53 +956,53 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
             // arrays D, P, Q, BT
             if (j == ((i > (bound - delta) / 2) * (i - (bound - delta) / 2))) {
 
-                tmpP = std::max({
+                tmpP = std::min({
                                        D[j] + scoring.penOpen + scoring.penExtend,
                                        P[j] + scoring.penExtend
                                 });
 
-                Q[j] = NEG_INF;
+                Q[j] = POS_INF;
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        tmpP
                                });
 
             } else if (j == (i + (bound + delta) / 2)) {
 
-                tmpP = NEG_INF;
+                tmpP = POS_INF;
 
-                Q[j] = std::max({
+                Q[j] = std::min({
                                        D[j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[j - 1] + scoring.penExtend
                                        });
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        Q[j]
                                });
 
             } else {
 
-                tmpP = std::max({
+                tmpP = std::min({
                                        D[j] + scoring.penOpen + scoring.penExtend,
                                        P[j] + scoring.penExtend
                                 });
 
-                Q[j] = std::max({
+                Q[j] = std::min({
                                        D[j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[j - 1] + scoring.penExtend
                                        });
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        tmpP,
                                        Q[j]
                                });
 
             }
 
-            BT[j] = (match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == tmpD)
+            BT[j] = (match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch == tmpD)
                            | (j != ((i > (bound - delta) / 2) * (i - (bound - delta) / 2))) * ((Q[j] == tmpD) << 1)
                            | (j != (i + (bound + delta) / 2)) * ((tmpP == tmpD) << 2)
                            | (((D[j] + scoring.penOpen + scoring.penExtend) == tmpP) << 3)
@@ -1070,7 +1060,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -1103,7 +1093,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
     for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
@@ -1119,7 +1109,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
         match = (i <= (bound - delta) / 2 + 1) * (D[0] - scoring.penExtend - (i == 1) * scoring.penOpen) + (i > (bound - delta) / 2 + 1) * D[i - (bound - delta) / 2 - 1];
-        Q[0] = NEG_INF;
+        Q[0] = POS_INF;
         diff = (i <= (bound - delta) / 2 + 1) * (i - 1) + (i > (bound - delta) / 2 + 1) * cntDiffs[i - (bound - delta) / 2 - 1];
         cntDiffs[0] = i;
 
@@ -1131,46 +1121,46 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
             // arrays D, P, Q, BT
             if (j == ((i > (bound - delta) / 2) * (i - (bound - delta) / 2))) {
 
-                tmpP = std::max({
+                tmpP = std::min({
                                        D[j] + scoring.penOpen + scoring.penExtend,
                                        P[j] + scoring.penExtend
                                 });
 
-                Q[j] = NEG_INF;
+                Q[j] = POS_INF;
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        tmpP
                                 });
 
             } else if (j == (i + (bound + delta) / 2)) {
 
-                tmpP = NEG_INF;
+                tmpP = POS_INF;
 
-                Q[j] = std::max({
+                Q[j] = std::min({
                                        D[j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[j - 1] + scoring.penExtend
                                        });
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        Q[j]
                                });
 
             } else {
 
-                tmpP = std::max({
+                tmpP = std::min({
                                        D[j] + scoring.penOpen + scoring.penExtend,
                                        P[j] + scoring.penExtend
                                 });
 
-                Q[j] = std::max({
+                Q[j] = std::min({
                                        D[j - 1] + scoring.penOpen + scoring.penExtend,
                                        Q[j - 1] + scoring.penExtend
                                        });
 
-                tmpD = std::max({
-                                       match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+                tmpD = std::min({
+                                       match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                        tmpP,
                                        Q[j]
                                });
@@ -1200,7 +1190,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
                 diff = cntDiffs[j];
                 cntDiffs[j] = cntDiffsP[j];
 
-            } else if (tmpD == match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch)) {
+            } else if (tmpD == match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch) {
 
                 tmp = diff + (shorter[i - 1] != longer[j - 1]);
                 diff = cntDiffs[j];
@@ -1227,7 +1217,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -1260,7 +1250,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
     for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
@@ -1276,7 +1266,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
         match = (i <= (bound - delta) / 2 + 1) * (D[0] - scoring.penExtend - (i == 1) * scoring.penOpen) + (i > (bound - delta) / 2 + 1) * D[i - (bound - delta) / 2 - 1];
-        Q[0] = NEG_INF;
+        Q[0] = POS_INF;
         diff = (i <= (bound - delta) / 2 + 1) * (i - 1) + (i > (bound - delta) / 2 + 1) * cntDiffs[i - (bound - delta) / 2 - 1];
         cntDiffs[0] = i;
 
@@ -1284,23 +1274,23 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
 
         // fill remaining row
         j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1);
-        D[j - 1] = Q[j - 1] = NEG_INF;
-        if (i + (bound + delta) / 2 <= longer.size()) {D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = NEG_INF;}
+        D[j - 1] = Q[j - 1] = POS_INF;
+        if (i + (bound + delta) / 2 <= longer.size()) {D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;}
         for (; j <= i + (bound + delta) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
 
             // arrays D, P, Q, BT
-            tmpP = std::max({
+            tmpP = std::min({
                                            D[j] + scoring.penOpen + scoring.penExtend,
                                            P[j] + scoring.penExtend
                             });
 
-            Q[j] = std::max({
+            Q[j] = std::min({
                                            D[j - 1] + scoring.penOpen + scoring.penExtend,
                                            Q[j - 1] + scoring.penExtend
                             });
 
-            tmpD = std::max({
-                                   match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+            tmpD = std::min({
+                                   match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                    tmpP,
                                    Q[j]
                            });
@@ -1329,7 +1319,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
                 diff = cntDiffs[j];
                 cntDiffs[j] = cntDiffsP[j];
 
-            } else if (tmpD == match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch)) {
+            } else if (tmpD == match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch) {
 
                 tmp = diff + (shorter[i - 1] != longer[j - 1]);
                 diff = cntDiffs[j];
@@ -1356,7 +1346,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -1392,7 +1382,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
     for (lenSeqs_t j = 1; j <= br && j <= longer.size(); j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
@@ -1408,7 +1398,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
         match = (i <= bl + 1) * (D[0] - scoring.penExtend - (i == 1) * scoring.penOpen) + (i > bl + 1) * D[i - bl - 1];
-        Q[0] = NEG_INF;
+        Q[0] = POS_INF;
         diff = (i <= bl + 1) * (i - 1) + (i > bl + 1) * cntDiffs[i - bl - 1];
         cntDiffs[0] = i;
 
@@ -1416,23 +1406,23 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
 
         // fill remaining row
         lenSeqs_t j = 1 + (i > bl) * (i - bl - 1);
-        D[j - 1] = Q[j - 1] = NEG_INF;
-        if (i + br <= longer.size()) {D[i + br] = P[i + br] = NEG_INF;}
+        D[j - 1] = Q[j - 1] = POS_INF;
+        if (i + br <= longer.size()) {D[i + br] = P[i + br] = POS_INF;}
         for (; j <= i + br && j <= longer.size(); j++) { // same as starting from j = max(1, i - bl) with signed integers
 
             // arrays D, P, Q, BT
-            tmpP = std::max({
+            tmpP = std::min({
                                            D[j] + scoring.penOpen + scoring.penExtend,
                                            P[j] + scoring.penExtend
                             });
 
-            Q[j] = std::max({
+            Q[j] = std::min({
                                            D[j - 1] + scoring.penOpen + scoring.penExtend,
                                            Q[j - 1] + scoring.penExtend
                             });
 
-            tmpD = std::max({
-                                   match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
+            tmpD = std::min({
+                                   match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch,
                                    tmpP,
                                    Q[j]
                            });
@@ -1461,7 +1451,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
                 diff = cntDiffs[j];
                 cntDiffs[j] = cntDiffsP[j];
 
-            } else if (tmpD == match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch)) {
+            } else if (tmpD == match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch) {
 
                 tmp = diff + (shorter[i - 1] != longer[j - 1]);
                 diff = cntDiffs[j];
@@ -1488,7 +1478,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t D[], val_t P[], val_t Q[], lenSeqs_t cntDiffs[], lenSeqs_t cntDiffsP[], lenSeqs_t cntDiffsQ[]) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
     if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
@@ -1521,14 +1511,14 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
     for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
-        P[j] = NEG_INF;
+        P[j] = POS_INF;
         cntDiffs[j] = j;
 
     }
     D[0] = 0;
 
     // compute remaining rows
-    val_t match, maxVal;
+    val_t match, minVal;
     lenSeqs_t j, diff, maxDiff;
     bool early;
 
@@ -1537,7 +1527,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
         match = (i <= (bound - delta) / 2 + 1) * (D[0] - scoring.penExtend - (i == 1) * scoring.penOpen) + (i > (bound - delta) / 2 + 1) * D[i - (bound - delta) / 2 - 1];
-        Q[0] = NEG_INF;
+        Q[0] = POS_INF;
         diff = (i <= (bound - delta) / 2 + 1) * (i - 1) + (i > (bound - delta) / 2 + 1) * cntDiffs[i - (bound - delta) / 2 - 1];
         cntDiffs[0] = i;
 
@@ -1545,14 +1535,14 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
 
         // fill remaining row
         j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1);
-        D[j - 1] = Q[j - 1] = NEG_INF;
+        D[j - 1] = Q[j - 1] = POS_INF;
         if (i + (bound + delta) / 2 <= longer.size()) {
-            D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = NEG_INF;
+            D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;
         }
         for (; j <= i + (bound + delta) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
 
             // arrays D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ
-            if ((D[j] + scoring.penOpen + scoring.penExtend) >= (P[j] + scoring.penExtend)) {
+            if ((D[j] + scoring.penOpen + scoring.penExtend) <= (P[j] + scoring.penExtend)) {
 
                 P[j] = D[j] + scoring.penOpen + scoring.penExtend;
                 cntDiffsP[j] = cntDiffs[j] + 1;
@@ -1564,7 +1554,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
 
             }
 
-            if ((D[j - 1] + scoring.penOpen + scoring.penExtend) >= (Q[j - 1] + scoring.penExtend)) {
+            if ((D[j - 1] + scoring.penOpen + scoring.penExtend) <= (Q[j - 1] + scoring.penExtend)) {
 
                 Q[j] = D[j - 1] + scoring.penOpen + scoring.penExtend;
                 cntDiffsQ[j] = cntDiffs[j - 1] + 1;
@@ -1576,23 +1566,23 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
 
             }
 
-            maxVal = (match + ((shorter[i - 1] == longer[j - 1]) ? scoring.rewardMatch : scoring.penMismatch));
+            minVal = (match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch);
             maxDiff = diff + (shorter[i - 1] != longer[j - 1]);
-            if (P[j] >= maxVal) {
+            if (P[j] < minVal) {
 
-                maxVal = P[j];
+                minVal = P[j];
                 maxDiff = cntDiffsP[j];
 
             }
-            if (Q[j] >= maxVal){
+            if (Q[j] <= minVal){
 
-                maxVal = Q[j];
+                minVal = Q[j];
                 maxDiff = cntDiffsQ[j];
 
             }
 
             match = D[j];
-            D[j] = maxVal;
+            D[j] = minVal;
 
             diff = cntDiffs[j];
             cntDiffs[j] = maxDiff;
@@ -1610,17 +1600,273 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
     return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
 
 }
+#endif
+
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow7(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+
+    // long computation not necessary if lengths differ too much
+    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+        return bound + 1;
+    }
+
+    if (bound == 0) {
+        return lenSeqs_t(s != t);
+    }
+
+    std::string shorter = s;
+    std::string longer = t;
+    if (shorter.size() > longer.size()) shorter.swap(longer);
+    lenSeqs_t delta = longer.size() - shorter.size();
+
+    // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
+    if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
+
+        lenSeqs_t diffs = 0;
+        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+            diffs += (shorter[i] != longer[i]);
+        }
+
+        return diffs;
+
+    }
+
+    // initialise necessary section of first row
+    D[0] = scoring.penOpen;
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+
+        D[j] = D[j - 1] + scoring.penExtend;
+        P[j] = POS_INF;
+        cntDiffs[j] = j;
+
+    }
+    D[0] = 0;
+
+    // compute remaining rows
+    val_t match, minVal, valQ;
+    lenSeqs_t j, diff, minValDiff, diffsQ;
+    bool early;
+
+    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+
+        // handle left end
+        D[0] = scoring.penOpen + i * scoring.penExtend;
+        match = ((1 < i) && (i <= (bound - delta) / 2 + 1)) * (D[0] - scoring.penExtend) + (i > (bound - delta) / 2 + 1) * D[i - (bound - delta) / 2 - 1];
+        valQ = POS_INF;
+        diff = (i <= (bound - delta) / 2 + 1) * (i - 1) + (i > (bound - delta) / 2 + 1) * cntDiffs[i - (bound - delta) / 2 - 1];
+        cntDiffs[0] = i;
+
+        early = true; // early termination flag
+
+        // fill remaining row
+        j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
+        D[j - 1] = POS_INF;
+        if (i + (bound + delta) / 2 <= longer.size()) {
+            D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;
+        }
+
+        for (; j <= i + (bound + delta) / 2 && j <= longer.size(); j++) {
+
+            // arrays P & cntDiffsP
+            if ((D[j] + scoring.penOpen + scoring.penExtend) <= (P[j] + scoring.penExtend)) {
+
+                P[j] = D[j] + scoring.penOpen + scoring.penExtend;
+                cntDiffsP[j] = cntDiffs[j] + 1;
+
+            } else {
+
+                P[j] += scoring.penExtend;
+                cntDiffsP[j]++;
+
+            }
+
+            // arrays Q & cntDiffsQ
+            if ((D[j - 1] + scoring.penOpen + scoring.penExtend) <= (valQ + scoring.penExtend)) {
+
+                valQ = D[j - 1] + scoring.penOpen + scoring.penExtend;
+                diffsQ = cntDiffs[j - 1] + 1;
+
+            } else {
+
+                valQ += scoring.penExtend;
+                diffsQ++;
+
+            }
+
+            // arrays D & cntDiffs
+            minVal = (match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch);
+            minValDiff = diff + (shorter[i - 1] != longer[j - 1]);
+            if (P[j] < minVal) {
+
+                minVal = P[j];
+                minValDiff = cntDiffsP[j];
+
+            }
+            if (valQ <= minVal){
+
+                minVal = valQ;
+                minValDiff = diffsQ;
+
+            }
+
+            match = D[j];
+            D[j] = minVal;
+
+            diff = cntDiffs[j];
+            cntDiffs[j] = minValDiff;
+
+            early &= ((cntDiffs[j] + llabs((long long)delta + (long long)i - (long long)j)) > bound); // improved e.t.
+
+        }
+
+        if (early) {// computation can be terminated early if computed row contains only values > bound (because values are monotonically increasing)
+            return bound + 1;
+        }
+
+    }
+
+    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+
+}
+
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow8(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+
+    // long computation not necessary if lengths differ too much
+    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+        return bound + 1;
+    }
+
+    if (bound == 0) {
+        return lenSeqs_t(s != t);
+    }
+
+    std::string shorter = s;
+    std::string longer = t;
+    if (shorter.size() > longer.size()) shorter.swap(longer);
+    lenSeqs_t delta = longer.size() - shorter.size();
+
+    // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
+    if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
+
+        lenSeqs_t diffs = 0;
+        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+            diffs += (shorter[i] != longer[i]);
+        }
+
+        return diffs;
+
+    }
+
+    // initialise necessary section of first row
+    D[0] = scoring.penOpen;
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+
+        D[j] = D[j - 1] + scoring.penExtend;
+        P[j] = POS_INF;
+        cntDiffs[j] = j;
+
+    }
+    D[0] = 0;
+
+    // compute remaining rows
+    val_t match, minVal, valQ, fromD, fromPQ;
+    lenSeqs_t j, diff, minValDiff, diffsQ;
+    bool early;
+
+    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+
+        // handle left end
+        D[0] = scoring.penOpen + i * scoring.penExtend;
+        match = ((1 < i) && (i <= (bound - delta) / 2 + 1)) * (D[0] - scoring.penExtend) + (i > (bound - delta) / 2 + 1) * D[i - (bound - delta) / 2 - 1];
+        valQ = POS_INF;
+        diff = (i <= (bound - delta) / 2 + 1) * (i - 1) + (i > (bound - delta) / 2 + 1) * cntDiffs[i - (bound - delta) / 2 - 1];
+        cntDiffs[0] = i;
+
+        early = true; // early termination flag
+
+        // fill remaining row
+        j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
+        D[j - 1] = POS_INF;
+        if (i + (bound + delta) / 2 <= longer.size()) {
+            D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;
+        }
+
+        for (; j <= i + (bound + delta) / 2 && j <= longer.size(); j++) {
+
+            // arrays P & cntDiffsP
+            fromD = D[j] + scoring.penOpen + scoring.penExtend;
+            fromPQ = P[j] + scoring.penExtend;
+
+            if (fromD <= fromPQ) {
+
+                P[j] = fromD;
+                cntDiffsP[j] = cntDiffs[j] + 1;
+
+            } else {
+
+                P[j] = fromPQ;
+                cntDiffsP[j]++;
+
+            }
+
+            // arrays Q & cntDiffsQ
+            fromD = D[j - 1] + scoring.penOpen + scoring.penExtend;
+            fromPQ = valQ + scoring.penExtend;
+            if (fromD <= fromPQ) {
+
+                valQ = fromD;
+                diffsQ = cntDiffs[j - 1] + 1;
+
+            } else {
+
+                valQ = fromPQ;
+                diffsQ++;
+
+            }
+
+            // arrays D & cntDiffs
+            minVal = (match + (shorter[i - 1] != longer[j - 1]) * scoring.penMismatch);
+            minValDiff = diff + (shorter[i - 1] != longer[j - 1]);
+            if (P[j] < minVal) {
+
+                minVal = P[j];
+                minValDiff = cntDiffsP[j];
+
+            }
+            if (valQ <= minVal){
+
+                minVal = valQ;
+                minValDiff = diffsQ;
+
+            }
+
+            match = D[j];
+            D[j] = minVal;
+
+            diff = cntDiffs[j];
+            cntDiffs[j] = minValDiff;
+
+            early &= ((cntDiffs[j] + llabs((long long)delta + (long long)i - (long long)j)) > bound); // improved e.t.
+
+        }
+
+        if (early) {// computation can be terminated early if computed row contains only values > bound (because values are monotonically increasing)
+            return bound + 1;
+        }
+
+    }
+
+    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+
+}
 
 void Verification::verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t width, lenSeqs_t t, const Scoring& scoring) {
 
     Candidate c;
     Buffer<Candidate> localBuffer;
-    Verification::val_t D[width];
-    Verification::val_t P[width];
-    Verification::val_t Q[width];
+    val_t D[width];
+    val_t P[width];
     lenSeqs_t cntDiffs[width];
     lenSeqs_t cntDiffsP[width];
-    lenSeqs_t cntDiffsQ[width];
 
     while (!buf.isClosed() || buf.syncSize() > 0) {
 
@@ -1632,7 +1878,7 @@ void Verification::verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffe
 
             if (!mat.contains(c.first, c.second)) {
 
-                lenSeqs_t d = computeGotohLengthAwareEarlyRow6(ac[c.first].seq, ac[c.second].seq, t, scoring, D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ); //TODO choose "best" implementation
+                lenSeqs_t d = computeGotohLengthAwareEarlyRow8(ac[c.first].seq, ac[c.second].seq, t, scoring, D, P, cntDiffs, cntDiffsP);
 
                 if (d <= t) {
                     mat.add(c.first, c.second, d);
@@ -1650,14 +1896,10 @@ void Verification::verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffe
 
 Verification::AlignmentInformation Verification::computeGotohCigarFull(const std::string &s, const std::string &t, const Scoring& scoring) {
 
-    ValArray D(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    ValArray P(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    ValArray Q(s.size() + 1, std::vector<val_t>(t.size() + 1));
-    BacktrackingArray BT(s.size() + 1, std::vector<char>(t.size() + 1));
-
-    std::vector<std::pair<char, lenSeqs_t >> cigarSegs;
-    lenSeqs_t len = 0;
-    lenSeqs_t numDiffs = 0;
+    val_t D[s.size() + 1][t.size() + 1];
+    val_t P[s.size() + 1][t.size() + 1];
+    val_t Q[s.size() + 1][t.size() + 1];
+    char BT[s.size() + 1][t.size() + 1];
 
     // initialisation
     D[0][0] = scoring.penOpen;
@@ -1665,14 +1907,14 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
 
         D[i][0] = D[i - 1][0] + scoring.penExtend;
         BT[i][0] = UP_IN_P;
-        Q[i][0] = NEG_INF;
+        Q[i][0] = POS_INF;
 
     }
     for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
         D[0][j] = D[0][j - 1] + scoring.penExtend;
         BT[0][j] = LEFT_IN_Q;
-        P[0][j] = NEG_INF;
+        P[0][j] = POS_INF;
 
     }
     D[0][0] = 0;
@@ -1680,127 +1922,130 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
     BT[0][1] = LEFT_TO_D;
 
     // fill matrix
+    val_t fromD, fromPQ, minVal;
+    char tmp;
+
     for (lenSeqs_t i = 1; i <= s.size(); i++) {
 
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
-            P[i][j] = std::max({
-                                       D[i - 1][j] + scoring.penOpen + scoring.penExtend,
-                                       P[i - 1][j] + scoring.penExtend
-                               });
+            //array P
+            fromD = D[i - 1][j] + scoring.penOpen + scoring.penExtend;
+            fromPQ = P[i - 1][j] + scoring.penExtend;
 
-            Q[i][j] = std::max({
-                                       D[i][j - 1] + scoring.penOpen + scoring.penExtend,
-                                       Q[i][j - 1] + scoring.penExtend
-                               });
+            if (fromD <= fromPQ) {
 
-            D[i][j] = std::max({
-                                       D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch),
-                                       P[i][j],
-                                       Q[i][j]
-                               });
+                P[i][j] = fromD;
+                tmp = UP_TO_D;
 
-            BT[i][j] = (D[i - 1][j - 1] + ((s[i - 1] == t[j - 1]) ? scoring.rewardMatch : scoring.penMismatch) == D[i][j])
-                       | ((Q[i][j] == D[i][j]) << 1)
-                       | ((P[i][j] == D[i][j]) << 2)
-                       | (((D[i - 1][j] + scoring.penOpen + scoring.penExtend) == P[i][j]) << 3)
-                       | (((P[i - 1][j] + scoring.penExtend) == P[i][j]) << 4)
-                       | (((D[i][j - 1] + scoring.penOpen + scoring.penExtend) == Q[i][j]) << 5)
-                       | (((Q[i][j - 1] + scoring.penExtend) == Q[i][j]) << 6);
+            } else {
+
+                P[i][j] = fromPQ;
+                tmp = UP_IN_P;
+
+            }
+
+            //array Q
+            fromD = D[i][j - 1] + scoring.penOpen + scoring.penExtend;
+            fromPQ = Q[i][j - 1] + scoring.penExtend;
+
+            if (fromD <= fromPQ) {
+
+                Q[i][j] = fromD;
+                tmp |= LEFT_TO_D;
+
+            } else {
+
+                Q[i][j] = fromPQ;
+                tmp |= LEFT_IN_Q;
+
+            }
+
+            //arrays D & BT
+            minVal = D[i - 1][j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch;
+            BT[i][j] = DIAGONAL_IN_D;
+            if (P[i][j] < minVal) {
+
+                minVal = P[i][j];
+                BT[i][j] = JUMP_TO_P;
+
+            }
+            if (Q[i][j] <= minVal){
+
+                minVal = Q[i][j];
+                BT[i][j] = JUMP_TO_Q;
+
+            }
+
+            BT[i][j] |= tmp;
+
+            D[i][j] = minVal;
 
         }
 
     }
 
-    // backtracking (priorities: left > up > diagonal)
+    // backtracking (priorities: left > diagonal > up)
+    std::vector<std::pair<char, lenSeqs_t >> cigarSegs = {std::make_pair('N',0)};
+    lenSeqs_t len = 0;
+    lenSeqs_t numDiffs = 0;
     lenSeqs_t i = s.size();
     lenSeqs_t j = t.size();
 
-    long MATRIX = 0;
-
     while (i != 0 && j != 0) {
 
-        switch (MATRIX) {
+        if ((cigarSegs.back().first == 'I') && (BT[i][j + 1] & LEFT_IN_Q)) {
 
-            case IN_D: {
+            len++;
+            numDiffs++;
+            cigarSegs.back().second++;
 
-                if (BT[i][j] & JUMP_TO_Q) {
+            j--;
 
-                    MATRIX = IN_Q;
+        } else if ((cigarSegs.back().first == 'D') && (BT[i + 1][j] & UP_IN_P)) {
 
-                } else if (BT[i][j] & JUMP_TO_P) {
+            len++;
+            numDiffs++;
+            cigarSegs.back().second++;
 
-                    MATRIX = IN_P;
+            i--;
 
-                } else if (BT[i][j] & DIAGONAL_IN_D) {
+        } else if (BT[i][j] & JUMP_TO_Q) {
 
-                    len++;
-                    numDiffs += (s[i - 1] != t[j - 1]);
-                    if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'M')) {
-                        cigarSegs.back().second++;
-                    } else {
-                        cigarSegs.push_back(std::make_pair('M', 1));
-                    }
-
-                    i--;
-                    j--;
-
-                }
-
-                break;
-
+            len++;
+            numDiffs++;
+            if (cigarSegs.back().first == 'I') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('I', 1));
             }
 
-            case IN_P: {
+            j--;
 
-                /*if (BT[i][j] & UP_IN_P) {
+        } else if (BT[i][j] & DIAGONAL_IN_D) {
 
-                } else*/ if (BT[i][j] & UP_TO_D) {
-
-                    MATRIX = IN_D;
-
-                }
-
-                len++;
-                numDiffs++;
-                if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'D')) {
-                    cigarSegs.back().second++;
-                } else {
-                    cigarSegs.push_back(std::make_pair('D', 1));
-                }
-
-                i--;
-
-                break;
-
+            len++;
+            numDiffs += (s[i - 1] != t[j - 1]);
+            if (cigarSegs.back().first == 'M') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('M', 1));
             }
 
-            case IN_Q: {
+            i--;
+            j--;
 
-                /*if (BT[i][j] & LEFT_IN_Q) {
+        } else { // BT[i][j] & JUMP_TO_P
 
-                } else*/ if (BT[i][j] & LEFT_TO_D) {
-
-                    MATRIX = IN_D;
-                }
-
-                len++;
-                numDiffs++;
-                if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'I')) {
-                    cigarSegs.back().second++;
-                } else {
-                    cigarSegs.push_back(std::make_pair('I', 1));
-                }
-
-                j--;
-
-                break;
-
+            len++;
+            numDiffs++;
+            if (cigarSegs.back().first == 'D') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('D', 1));
             }
 
-            default: {
-                // do nothing (should not occur)
-            }
+            i--;
 
         }
 
@@ -1810,10 +2055,10 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
 
         len++;
         numDiffs++;
-        if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'd')) {
+        if (cigarSegs.back().first == 'D') {
             cigarSegs.back().second++;
         } else {
-            cigarSegs.push_back(std::make_pair('d', 1));
+            cigarSegs.push_back(std::make_pair('D', 1));
         }
 
         i--;
@@ -1824,10 +2069,10 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
 
         len++;
         numDiffs++;
-        if ((cigarSegs.size() > 0) && (cigarSegs.back().first == 'i')) {
+        if (cigarSegs.back().first == 'I') {
             cigarSegs.back().second++;
         } else {
-            cigarSegs.push_back(std::make_pair('i', 1));
+            cigarSegs.push_back(std::make_pair('I', 1));
         }
 
         j--;
@@ -1835,10 +2080,204 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
     }
 
     std::stringstream sStream;
-    for (auto iter = cigarSegs.rbegin(); iter != cigarSegs.rend(); iter++) {
+    for (auto p = cigarSegs.size() - 1; p > 0; p--) {
 
-        if (iter->second > 1) sStream << iter->second;
-        sStream << iter->first;
+        if (cigarSegs[p].second > 1) sStream << cigarSegs[p].second;
+        sStream << cigarSegs[p].first;
+
+    }
+
+    return AlignmentInformation(sStream.str(), len, numDiffs);
+
+}
+
+Verification::AlignmentInformation Verification::computeGotohCigarFull1(const std::string &s, const std::string &t, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT) {
+
+    lenSeqs_t width = t.size() + 1;
+
+    // initialisation
+    D[0] = scoring.penOpen;
+    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+
+        D[i * width] = D[(i - 1) * width] + scoring.penExtend;
+        BT[i * width] = UP_IN_P;
+        Q[i * width] = POS_INF;
+
+    }
+    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+
+        D[j] = D[j - 1] + scoring.penExtend;
+        BT[j] = LEFT_IN_Q;
+        P[j] = POS_INF;
+
+    }
+    D[0] = 0;
+    BT[1 * width] = UP_TO_D;
+    BT[1] = LEFT_TO_D;
+
+    // fill matrix
+    val_t fromD, fromPQ, minVal;
+    char tmp;
+
+    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+
+        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+
+            //array P
+            fromD = D[(i - 1) * width + j] + scoring.penOpen + scoring.penExtend;
+            fromPQ = P[(i - 1) * width + j] + scoring.penExtend;
+
+            if (fromD <= fromPQ) {
+
+                P[i * width + j] = fromD;
+                tmp = UP_TO_D;
+
+            } else {
+
+                P[i * width + j] = fromPQ;
+                tmp = UP_IN_P;
+
+            }
+
+            //array Q
+            fromD = D[i * width + j - 1] + scoring.penOpen + scoring.penExtend;
+            fromPQ = Q[i * width + j - 1] + scoring.penExtend;
+
+            if (fromD <= fromPQ) {
+
+                Q[i * width + j] = fromD;
+                tmp |= LEFT_TO_D;
+
+            } else {
+
+                Q[i * width + j] = fromPQ;
+                tmp |= LEFT_IN_Q;
+
+            }
+
+            //arrays D & BT
+            minVal = D[(i - 1) * width + j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch;
+            BT[i * width + j] = DIAGONAL_IN_D;
+            if (P[i * width + j] < minVal) {
+
+                minVal = P[i * width + j];
+                BT[i * width + j] = JUMP_TO_P;
+
+            }
+            if (Q[i * width + j] <= minVal){
+
+                minVal = Q[i * width + j];
+                BT[i * width + j] = JUMP_TO_Q;
+
+            }
+
+            BT[i * width + j] |= tmp;
+
+            D[i * width + j] = minVal;
+
+        }
+
+    }
+
+    // backtracking (priorities: left > diagonal > up)
+    std::vector<std::pair<char, lenSeqs_t >> cigarSegs = {std::make_pair('N',0)};
+    lenSeqs_t len = 0;
+    lenSeqs_t numDiffs = 0;
+    lenSeqs_t i = s.size();
+    lenSeqs_t j = t.size();
+
+    while (i != 0 && j != 0) {
+
+        if ((cigarSegs.back().first == 'I') && (BT[i * width  + j + 1] & LEFT_IN_Q)) {
+
+            len++;
+            numDiffs++;
+            cigarSegs.back().second++;
+
+            j--;
+
+        } else if ((cigarSegs.back().first == 'D') && (BT[(i + 1) * width + j] & UP_IN_P)) {
+
+            len++;
+            numDiffs++;
+            cigarSegs.back().second++;
+
+            i--;
+
+        } else if (BT[i * width + j] & JUMP_TO_Q) {
+
+            len++;
+            numDiffs++;
+            if (cigarSegs.back().first == 'I') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('I', 1));
+            }
+
+            j--;
+
+        } else if (BT[i * width + j] & DIAGONAL_IN_D) {
+
+            len++;
+            numDiffs += (s[i - 1] != t[j - 1]);
+            if (cigarSegs.back().first == 'M') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('M', 1));
+            }
+
+            i--;
+            j--;
+
+        } else { // BT[i * width + j] & JUMP_TO_P
+
+            len++;
+            numDiffs++;
+            if (cigarSegs.back().first == 'D') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('D', 1));
+            }
+
+            i--;
+
+        }
+
+    }
+
+    while (i > 0) {
+
+        len++;
+        numDiffs++;
+        if (cigarSegs.back().first == 'D') {
+            cigarSegs.back().second++;
+        } else {
+            cigarSegs.push_back(std::make_pair('D', 1));
+        }
+
+        i--;
+
+    }
+
+    while (j > 0) {
+
+        len++;
+        numDiffs++;
+        if (cigarSegs.back().first == 'I') {
+            cigarSegs.back().second++;
+        } else {
+            cigarSegs.push_back(std::make_pair('I', 1));
+        }
+
+        j--;
+
+    }
+
+    std::stringstream sStream;
+    for (auto p = cigarSegs.size() - 1; p > 0; p--) {
+
+        if (cigarSegs[p].second > 1) sStream << cigarSegs[p].second;
+        sStream << cigarSegs[p].first;
 
     }
 
@@ -1847,250 +2286,387 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
 }
 
 
-// Slightly adapted nw(...) code taken from swarm.
-// TODO Reimplement properly or change above method computeGotohCigarFull(...).
-void pushop(char newop, char ** cigarendp, char * op, int * count)
-{
-    if (newop == *op)
-        (*count)++;
-    else
-    {
-        *--*cigarendp = *op;
-        if (*count > 1)
-        {
-            char buf[25];
-            int len = sprintf(buf, "%d", *count);
-            *cigarendp -= len;
-            strncpy(*cigarendp, buf, len);
+Verification::AlignmentInformation Verification::computeGotohCigarRow(const std::string &s, const std::string &t, const Scoring& scoring) {
+
+    val_t D[t.size() + 1];
+    val_t P[t.size() + 1];
+    char BT[s.size() + 1][t.size() + 1];
+
+    // initialise first row
+    D[0] = scoring.penOpen;
+    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+
+        D[j] = D[j - 1] + scoring.penExtend;
+        P[j] = POS_INF;
+
+    }
+    D[0] = 0;
+
+    // compute remaining rows
+    val_t match, valQ, fromD, fromPQ, minVal;
+    char tmp;
+
+    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+
+        // handle left end
+        D[0] = scoring.penOpen + i * scoring.penExtend;
+        match = (i > 1) * (D[0] - scoring.penExtend);
+        valQ = POS_INF;
+
+        // fill remaining row
+        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+
+            //array P
+            fromD = D[j] + scoring.penOpen + scoring.penExtend;
+            fromPQ = P[j] + scoring.penExtend;
+
+            if (fromD <= fromPQ) {
+
+                P[j] = fromD;
+                tmp = UP_TO_D;
+
+            } else {
+
+                P[j] = fromPQ;
+                tmp = UP_IN_P;
+
+            }
+
+            //array Q
+            fromD = D[j - 1] + scoring.penOpen + scoring.penExtend;
+            fromPQ = valQ + scoring.penExtend;
+
+            if (fromD <= fromPQ) {
+
+                valQ = fromD;
+                tmp |= LEFT_TO_D;
+
+            } else {
+
+                valQ = fromPQ;
+                tmp |= LEFT_IN_Q;
+
+            }
+
+            //arrays D & BT
+            minVal = match + (s[i - 1] != t[j - 1]) * scoring.penMismatch;
+            BT[i][j] = DIAGONAL_IN_D;
+            if (P[j] < minVal) {
+
+                minVal = P[j];
+                BT[i][j] = JUMP_TO_P;
+
+            }
+            if (valQ <= minVal){
+
+                minVal = valQ;
+                BT[i][j] = JUMP_TO_Q;
+
+            }
+
+            BT[i][j] |= tmp;
+
+            match = D[j];
+            D[j] = minVal;
+
         }
-        *op = newop;
-        *count = 1;
-    }
-}
 
-void finishop(char ** cigarendp, char * op, int * count)
-{
-    if ((op) && (count))
-    {
-        *--*cigarendp = *op;
-        if (*count > 1)
-        {
-            char buf[25];
-            int len = sprintf(buf, "%d", *count);
-            *cigarendp -= len;
-            strncpy(*cigarendp, buf, len);
-        }
-        *op = 0;
-        *count = 0;
-    }
-}
-
-Verification::AlignmentInformation Verification::computeGotohCigarSwarm(const std::string &s, const std::string &t, const Scoring& scoring) {
-//begin - "external"
-    unsigned char maskup      = 1;
-    unsigned char maskleft    = 2;
-    unsigned char maskextup   = 4;
-    unsigned char maskextleft = 8;
-
-    unsigned long gapopen = 12;
-    unsigned long gapextend = 4;
-    unsigned long penalty_mismatch = 9;
-
-
-
-    char map_nt[256] =
-            {
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1,  1, -1,  2, -1, -1, -1,  3, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1,  4,  4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1,  1, -1,  2, -1, -1, -1,  3, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1,  4,  4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-            };
-    std::vector<long> score_matrix(32 * 32);
-    for (int a = 0; a < 16; a++) {
-        for (int b = 0; b < 16; b++) {
-            score_matrix[(a << 5) + b] = (((a == b) && (a > 0) && (b > 0)) ? 0 : penalty_mismatch);
-        }
     }
 
+    // backtracking (priorities: left > diagonal > up)
+    std::vector<std::pair<char, lenSeqs_t >> cigarSegs = {std::make_pair('N',0)};
+    lenSeqs_t len = 0;
+    lenSeqs_t numDiffs = 0;
+    lenSeqs_t i = s.size();
+    lenSeqs_t j = t.size();
 
-    long longestamplicon = std::max(s.length(), t.length());
-    unsigned char * dir = new unsigned char[longestamplicon * longestamplicon];
-    unsigned long * hearray = new unsigned long[2 * longestamplicon];
+    while (i != 0 && j != 0) {
 
-//end - "external"
+        if ((cigarSegs.back().first == 'I') && (BT[i][j + 1] & LEFT_IN_Q)) {
 
-    /* dir must point to at least qlen*dlen bytes of allocated memory
-    hearray must point to at least 2*qlen longs of allocated memory (8*qlen bytes) */
+            len++;
+            numDiffs++;
+            cigarSegs.back().second++;
 
-    long n, e;
-    long unsigned *hep;
-
-    long qlen = s.length();
-    long dlen = t.length();
-
-    memset(dir, 0, qlen*dlen);
-
-    long i, j;
-
-    for(i=0; i<qlen; i++)
-    {
-        hearray[2*i]   = 1 * gapopen + (i+1) * gapextend; // H (N)
-        hearray[2*i+1] = 2 * gapopen + (i+2) * gapextend; // E
-    }
-
-    for(j=0; j<dlen; j++)
-    {
-        hep = &(hearray[0]);
-        long f = 2 * gapopen + (j+2) * gapextend;
-        long h = (j == 0) ? 0 : (gapopen + j * gapextend);
-
-        for(i=0; i<qlen; i++)
-        {
-            long index = qlen*j+i;
-
-            n = *hep;
-            e = *(hep+1);
-            h += score_matrix[(map_nt[t[j]]<<5) + map_nt[s[i]]]; //h += score_matrix[(t[j]<<5) + s[i]];
-
-
-            dir[index] |= (f < h ? maskup : 0);
-            h = std::min(h, f);
-            h = std::min(h, e);
-            dir[index] |= (e == h ? maskleft : 0);
-
-            *hep = h;
-
-            h += gapopen + gapextend;
-            e += gapextend;
-            f += gapextend;
-
-            dir[index] |= (f < h ? maskextup : 0);
-            dir[index] |= (e < h ? maskextleft : 0);
-            f = std::min(h,f);
-            e = std::min(h,e);
-
-            *(hep+1) = e;
-            h = n;
-            hep += 2;
-        }
-    }
-
-    long dist = hearray[2*qlen-2];
-
-    /* backtrack: count differences and save alignment in cigar string */
-
-    long score = 0;
-    long alength = 0;
-    long matches = 0;
-
-    char * cigar = new char[qlen + dlen + 1];//(char *) xmalloc(qlen + dlen + 1);
-    char * cigarend = cigar+qlen+dlen+1;
-
-
-    char op = 0;
-    int count = 0;
-    *(--cigarend) = 0;
-
-    i = qlen;
-    j = dlen;
-
-    while ((i>0) && (j>0))
-    {
-        int d = dir[qlen*(j-1)+(i-1)];
-
-        alength++;
-
-        if ((op == 'I') && (d & maskextleft))
-        {
-            score += gapextend;
             j--;
-            pushop('I', &cigarend, &op, &count);
-        }
-        else if ((op == 'D') && (d & maskextup))
-        {
-            score += gapextend;
+
+        } else if ((cigarSegs.back().first == 'D') && (BT[i + 1][j] & UP_IN_P)) {
+
+            len++;
+            numDiffs++;
+            cigarSegs.back().second++;
+
             i--;
-            pushop('D', &cigarend, &op, &count);
-        }
-        else if (d & maskleft)
-        {
-            score += gapextend;
-            if (op != 'I')
-                score += gapopen;
+
+        } else if (BT[i][j] & JUMP_TO_Q) {
+
+            len++;
+            numDiffs++;
+            if (cigarSegs.back().first == 'I') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('I', 1));
+            }
+
             j--;
-            pushop('I', &cigarend, &op, &count);
-        }
-        else if (d & maskup)
-        {
-            score += gapextend;
-            if (op != 'D')
-                score +=gapopen;
-            i--;
-            pushop('D', &cigarend, &op, &count);
-        }
-        else
-        {
-            score += score_matrix[(map_nt[t[j-1]] << 5) + map_nt[s[i-1]]]; //score += score_matrix[(t[j-1] << 5) + s[i-1]];
-            if (s[i-1] == t[j-1])
-                matches++;
+
+        } else if (BT[i][j] & DIAGONAL_IN_D) {
+
+            len++;
+            numDiffs += (s[i - 1] != t[j - 1]);
+            if (cigarSegs.back().first == 'M') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('M', 1));
+            }
+
             i--;
             j--;
-            pushop('M', &cigarend, &op, &count);
+
+        } else { // BT[i][j] & JUMP_TO_P
+
+            len++;
+            numDiffs++;
+            if (cigarSegs.back().first == 'D') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('D', 1));
+            }
+
+            i--;
+
         }
+
     }
 
-    while(i>0)
-    {
-        alength++;
-        score += gapextend;
-        if (op != 'D')
-            score += gapopen;
+    while (i > 0) {
+
+        len++;
+        numDiffs++;
+        if (cigarSegs.back().first == 'D') {
+            cigarSegs.back().second++;
+        } else {
+            cigarSegs.push_back(std::make_pair('D', 1));
+        }
+
         i--;
-        pushop('D', &cigarend, &op, &count);
+
     }
 
-    while(j>0)
-    {
-        alength++;
-        score += gapextend;
-        if (op != 'I')
-            score += gapopen;
+    while (j > 0) {
+
+        len++;
+        numDiffs++;
+        if (cigarSegs.back().first == 'I') {
+            cigarSegs.back().second++;
+        } else {
+            cigarSegs.push_back(std::make_pair('I', 1));
+        }
+
         j--;
-        pushop('I', &cigarend, &op, &count);
 
     }
 
-    finishop(&cigarend, &op, &count);
+    std::stringstream sStream;
+    for (auto p = cigarSegs.size() - 1; p > 0; p--) {
 
+        if (cigarSegs[p].second > 1) sStream << cigarSegs[p].second;
+        sStream << cigarSegs[p].first;
 
-    /* move and reallocate cigar */
+    }
 
-    long cigarlength = cigar+qlen+dlen-cigarend;
-//    memmove(cigar, cigarend, cigarlength+1);
-//    cigar = (char*) xrealloc(cigar, cigarlength+1);
-    char* finalCigar = new char[cigarlength + 1];
-    memmove(finalCigar, cigarend, cigarlength + 1);
+    return AlignmentInformation(sStream.str(), len, numDiffs);
 
-    std::string cigStr = std::string(finalCigar);
+}
 
-    delete[] cigar;
-    delete[] finalCigar;
-    delete[] dir;
-    delete[] hearray;
+Verification::AlignmentInformation Verification::computeGotohCigarRow1(const std::string &s, const std::string &t, const Scoring& scoring, val_t* D, val_t* P, char* BT) {
 
-    return AlignmentInformation(cigStr, alength, alength - matches);
+    lenSeqs_t width = t.size() + 1;
+
+    // initialise first row
+    D[0] = scoring.penOpen;
+    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+
+        D[j] = D[j - 1] + scoring.penExtend;
+        P[j] = POS_INF;
+
+    }
+    D[0] = 0;
+
+    // compute remaining rows
+    val_t match, valQ, fromD, fromPQ, minVal;
+    char tmp;
+
+    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+
+        // handle left end
+        D[0] = scoring.penOpen + i * scoring.penExtend;
+        match = (i > 1) * (D[0] - scoring.penExtend);
+        valQ = POS_INF;
+
+        // fill remaining row
+        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+
+            //array P
+            fromD = D[j] + scoring.penOpen + scoring.penExtend;
+            fromPQ = P[j] + scoring.penExtend;
+
+            if (fromD <= fromPQ) {
+
+                P[j] = fromD;
+                tmp = UP_TO_D;
+
+            } else {
+
+                P[j] = fromPQ;
+                tmp = UP_IN_P;
+
+            }
+
+            //array Q
+            fromD = D[j - 1] + scoring.penOpen + scoring.penExtend;
+            fromPQ = valQ + scoring.penExtend;
+
+            if (fromD <= fromPQ) {
+
+                valQ = fromD;
+                tmp |= LEFT_TO_D;
+
+            } else {
+
+                valQ = fromPQ;
+                tmp |= LEFT_IN_Q;
+
+            }
+
+            //arrays D & BT
+            minVal = match + (s[i - 1] != t[j - 1]) * scoring.penMismatch;
+            BT[i * width + j] = DIAGONAL_IN_D;
+            if (P[j] < minVal) {
+
+                minVal = P[j];
+                BT[i * width + j] = JUMP_TO_P;
+
+            }
+            if (valQ <= minVal){
+
+                minVal = valQ;
+                BT[i * width + j] = JUMP_TO_Q;
+
+            }
+
+            BT[i * width + j] |= tmp;
+
+            match = D[j];
+            D[j] = minVal;
+
+        }
+
+    }
+
+    // backtracking (priorities: left > diagonal > up)
+    std::vector<std::pair<char, lenSeqs_t >> cigarSegs = {std::make_pair('N',0)};
+    lenSeqs_t len = 0;
+    lenSeqs_t numDiffs = 0;
+    lenSeqs_t i = s.size();
+    lenSeqs_t j = t.size();
+
+    while (i != 0 && j != 0) {
+
+        if ((cigarSegs.back().first == 'I') && (BT[i * width + j + 1] & LEFT_IN_Q)) {
+
+            len++;
+            numDiffs++;
+            cigarSegs.back().second++;
+
+            j--;
+
+        } else if ((cigarSegs.back().first == 'D') && (BT[(i + 1) * width + j] & UP_IN_P)) {
+
+            len++;
+            numDiffs++;
+            cigarSegs.back().second++;
+
+            i--;
+
+        } else if (BT[i * width + j] & JUMP_TO_Q) {
+
+            len++;
+            numDiffs++;
+            if (cigarSegs.back().first == 'I') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('I', 1));
+            }
+
+            j--;
+
+        } else if (BT[i * width + j] & DIAGONAL_IN_D) {
+
+            len++;
+            numDiffs += (s[i - 1] != t[j - 1]);
+            if (cigarSegs.back().first == 'M') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('M', 1));
+            }
+
+            i--;
+            j--;
+
+        } else { // BT[i][j] & JUMP_TO_P
+
+            len++;
+            numDiffs++;
+            if (cigarSegs.back().first == 'D') {
+                cigarSegs.back().second++;
+            } else {
+                cigarSegs.push_back(std::make_pair('D', 1));
+            }
+
+            i--;
+
+        }
+
+    }
+
+    while (i > 0) {
+
+        len++;
+        numDiffs++;
+        if (cigarSegs.back().first == 'D') {
+            cigarSegs.back().second++;
+        } else {
+            cigarSegs.push_back(std::make_pair('D', 1));
+        }
+
+        i--;
+
+    }
+
+    while (j > 0) {
+
+        len++;
+        numDiffs++;
+        if (cigarSegs.back().first == 'I') {
+            cigarSegs.back().second++;
+        } else {
+            cigarSegs.push_back(std::make_pair('I', 1));
+        }
+
+        j--;
+
+    }
+
+    std::stringstream sStream;
+    for (auto p = cigarSegs.size() - 1; p > 0; p--) {
+
+        if (cigarSegs[p].second > 1) sStream << cigarSegs[p].second;
+        sStream << cigarSegs[p].first;
+
+    }
+
+    return AlignmentInformation(sStream.str(), len, numDiffs);
 
 }
 

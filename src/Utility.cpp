@@ -144,14 +144,17 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
     /* Determine parameter values */
 
-    // determine used config file and load basic configuration
+    // a) determine used config file and load basic configuration
+    // b) determine position of first option (first arg starting with '-')
+    int firstOpt = 0;
     for (int i = 1; i < argc; i++) {
 
         if (parameters[argv[i]] == 9 || parameters[argv[i]] == 10) {
-
             configFile = argv[++i];
-            break;
+        }
 
+        if ((firstOpt == 0) && (argv[i][0] == '-')) {
+            firstOpt = i;
         }
 
     }
@@ -160,33 +163,33 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
     // read remaining configuration from command line (potentially overwriting values from the config file)
     // converting back and forth between string and integer values is used to "detect" (some) meaningless inputs
-    for (int i = 1; i < argc; i++) {
+    for (int i = firstOpt; i < argc; i++) {
 
         // one-part parameters
         switch (parameters[argv[i]]) {
             case 109: //fallthrough -sn to --swarm-no-otu-breaking
             case 110:
                 config.set(SWARM_NO_OTU_BREAKING, "1");
-                break;
+                continue;
 
             case 111: //fallthrough -sd to --swarm-dereplicate
             case 112:
                 config.set(SWARM_DEREPLICATE, "1");
-                break;
+                continue;
 
             case 113: //fallthrough -sf to --swarm-fastidious
             case 114:
                 config.set(SWARM_FASTIDIOUS, "1");
-                break;
+                continue;
 
             case 125: //fallthrough -sr to --swarm-mothur
             case 126:
                 config.set(SWARM_MOTHUR, "1");
-                break;
+                continue;
 
             case 1007:
                 config.set(USE_SCORE, "1");
-                break;
+                continue;
 
             default:
                 // do nothing

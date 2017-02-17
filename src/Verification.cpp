@@ -477,19 +477,32 @@ lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::s
     }
 
 
-    std::string shorter = (s.size() < t.size()) ? s : t;
-    std::string longer = (s.size() >= t.size()) ? s : t;
+    std::string shorter = s;
+    std::string longer = t;
+    if (shorter.size() > longer.size()) shorter.swap(longer);
     lenSeqs_t diff = longer.size() - shorter.size();
 
 
-//    lenSeqs_t M[longer.size() + 1];
     lenSeqs_t match, tmp;
+
+    // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
+    if ((bound - diff) / 2 == 0 && (bound + diff) / 2 == 0) {
+
+        lenSeqs_t diffs = 0;
+        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+            diffs += (shorter[i] != longer[i]);
+        }
+
+        return diffs;
+
+    }
 
     // initialise necessary sections of first row
     for (lenSeqs_t j = 0; j <= (bound + diff) / 2 && j <= longer.size(); j++) {
         M[j] = j;
     }
 
+    lenSeqs_t j;
     bool early;
 
     // compute sections of remaining rows
@@ -497,43 +510,25 @@ lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::s
 
         early = true; // early termination flag
 
-        match = (i <= (bound - diff) / 2 + 1) * (i - 1) + (i > (bound - diff) / 2 + 1) * M[i - (bound - diff) / 2 - 1]; // same as match = (i <= (bound - diff) / 2 + 1) ? (i - 1) : M[i - (bound - diff) / 2 - 1]
-        M[0] = i;
+        j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1);
+        match = M[j - 1];
+        M[j - 1] = (i <= (bound - diff) / 2) ? i : POS_INF; // handle left end to avoid case distinction
+        if (i + (bound + diff) / 2 <= longer.size()) { // handle right end to avoid case distinction
+            M[i + (bound + diff) / 2] = POS_INF;
+        }
 
-        for (lenSeqs_t j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1); j <= i + (bound + diff) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
+        for (; j <= i + (bound + diff) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
 
-            if ((bound - diff) / 2 == 0 && (bound + diff) / 2 == 0) {
-
-                tmp = match + (shorter[i - 1] != longer[j - 1]); // (mis)match is only possibility since we have to consider only one diagonal
-
-            } else if (j == ((i > (bound - diff) / 2) * (i - (bound - diff) / 2))) {
-
-                tmp = std::min({
-                                       match + (shorter[i - 1] != longer[j - 1]), // (mis)match
-                                       M[j] + 1 // deletion
-                               });
-
-            } else if (j == (i + (bound + diff) / 2)) {
-
-                tmp = std::min({
-                                       match + (shorter[i - 1] != longer[j - 1]), // (mis)match
-                                       M[j - 1] + 1 // insertion
-                               });
-
-            } else {
-
-                tmp = std::min({
-                                       match + (shorter[i - 1] != longer[j - 1]), // (mis)match
-                                       M[j] + 1, // deletion
-                                       M[j - 1] + 1 // insertion
-                               });
-
-            }
+            tmp = std::min({
+                                   match + (shorter[i - 1] != longer[j - 1]), // (mis)match
+                                   M[j] + 1, // deletion
+                                   M[j - 1] + 1 // insertion
+                           });
 
             match = M[j];
             M[j] = tmp;
 
-            early &= ((M[j] + ((diff + i >= j) * (diff + i - j) + (diff + i < j) * (j - diff - i))) > bound); // improved e.t.
+            early &= ((M[j] + llabs((long long)diff + (long long)i - (long long)j)) > bound); // improved e.t.
 
         }
 

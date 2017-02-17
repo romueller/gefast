@@ -166,11 +166,11 @@ public:
 private:
     std::unordered_map<ConfigParameters, V, EnumClassHash> conf_;
 
-    std::unordered_map<std::string, ConfigParameters> paramNames_;
+    std::map<std::string, ConfigParameters> paramNames_;
 
     void initParamNames() {
 
-        paramNames_ = std::unordered_map<std::string, ConfigParameters>(
+        paramNames_ = std::map<std::string, ConfigParameters>(
                 {
                         {"ALPHABET",                          ALPHABET},
                         {"CONFIG_FILE",                       CONFIG_FILE},

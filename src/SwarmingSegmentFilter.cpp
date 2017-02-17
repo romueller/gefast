@@ -15,7 +15,7 @@
 
 namespace SCT_PJ {
 
-SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
 
     M_ = M;
     D_ = D;
@@ -353,8 +353,8 @@ void SegmentFilter::ParallelChildrenFinder::verifyGotoh(std::vector<std::pair<nu
 
     Candidate c;
     Buffer<Candidate> localBuffer;
-    Verification::val_t D[width]; // reusable DP-matrix (wide enough for all possible calculations for this AmpliconCollection)
-    Verification::val_t P[width];
+    val_t D[width]; // reusable DP-matrix (wide enough for all possible calculations for this AmpliconCollection)
+    val_t P[width];
     lenSeqs_t cntDiffs[width];
     lenSeqs_t cntDiffsP[width];
 
@@ -738,7 +738,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
 
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
@@ -791,7 +791,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 }
 
-void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
     std::vector<numSeqs_t> candIntIds;
@@ -841,7 +841,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
 }
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
@@ -918,7 +918,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 }
 
-void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, Verification::val_t* D, Verification::val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
     std::vector<numSeqs_t> candIntIds;
@@ -1210,8 +1210,8 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
     numSeqs_t pos;
 
     lenSeqs_t M[sc.useScore ? 1 : indices.maxLength() + 1];
-    Verification::val_t D[sc.useScore ? indices.maxLength() + 1 : 1];
-    Verification::val_t P[sc.useScore ? indices.maxLength() + 1 : 1];
+    val_t D[sc.useScore ? indices.maxLength() + 1 : 1];
+    val_t P[sc.useScore ? indices.maxLength() + 1 : 1];
     lenSeqs_t cntDiffs[sc.useScore ? indices.maxLength() + 1 : 1];
     lenSeqs_t cntDiffsP[sc.useScore ? indices.maxLength() + 1 : 1];
 #if CHILDREN_FINDER

@@ -22,9 +22,6 @@ namespace SCT_PJ {
 namespace Verification {
 
 
-typedef lenSeqs_t val_t;
-//const val_t NEG_INF = INT16_MIN;
-const val_t POS_INF = INT16_MAX;
 
 /**
  * Representation of scoring function with affine gap costs.

@@ -23,7 +23,6 @@
 namespace SCT_PJ {
 namespace Verification {
 
-lenSeqs_t POS_INF = INT16_MAX;
 
 //===========================================================
 //                  Exact computation

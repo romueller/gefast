@@ -258,8 +258,8 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
     Segments segments(t + k);
 
     lenSeqs_t M[useScore ? 1 : ac.back().seq.length() + 1];
-    Verification::val_t D[useScore? ac.back().seq.length() + 1 : 1];
-    Verification::val_t P[useScore? ac.back().seq.length() + 1 : 1];
+    val_t D[useScore? ac.back().seq.length() + 1 : 1];
+    val_t P[useScore? ac.back().seq.length() + 1 : 1];
     lenSeqs_t cntDiffs[useScore? ac.back().seq.length() + 1 : 1];
     lenSeqs_t cntDiffsP[useScore? ac.back().seq.length() + 1 : 1];
 
@@ -473,8 +473,8 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
     Segments segments(t + k);
 
     lenSeqs_t M[useScore ? 1 : ac.back().seq.length() + 1];
-    Verification::val_t D[useScore? ac.back().seq.length() + 1 : 1];
-    Verification::val_t P[useScore? ac.back().seq.length() + 1 : 1];
+    val_t D[useScore? ac.back().seq.length() + 1 : 1];
+    val_t P[useScore? ac.back().seq.length() + 1 : 1];
     lenSeqs_t cntDiffs[useScore? ac.back().seq.length() + 1 : 1];
     lenSeqs_t cntDiffsP[useScore? ac.back().seq.length() + 1 : 1];
 
@@ -720,8 +720,8 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
     std::vector<std::string> segmentStrs(t + k);
 
     lenSeqs_t M[useScore ? 1 : ac.back().seq.length() + 1];
-    Verification::val_t D[useScore? ac.back().seq.length() + 1 : 1];
-    Verification::val_t P[useScore? ac.back().seq.length() + 1 : 1];
+    val_t D[useScore? ac.back().seq.length() + 1 : 1];
+    val_t P[useScore? ac.back().seq.length() + 1 : 1];
     lenSeqs_t cntDiffs[useScore? ac.back().seq.length() + 1 : 1];
     lenSeqs_t cntDiffsP[useScore? ac.back().seq.length() + 1 : 1];
 
@@ -999,8 +999,8 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
     std::vector<std::string> segmentStrs(t + k);
 
     lenSeqs_t M[useScore ? 1 : ac.back().seq.length() + 1];
-    Verification::val_t D[useScore? ac.back().seq.length() + 1 : 1];
-    Verification::val_t P[useScore? ac.back().seq.length() + 1 : 1];
+    val_t D[useScore? ac.back().seq.length() + 1 : 1];
+    val_t P[useScore? ac.back().seq.length() + 1 : 1];
     lenSeqs_t cntDiffs[useScore? ac.back().seq.length() + 1 : 1];
     lenSeqs_t cntDiffsP[useScore? ac.back().seq.length() + 1 : 1];
 

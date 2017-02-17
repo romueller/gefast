@@ -207,8 +207,8 @@ void SwarmClustering::verifyGotohFastidious(const AmpliconCollection& acOtus, co
     Buffer<CandidateFastidious> localBuffer;
 
     // reusable DP-matrices (wide enough for all possible calculations for this AmpliconCollection)
-    Verification::val_t D[width];
-    Verification::val_t P[width];
+    val_t D[width];
+    val_t P[width];
     lenSeqs_t cntDiffs[width];
     lenSeqs_t cntDiffsP[width];
 
@@ -340,8 +340,8 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const std::vector<Otu*>& otus,
     lenSeqs_t seqLen;
 
     lenSeqs_t M[sc.useScore ? 1 : width];
-    Verification::val_t D[sc.useScore? width : 1];
-    Verification::val_t P[sc.useScore? width : 1];
+    val_t D[sc.useScore? width : 1];
+    val_t P[sc.useScore? width : 1];
     lenSeqs_t cntDiffs[sc.useScore? width : 1];
     lenSeqs_t cntDiffsP[sc.useScore? width : 1];
 
@@ -1353,8 +1353,8 @@ void SwarmClustering::outputUclust(const std::string oFile, const AmpliconPools&
     for (auto iter = ac->begin(); iter != ac->end(); iter++) {
         maxLen = std::max(maxLen, iter->seq.length());
     }
-    Verification::val_t D[maxLen + 1];
-    Verification::val_t P[maxLen + 1];
+    val_t D[maxLen + 1];
+    val_t P[maxLen + 1];
     char BT[(maxLen + 1) * (maxLen + 1)];
 
     for (auto i = 0; i < otus.size(); i++) {

@@ -28,7 +28,10 @@ typedef unsigned long numSeqs_t;
 // type for everything related to the length of the sequence of an amplicon
 typedef unsigned long lenSeqs_t;
 
-
+// type for values in the DP-matrix of (Gotoh) verification methods
+typedef lenSeqs_t val_t;
+//const val_t NEG_INF = INT16_MIN;
+const val_t POS_INF = INT16_MAX;
 
 // =====================================================
 //              Data type for single amplicons

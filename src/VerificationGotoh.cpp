@@ -20,7 +20,7 @@
 
 namespace SCT_PJ {
 
-Verification::val_t Verification::computeGotohScoreFull(const std::string &s, const std::string &t, const Scoring& scoring) {
+val_t Verification::computeGotohScoreFull(const std::string &s, const std::string &t, const Scoring& scoring) {
 
     val_t D[s.size() + 1][t.size() + 1];
     val_t P[s.size() + 1][t.size() + 1];
@@ -71,7 +71,7 @@ Verification::val_t Verification::computeGotohScoreFull(const std::string &s, co
 
 }
 
-std::pair<Verification::val_t, std::string> Verification::computeGotohAlignmentFull(const std::string &s, const std::string &t, const Scoring& scoring) {
+std::pair<val_t, std::string> Verification::computeGotohAlignmentFull(const std::string &s, const std::string &t, const Scoring& scoring) {
 
     val_t D[s.size() + 1][t.size() + 1];
     val_t P[s.size() + 1][t.size() + 1];

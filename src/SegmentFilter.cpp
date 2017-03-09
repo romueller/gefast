@@ -36,9 +36,9 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrs(const lenSeqs_t selfLen, 
     lenSeqs_t p = 0;
     lenSeqs_t l = 0;
 
-    lenSeqs_t i = segIndex + 1; //computations from PJ-paper use segment indices from 1 to t+1
+    lenSeqs_t i = segIndex + 1; // computations from PJ-paper use segment indices from 1 to t+1
 
-    //by even-partitioning scheme
+    // by even-partitioning scheme
     // * first t + k - d segments: length floor(|s| / (t+l))
     // * last d segments: length floor(|s| / (t+k)) + 1
     lenSeqs_t d = partnerLen - (partnerLen / (t + k)) * (t + k);
@@ -46,8 +46,8 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrs(const lenSeqs_t selfLen, 
     p = 1 + (i - 1) * l - (i > t + k - d) * (t + k - d);
 
 
-    //multimatch-aware substring selection boundaries
-//    //calculations from paper (assume that positions p start at 1)
+    // multimatch-aware substring selection boundaries
+//    // calculations from paper (assume that positions p start at 1)
 //    lenSeqs_t lowerL = std::max((lenSeqs_t)1, p - (i - 1));
 //    lenSeqs_t upperL = std::min(s.length() - l + 1, p + (i - 1));
 //
@@ -58,7 +58,7 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrs(const lenSeqs_t selfLen, 
 //    lenSeqs_t upper = std::min(upperL, upperR);
 
 
-//    //problem: underflow of non-negative type lenSeqs_t
+//    // problem: underflow of non-negative type lenSeqs_t
 //    lenSeqs_t lower = std::max({(lenSeqs_t)1, p - (i - 1), p + (s.length() - len) - (t + k - i)});
     lenSeqs_t lower = 1;
     if (p > (i - 1)) {
@@ -68,14 +68,14 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrs(const lenSeqs_t selfLen, 
         lower = p + (selfLen - partnerLen) - (t + k - i);
     }
 
-    //std::min okay
+    // std::min okay
     lenSeqs_t upper = std::min({
                                        selfLen - l + 1,
                                        p + (i - 1),
                                        p + (selfLen - partnerLen) + (t + k - i)
                                });
 
-    return Substrings(lower - 1, upper - 1, l); //-1 for translation to index starting at 0
+    return Substrings(lower - 1, upper - 1, l); // -1 for translation to index starting at 0
 
 }
 
@@ -84,9 +84,9 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrsBackward(const lenSeqs_t s
     lenSeqs_t p = 0;
     lenSeqs_t l = 0;
 
-    lenSeqs_t i = segIndex + 1; //computations from PJ-paper use segment indices from 1 to t+1
+    lenSeqs_t i = segIndex + 1; // computations from PJ-paper use segment indices from 1 to t+1
 
-    //by even-partitioning scheme
+    // by even-partitioning scheme
     // * first t + k - d segments: length floor(|s| / (t+l))
     // * last d segments: length floor(|s| / (t+k)) + 1
     lenSeqs_t d = partnerLen - (partnerLen / (t + k)) * (t + k);
@@ -94,8 +94,8 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrsBackward(const lenSeqs_t s
     p = 1 + (i - 1) * l - (i > t + k - d) * (t + k - d);
 
 
-    //multimatch-aware substring selection boundaries
-//    //calculations from paper (assume that positions p start at 1)
+    // multimatch-aware substring selection boundaries
+//    // calculations from paper (assume that positions p start at 1)
 //    lenSeqs_t lowerL = std::max((lenSeqs_t)1, p - (i - 1));
 //    lenSeqs_t upperL = std::min(s.length() - l + 1, p + (i - 1));
 //
@@ -106,7 +106,7 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrsBackward(const lenSeqs_t s
 //    lenSeqs_t upper = std::min(upperL, upperR);
 
 
-//    //problem: underflow of non-negative type lenSeqs_t
+//    // problem: underflow of non-negative type lenSeqs_t
 //    lenSeqs_t lower = std::max({(lenSeqs_t)1, p - (i - 1), p + (s.length() - len) - (t + k - i)});
 
     lenSeqs_t lower = 1;
@@ -117,14 +117,14 @@ SegmentFilter::Substrings SegmentFilter::selectSubstrsBackward(const lenSeqs_t s
         lower = p - (partnerLen - selfLen) - (t + k - i);
     }
 
-    //std::min okay
+    // std::min okay
     lenSeqs_t upper = std::min({
                                        selfLen - l + 1,
                                        p + (i - 1),
                                        p - (partnerLen - selfLen) + (t + k - i)
                                });
 
-    return Substrings(lower - 1, upper - 1, l); //-1 for translation to index starting at 0
+    return Substrings(lower - 1, upper - 1, l); // -1 for translation to index starting at 0
 
 }
 
@@ -215,13 +215,13 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
         }
 
 
-        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { //... consider already indexed seqs with a feasible length...
+        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { // ... consider already indexed seqs with a feasible length...
 
             candCnts.clear();
 
-            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+            for (lenSeqs_t i = 0; i < t + k; i++) { // ... and apply segment filter for each segment
 
-                Substrings& subs = substrs[seqLen - len][i];//selectSubstrs(amplIter->seq.length(), len, i, t, k);
+                Substrings& subs = substrs[seqLen - len][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
@@ -247,7 +247,7 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 
         }
 
-        //index sequence
+        // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
         }
@@ -321,13 +321,13 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
         }
 
 
-        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { //... consider already indexed seqs with a feasible length...
+        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { // ... consider already indexed seqs with a feasible length...
 
             candCnts.clear();
 
-            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+            for (lenSeqs_t i = 0; i < t + k; i++) { // ... and apply segment filter for each segment
 
-                Substrings& subs = substrs[seqLen - len][i];//selectSubstrs(amplIter->seq.length(), len, i, t, k);
+                Substrings& subs = substrs[seqLen - len][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
@@ -361,7 +361,7 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
         }
 
-        //index sequence
+        // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
         }
@@ -430,13 +430,13 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
         }
 
 
-        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { //... consider already indexed seqs with a feasible length...
+        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { // ... consider already indexed seqs with a feasible length...
 
             candCnts.clear();
 
-            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+            for (lenSeqs_t i = 0; i < t + k; i++) { // ... and apply segment filter for each segment
 
-                Substrings& subs = substrs[len - seqLen][i]; //<-- change: swapped len and seqLen
+                Substrings& subs = substrs[len - seqLen][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
@@ -462,7 +462,7 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 
         }
 
-        //index sequence
+        // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
         }
@@ -539,13 +539,13 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
         }
 
 
-        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { //... consider already indexed seqs with a feasible length...
+        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { // ... consider already indexed seqs with a feasible length...
 
             candCnts.clear();
 
-            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+            for (lenSeqs_t i = 0; i < t + k; i++) { // ... and apply segment filter for each segment
 
-                Substrings& subs = substrs[len - seqLen][i]; //<-- change: swapped len and seqLen
+                Substrings& subs = substrs[len - seqLen][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
@@ -578,7 +578,7 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
         }
 
-        //index sequence
+        // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
         }
@@ -649,11 +649,11 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
             segmentStrs[i] = ac[curIntId].seq.substr(segments[i].first, segments[i].second);
         }
 
-        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { //... consider already indexed seqs with a feasible length...
+        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { // ... consider already indexed seqs with a feasible length...
 
             candCnts.clear();
 
-            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+            for (lenSeqs_t i = 0; i < t + k; i++) { // ... and apply segment filter for each segment
 
                 Substrings& subs = substrs[seqLen - len][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
@@ -708,7 +708,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 
         }
 
-        //index sequence
+        // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
         }
@@ -787,11 +787,11 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
             segmentStrs[i] = ac[curIntId].seq.substr(segments[i].first, segments[i].second);
         }
 
-        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { //... consider already indexed seqs with a feasible length...
+        for (lenSeqs_t len = (seqLen > t) * (seqLen - t); len <= seqLen; len++) { // ... consider already indexed seqs with a feasible length...
 
             candCnts.clear();
 
-            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+            for (lenSeqs_t i = 0; i < t + k; i++) { // ... and apply segment filter for each segment
 
                 Substrings& subs = substrs[seqLen - len][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
@@ -854,7 +854,7 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
         }
 
-        //index sequence
+        // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
         }
@@ -916,7 +916,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
             // ... and determine position information shared by all amplicons of this length
             for (lenSeqs_t lenDiff = 0; lenDiff < t + 1; lenDiff++) {
                 for (lenSeqs_t segmentIndex = 0; segmentIndex < t + k; segmentIndex++) {
-                    substrs[lenDiff][segmentIndex] = selectSubstrsBackward(seqLen, seqLen + lenDiff, segmentIndex, t, k); //<-- change: selectSubstrsBackward, '-' to '+'
+                    substrs[lenDiff][segmentIndex] = selectSubstrsBackward(seqLen, seqLen + lenDiff, segmentIndex, t, k);
                 }
             }
             selectSegments(segments, seqLen, t, k);
@@ -928,13 +928,13 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
             segmentStrs[i] = ac[curIntId].seq.substr(segments[i].first, segments[i].second);
         }
 
-        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { //... consider already indexed seqs with a feasible length...
+        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { // ... consider already indexed seqs with a feasible length...
 
             candCnts.clear();
 
-            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+            for (lenSeqs_t i = 0; i < t + k; i++) { // ... and apply segment filter for each segment
 
-                Substrings& subs = substrs[len - seqLen][i]; //<-- change: swapped len and seqLen
+                Substrings& subs = substrs[len - seqLen][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
@@ -987,7 +987,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 
         }
 
-        //index sequence
+        // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
         }
@@ -1057,7 +1057,7 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
             // ... and determine position information shared by all amplicons of this length
             for (lenSeqs_t lenDiff = 0; lenDiff < t + 1; lenDiff++) {
                 for (lenSeqs_t segmentIndex = 0; segmentIndex < t + k; segmentIndex++) {
-                    substrs[lenDiff][segmentIndex] = selectSubstrsBackward(seqLen, seqLen + lenDiff, segmentIndex, t, k); //<-- change: selectSubstrsBackward, '-' to '+'
+                    substrs[lenDiff][segmentIndex] = selectSubstrsBackward(seqLen, seqLen + lenDiff, segmentIndex, t, k);
                 }
             }
             selectSegments(segments, seqLen, t, k);
@@ -1069,13 +1069,13 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
             segmentStrs[i] = ac[curIntId].seq.substr(segments[i].first, segments[i].second);
         }
 
-        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { //... consider already indexed seqs with a feasible length...
+        for (lenSeqs_t len = seqLen + t; len >= seqLen; len--) { // ... consider already indexed seqs with a feasible length...
 
             candCnts.clear();
 
-            for (lenSeqs_t i = 0; i < t + k; i++) { //... and apply segment filter for each segment
+            for (lenSeqs_t i = 0; i < t + k; i++) { // ... and apply segment filter for each segment
 
-                Substrings& subs = substrs[len - seqLen][i]; //<-- change: swapped len and seqLen
+                Substrings& subs = substrs[len - seqLen][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
@@ -1136,7 +1136,7 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 
         }
 
-        //index sequence
+        // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
             indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
         }

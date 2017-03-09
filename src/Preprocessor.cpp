@@ -69,7 +69,7 @@ void Preprocessor::lowerCase(std::string& s) {
 
 }
 
-//adds contents of specified file (if readable) to the given LengthGroups object, returns pointer to this object
+// adds contents of specified file (if readable) to the given LengthGroups object, returns pointer to this object
 // "normalises" to lower-case letters
 LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string fileName, const std::string sep) {
 
@@ -92,17 +92,17 @@ LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string f
 
     while (std::getline(iStream, line).good()) {
 
-        if (line.empty() || line[0] == ';') continue; //skip empty and comment lines (begin with ';')
+        if (line.empty() || line[0] == ';') continue; // skip empty and comment lines (begin with ';')
 
-        if (line[0] == '>') { //header line
+        if (line[0] == '>') { // header line
 
             cnt++;
 
-            if (cnt == 1) { //first entry found (no previous entry to finish), simply parse header
+            if (cnt == 1) { // first entry found (no previous entry to finish), simply parse header
 
                 dl = parseDescriptionLine(line, sep);
 
-            } else { //finish and store previous entry, then collect parse header of new entry
+            } else { // finish and store previous entry, then collect parse header of new entry
 
                 lowerCase(seq);
 #if INPUT_RANK
@@ -116,14 +116,14 @@ LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string f
 
             }
 
-        } else { //still the same entry, continue to collect sequence
+        } else { // still the same entry, continue to collect sequence
 
             seq += line;
 
         }
     }
 
-    if (cnt > 0) { //ensures that last entry (if any) is written to file.
+    if (cnt > 0) { // ensures that last entry (if any) is written to file.
 
         lowerCase(seq);
 #if INPUT_RANK
@@ -173,8 +173,6 @@ LengthGroups& Preprocessor::filterMinMaxLength(LengthGroups& lg, const numSeqs_t
 }
 
 
-// bei Benutzung von regex_match() Problem mit erster Gruppe, die Sequenzen länger als 3000 Zeichen enthält -- warum?
-// regex_search() mit negiertem Alphabet bedeutend langsamer
 LengthGroups& Preprocessor::filterAlphabet(LengthGroups& lg, const std::string& alph) {
 
     auto& groups = lg.getGroups();
@@ -208,8 +206,6 @@ LengthGroups& Preprocessor::filterAlphabet(LengthGroups& lg, const std::string& 
 }
 
 
-// bei Benutzung von regex_match() Problem mit erster Gruppe, die Sequenzen länger als 3000 Zeichen enthält -- warum?
-// e.g. filterRegex(*ampls, std::regex("[^aAcCgGtTuU]"));
 LengthGroups& Preprocessor::filterRegex(LengthGroups& lg, const std::regex& expr) {
 
     auto& groups = lg.getGroups();
@@ -261,19 +257,19 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
     bool flagAlph = bool(std::stoi(conf.get(FILTER_ALPHABET)));
 
     switch (flagLength) {
-        case 1: { //01 = only max
+        case 1: { // 01 = only max
             maxLength = std::stoul(conf.get(MAX_LENGTH));
             Preprocessor::filterMaxLength(*ampls, maxLength);
             break;
         }
 
-        case 2: { //10 = only min
+        case 2: { // 10 = only min
             minLength = std::stoul(conf.get(MIN_LENGTH));
             Preprocessor::filterMinLength(*ampls, minLength);
             break;
         }
 
-        case 3: { //11 = min & max
+        case 3: { // 11 = min & max
             minLength = std::stoul(conf.get(MIN_LENGTH));
             maxLength = std::stoul(conf.get(MAX_LENGTH));
             Preprocessor::filterMinMaxLength(*ampls, minLength, maxLength);
@@ -281,7 +277,7 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
         }
 
         default: {
-            //do nothing
+            // do nothing
         }
     }
 

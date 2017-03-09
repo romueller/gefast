@@ -278,7 +278,7 @@ AmpliconPools* LengthGroups::pool(const lenSeqs_t threshold) {
     // if a break is detected
     for (auto iter = ++groups_.begin(); iter != groups_.end(); iter++) {
 
-        if ((lastLen + threshold) < iter->first) {//new pool
+        if ((lastLen + threshold) < iter->first) { // new pool
 
             pools->add(curPool);
             curPool = new AmpliconCollection();

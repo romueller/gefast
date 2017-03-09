@@ -45,7 +45,6 @@ namespace Verification {
  *  - full matrix
  *  - computes exact edit distance
  */
-// classic_f / compute_edit_distance_full
 lenSeqs_t computeClassicFull(const std::string& s, const std::string& t);
 
 
@@ -54,7 +53,6 @@ lenSeqs_t computeClassicFull(const std::string& s, const std::string& t);
  *  - keeps always only a single row of the matrix
  *  - computes exact edit distance
  */
-// classic_1 / compute_edit_distance_one_row
 lenSeqs_t computeClassicRow(const std::string& s, const std::string& t, lenSeqs_t* M);
 
 
@@ -76,7 +74,6 @@ lenSeqs_t mapColIndex(const lenSeqs_t j, const lenSeqs_t i, const lenSeqs_t boun
  *  - computes exact edit distance if d_e(s,t) <= bound and returns bound + 1 otherwise
  *  - early termination if all values in row computed last already larger than bound
  */
-// bounded_f / compute_bounded_edit_distance_with_early_termination
 lenSeqs_t computeBoundedFull(const std::string& s, const std::string& t, const lenSeqs_t bound);
 
 
@@ -87,7 +84,6 @@ lenSeqs_t computeBoundedFull(const std::string& s, const std::string& t, const l
  *  - computes exact edit distance if d_e(s,t) <= bound and returns bound + 1 otherwise
  *  - early termination if all values in row computed last already larger than bound
  */
-// bounded_1 / compute_bounded_edit_distance_with_early_termination_one_row
 lenSeqs_t computeBoundedRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M);
 
 
@@ -97,7 +93,6 @@ lenSeqs_t computeBoundedRow(const std::string& s, const std::string& t, const le
  *  - computes exact edit distance if d_e(s,t) <= bound and returns bound + 1 otherwise
  *  - early termination if all values in row computed last already larger than bound
  */
-// bounded_fs / compute_bounded_edit_distance_with_early_termination_slim
 lenSeqs_t computeBoundedFullSlim(const std::string& s, const std::string& t, const lenSeqs_t bound);
 
 
@@ -108,7 +103,6 @@ lenSeqs_t computeBoundedFullSlim(const std::string& s, const std::string& t, con
  *  - computes exact edit distance if d_e(s,t) <= bound and returns bound + 1 otherwise
  *  - early termination if all values in row computed last already larger than bound
  */
-// bounded_1s / compute_bounded_edit_distance_with_early_termination_one_row_slim
 lenSeqs_t computeBoundedRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M);
 
 
@@ -127,7 +121,6 @@ lenSeqs_t computeBoundedRowSlim(const std::string& s, const std::string& t, cons
  *  - computes exact edit distance if d_e(s,t) <= bound and returns bound + 1 otherwise
  *  - improved early termination if all expected edit distance values for the row computed last already larger than bound
  */
-// l-aware_f / compute_length_aware_bounded_edit_distance_with_early_termination
 lenSeqs_t computeLengthAwareFull(const std::string& s, const std::string& t, const lenSeqs_t bound);
 
 
@@ -139,7 +132,6 @@ lenSeqs_t computeLengthAwareFull(const std::string& s, const std::string& t, con
  *  - computes exact edit distance if d_e(s,t) <= bound and returns bound + 1 otherwise
  *  - improved early termination if all expected edit distance values for the row computed last already larger than bound
  */
-// l-aware_1 / compute_length_aware_bounded_edit_distance_with_early_termination_one_row
 lenSeqs_t computeLengthAwareRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M);
 
 
@@ -150,7 +142,6 @@ lenSeqs_t computeLengthAwareRow(const std::string& s, const std::string& t, cons
  *  - computes exact edit distance if d_e(s,t) <= bound and returns bound + 1 otherwise
  *  - improved early termination if all expected edit distance values for the row computed last already larger than bound
  */
-// l-aware_fs / compute_length_aware_bounded_edit_distance_with_early_termination_slim
 lenSeqs_t computeLengthAwareFullSlim(const std::string& s, const std::string& t, const lenSeqs_t bound);
 
 
@@ -162,7 +153,6 @@ lenSeqs_t computeLengthAwareFullSlim(const std::string& s, const std::string& t,
  *  - computes exact edit distance if d_e(s,t) <= bound and returns bound + 1 otherwise
  *  - improved early termination if all expected edit distance values for the row computed last already larger than bound
  */
-// l-aware_1s / compute_length_aware_bounded_edit_distance_with_early_termination_one_row_slim
 lenSeqs_t computeLengthAwareRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M);
 
 

@@ -35,9 +35,9 @@ namespace SegmentFilter {
     // describes a set of substrings chosen for comparison with a segment
     struct Substrings {
 
-        lenSeqs_t first; //start position of first substring to be checked
-        lenSeqs_t last; //start position of last substring to be checked
-        lenSeqs_t len; //common length of all substrings to be checked
+        lenSeqs_t first; // start position of first substring to be checked
+        lenSeqs_t last; // start position of last substring to be checked
+        lenSeqs_t len; // common length of all substrings to be checked
 
         Substrings() {
 

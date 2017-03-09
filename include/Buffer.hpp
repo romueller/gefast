@@ -127,7 +127,7 @@ public:
 
     }
 
-    inline void syncSwapContents(Buffer<T>& b) {//assumption: no concurrent accesses on b (i.e. b is a (thread-)local buffer)
+    inline void syncSwapContents(Buffer<T>& b) { // assumption: no concurrent accesses on b (i.e. b is a (thread-)local buffer)
 
         std::unique_lock<std::mutex> lock(mtx_);
         cv_.wait(lock, [this](){return buffer_.size() > 0 || closed_;});

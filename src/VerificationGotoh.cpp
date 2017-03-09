@@ -499,7 +499,7 @@ lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::st
 
     for (lenSeqs_t i = 1; i <= s.size(); i++) {
 
-        //handle left end
+        // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
         match = (i > 1) * (D[0] - scoring.penExtend);
         Q[0] = POS_INF;
@@ -1940,7 +1940,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
 
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
-            //array P
+            // array P
             fromD = D[i - 1][j] + scoring.penOpen + scoring.penExtend;
             fromPQ = P[i - 1][j] + scoring.penExtend;
 
@@ -1956,7 +1956,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
 
             }
 
-            //array Q
+            // array Q
             fromD = D[i][j - 1] + scoring.penOpen + scoring.penExtend;
             fromPQ = Q[i][j - 1] + scoring.penExtend;
 
@@ -1972,7 +1972,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
 
             }
 
-            //arrays D & BT
+            // arrays D & BT
             minVal = D[i - 1][j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch;
             BT[i][j] = DIAGONAL_IN_D;
             if (P[i][j] < minVal) {
@@ -2134,7 +2134,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull1(const st
 
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
-            //array P
+            // array P
             fromD = D[(i - 1) * width + j] + scoring.penOpen + scoring.penExtend;
             fromPQ = P[(i - 1) * width + j] + scoring.penExtend;
 
@@ -2150,7 +2150,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull1(const st
 
             }
 
-            //array Q
+            // array Q
             fromD = D[i * width + j - 1] + scoring.penOpen + scoring.penExtend;
             fromPQ = Q[i * width + j - 1] + scoring.penExtend;
 
@@ -2166,7 +2166,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull1(const st
 
             }
 
-            //arrays D & BT
+            // arrays D & BT
             minVal = D[(i - 1) * width + j - 1] + (s[i - 1] != t[j - 1]) * scoring.penMismatch;
             BT[i * width + j] = DIAGONAL_IN_D;
             if (P[i * width + j] < minVal) {
@@ -2327,7 +2327,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow(const std:
         // fill remaining row
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
-            //array P
+            // array P
             fromD = D[j] + scoring.penOpen + scoring.penExtend;
             fromPQ = P[j] + scoring.penExtend;
 
@@ -2343,7 +2343,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow(const std:
 
             }
 
-            //array Q
+            // array Q
             fromD = D[j - 1] + scoring.penOpen + scoring.penExtend;
             fromPQ = valQ + scoring.penExtend;
 
@@ -2359,7 +2359,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow(const std:
 
             }
 
-            //arrays D & BT
+            // arrays D & BT
             minVal = match + (s[i - 1] != t[j - 1]) * scoring.penMismatch;
             BT[i][j] = DIAGONAL_IN_D;
             if (P[j] < minVal) {
@@ -2518,7 +2518,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow1(const std
         // fill remaining row
         for (lenSeqs_t j = 1; j <= t.size(); j++) {
 
-            //array P
+            // array P
             fromD = D[j] + scoring.penOpen + scoring.penExtend;
             fromPQ = P[j] + scoring.penExtend;
 
@@ -2534,7 +2534,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow1(const std
 
             }
 
-            //array Q
+            // array Q
             fromD = D[j - 1] + scoring.penOpen + scoring.penExtend;
             fromPQ = valQ + scoring.penExtend;
 
@@ -2550,7 +2550,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow1(const std
 
             }
 
-            //arrays D & BT
+            // arrays D & BT
             minVal = match + (s[i - 1] != t[j - 1]) * scoring.penMismatch;
             BT[i * width + j] = DIAGONAL_IN_D;
             if (P[j] < minVal) {

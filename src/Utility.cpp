@@ -40,7 +40,7 @@ std::vector<std::string> readFileList(const std::string listFile) {
 
     while (std::getline(iStream, file).good()) {
 
-        if (file.empty() || file[0] == ';') continue; //skip empty and comment lines (begin with ';')
+        if (file.empty() || file[0] == ';') continue; // skip empty and comment lines (begin with ';')
 
         files.push_back(file);
 
@@ -178,22 +178,22 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
         // one-part parameters
         switch (parameters[argv[i]]) {
-            case 109: //fallthrough -sn to --swarm-no-otu-breaking
+            case 109: // fallthrough -sn to --swarm-no-otu-breaking
             case 110:
                 config.set(SWARM_NO_OTU_BREAKING, "1");
                 continue;
 
-            case 111: //fallthrough -sd to --swarm-dereplicate
+            case 111: // fallthrough -sd to --swarm-dereplicate
             case 112:
                 config.set(SWARM_DEREPLICATE, "1");
                 continue;
 
-            case 113: //fallthrough -sf to --swarm-fastidious
+            case 113: // fallthrough -sf to --swarm-fastidious
             case 114:
                 config.set(SWARM_FASTIDIOUS, "1");
                 continue;
 
-            case 125: //fallthrough -sr to --swarm-mothur
+            case 125: // fallthrough -sr to --swarm-mothur
             case 126:
                 config.set(SWARM_MOTHUR, "1");
                 continue;
@@ -210,102 +210,102 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
         // two-part parameters
         if (i + 1 != argc) {
             switch (parameters[argv[i]]) {
-                case 1: //fallthrough -a to --alphabet
+                case 1: // fallthrough -a to --alphabet
                 case 2:
                     config.set(FILTER_ALPHABET, std::to_string(true));
                     config.set(ALPHABET, argv[++i]);
                     break;
 
-                case 3: //fallthrough -e to --extra-segments
+                case 3: // fallthrough -e to --extra-segments
                 case 4:
                     val = std::stoul(argv[++i]);
                     config.set(NUM_EXTRA_SEGMENTS, std::to_string(val));
                     break;
 
-                case 5: //fallthrough -n to --name
+                case 5: // fallthrough -n to --name
                 case 6:
                     name = argv[++i]; // further handling after reading all parameters
                     break;
 
-                case 7: //fallthrough -t to --threshold
+                case 7: // fallthrough -t to --threshold
                 case 8:
                     val = std::stoul(argv[++i]);
                     config.set(THRESHOLD, std::to_string(val));
                     break;
 
-                case 9: //fallthrough -c to --config
+                case 9: // fallthrough -c to --config
                 case 10:
                     config.set(CONFIG_FILE, argv[++i]);
                     break;
 
-                case 11: //fallthrough -i to --input-files
+                case 11: // fallthrough -i to --input-files
                 case 12:
                     config.set(FILE_LIST, argv[++i]);
                     break;
 
-                case 13: //fallthrough -s to --seg-filter
+                case 13: // fallthrough -s to --seg-filter
                 case 14:
                     val = std::stoul(argv[++i]);
                     config.set(SEGMENT_FILTER, std::to_string(val));
                     break;
 
-                case 15: //fallthrough -o to --output-file
+                case 15: // fallthrough -o to --output-file
                 case 16:
                     config.set(MATCHES_OUTPUT_FILE, argv[++i]);
                     break;
 
 
-                case 101: //fallthrough -si to --swarm-internal
+                case 101: // fallthrough -si to --swarm-internal
                 case 102:
                     config.set(SWARM_OUTPUT_INTERNAL, argv[++i]);
                     break;
 
-                case 103: //fallthrough -so to --swarm-output
+                case 103: // fallthrough -so to --swarm-output
                 case 104:
                     config.set(SWARM_OUTPUT_OTUS, argv[++i]);
                     break;
 
-                case 105: //fallthrough -ss to --swarm-statistics
+                case 105: // fallthrough -ss to --swarm-statistics
                 case 106:
                     config.set(SWARM_OUTPUT_STATISTICS, argv[++i]);
                     break;
 
-                case 107: //fallthrough -sw to --swarm-seeds
+                case 107: // fallthrough -sw to --swarm-seeds
                 case 108:
                     config.set(SWARM_OUTPUT_SEEDS, argv[++i]);
                     break;
 
-                case 115: //fallthrough -sb to --swarm-boundary
+                case 115: // fallthrough -sb to --swarm-boundary
                 case 116:
                     val = std::stoul(argv[++i]);
                     config.set(SWARM_BOUNDARY, std::to_string(val));
                     break;
 
-                case 117: //fallthrough -sm to --swarm-match-reward
+                case 117: // fallthrough -sm to --swarm-match-reward
                 case 118:
                     val = std::stoul(argv[++i]);
                     config.set(SWARM_MATCH_REWARD, std::to_string(val));
                     break;
 
-                case 119: //fallthrough -sp to --swarm-mismatch-penalty
+                case 119: // fallthrough -sp to --swarm-mismatch-penalty
                 case 120:
                     signedVal = std::stoll(argv[++i]);
                     config.set(SWARM_MISMATCH_PENALTY, std::to_string(signedVal));
                     break;
 
-                case 121: //fallthrough -sg to --swarm-gap-opening-penalty
+                case 121: // fallthrough -sg to --swarm-gap-opening-penalty
                 case 122:
                     signedVal = std::stoll(argv[++i]);
                     config.set(SWARM_GAP_OPENING_PENALTY, std::to_string(signedVal));
                     break;
 
-                case 123: //fallthrough -se to --swarm-gap-extension-penalty
+                case 123: // fallthrough -se to --swarm-gap-extension-penalty
                 case 124:
                     signedVal = std::stoll(argv[++i]);
                     config.set(SWARM_GAP_EXTENSION_PENALTY, std::to_string(signedVal));
                     break;
 
-                case 127: //fallthrough -su to --swarm-uclust
+                case 127: // fallthrough -su to --swarm-uclust
                 case 128:
                     config.set(SWARM_OUTPUT_UCLUST, argv[++i]);
                     break;

@@ -156,13 +156,6 @@ public:
     void add(const O& obj, const L& lab) {
 
         // at() not necessary because creating new entry for s should be done anyway if it is not already included
-//        auto labels = &(binRel_[obj]);
-//        auto iter = std::find(labels->begin(), labels->end(), lab);
-//
-//        if (iter == labels->end()) { // add label only if it is not already there
-//            labels->push_back(lab);
-//        }
-//
         auto& labels = binRel_[obj];
         auto iter = std::find(labels.begin(), labels.end(), lab);
 
@@ -199,7 +192,7 @@ public:
     }
 
     void addLabel(const L& lab) {
-        //nothing to do
+        // nothing to do
     }
 
     void removeLabel(const L& lab) {
@@ -367,7 +360,7 @@ public:
     }
 
     void addLabel(const L& lab) {
-        //nothing to do
+        // nothing to do
     }
 
     void removeLabel(const L& lab) {
@@ -560,7 +553,7 @@ public:
             auto e = Entry(lab, labIter->second);
             auto iter = std::find(row.begin(), row.end(), e);
 
-            if (iter == row.end()) {//only "redirect iterator" if insertion is actually done
+            if (iter == row.end()) { // only "redirect iterator" if insertion is actually done
                 labels_[lab] = &(*(binRel_.find(obj)));
                 row.push_back(e);
             }
@@ -592,7 +585,7 @@ public:
                     auto& nextRow = binRel_[entry.next->first];
                     auto iter = std::find(nextRow.begin(), nextRow.end(), entry);
 
-                    if (prevEntry.next->first == entry.next->first) { //remove first element of vertical chain
+                    if (prevEntry.next->first == entry.next->first) { // remove first element of vertical chain
                         labels_[lab] = iter->next;
                     } else {
 
@@ -629,7 +622,7 @@ public:
     }
 
     void addLabel(const L& lab) {
-        //nothing to do?
+        // nothing to do?
     }
 
     void removeLabel(const L& lab) {
@@ -836,7 +829,7 @@ public:
 
         if (labIter != labels_.end()) { // add to already existing column
 
-            if (binRel_[obj].insert(Entry(lab, labIter->second)).second) {//only "redirect iterator" if insertion is actually done
+            if (binRel_[obj].insert(Entry(lab, labIter->second)).second) { // only "redirect iterator" if insertion is actually done
                 labels_[lab] = &(*(binRel_.find(obj)));
             }
 
@@ -865,7 +858,7 @@ public:
 
                     auto iter = binRel_[entry.next->first].find(entry);
 
-                    if (prevEntry.next->first == entry.next->first) { //remove first element of vertical chain
+                    if (prevEntry.next->first == entry.next->first) { // remove first element of vertical chain
                         labels_[lab] = iter->next;
                     } else {
 
@@ -899,7 +892,7 @@ public:
     }
 
     void addLabel(const L& lab) {
-        //nothing to do?
+        // nothing to do?
     }
 
     void removeLabel(const L& lab) {
@@ -983,7 +976,7 @@ public:
     void add(const T& t1, const T& t2, const K& d) {
 
         matches_[d].add(t1, t2);
-        matches_[d].add(t2, t1); //NEW for symmetry
+        matches_[d].add(t2, t1); // only for symmetry
 
     }
 
@@ -992,7 +985,7 @@ public:
 
         for (auto iter = matches_.begin(); iter != matches_.end(); iter++) {
             iter->second.remove(t1, t2);
-            iter->second.remove(t2, t1); //NEW for symmetry
+            iter->second.remove(t2, t1); // only for symmetry
         }
 
     }
@@ -1061,7 +1054,7 @@ public:
         }
 
 //        return sum;
-        return sum / 2; //NEW for symmetry
+        return sum / 2; // only for symmetry
 
     }
 
@@ -1143,7 +1136,7 @@ public:
 
     }
 
-    void syncJoin(const SimpleMatches<T, T>& sm) {//assumption: no concurrent accesses on sm
+    void syncJoin(const SimpleMatches<T, T>& sm) { // assumption: no concurrent accesses on sm
 
         std::lock_guard<std::mutex> lock(mtx_);
         join(sm);

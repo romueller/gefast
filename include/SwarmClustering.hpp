@@ -44,20 +44,20 @@ namespace SwarmClustering {
 struct SwarmConfig {
 
     // output flags, files & separators
-    bool outInternals; //-i
+    bool outInternals; // -i
     std::string oFileInternals;
 
-    bool outOtus; //-o
-    bool outMothur; //-r
+    bool outOtus; // -o
+    bool outMothur; // -r
     std::string oFileOtus;
 
-    bool outStatistics; //-s
+    bool outStatistics; // -s
     std::string oFileStatistics;
 
-    bool outSeeds; //-w
+    bool outSeeds; // -w
     std::string oFileSeeds;
 
-    bool outUclust; //-u
+    bool outUclust; // -u
     std::string oFileUclust;
 
     char sepInternals = '\t';
@@ -69,15 +69,15 @@ struct SwarmConfig {
     std::string sepAbundance;
 
     // clustering options
-    bool noOtuBreaking = false; //-n
-    bool dereplicate = false; //-d 0
-    bool fastidious = false; //-f
-    numSeqs_t boundary; //-b
+    bool noOtuBreaking = false; // -n
+    bool dereplicate = false; // -d 0
+    bool fastidious = false; // -f
+    numSeqs_t boundary; // -b
     lenSeqs_t fastidiousThreshold;
 
     // scoring
     bool useScore = false;
-    Verification::Scoring scoring; //-m, -p, -g, -e
+    Verification::Scoring scoring; // -m, -p, -g, -e
 
     // misc
     lenSeqs_t threshold;
@@ -154,8 +154,8 @@ struct Otu {
     numSeqs_t numSingletons;
     lenSeqs_t maxGen;
     lenSeqs_t maxRad;
-    std::vector<OtuEntry> members; //always entry for seed at index 0 (with itself as its parent)
-    bool attached; //only for fastidious
+    std::vector<OtuEntry> members; // always entry for seed at index 0 (with itself as its parent)
+    bool attached; // only for fastidious
 
     numSeqs_t poolId;
 

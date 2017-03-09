@@ -126,7 +126,8 @@ private:
 };
 
 
-// description of a subset of an AmpliconCollection suitable for segment filtering
+// Description of a subset of an AmpliconCollection suitable for segment filtering
+//
 // Forward filtering (beginIndex <= beginMatch < end, reading left to right):
 // Amplicons with an index in [beginMatch, end) make up the actual content of the subpool, i.e. these are the amplicons to be filtered.
 // The amplicons with an index in [beginIndex, beginMatch) (if any) are used for indexing only,

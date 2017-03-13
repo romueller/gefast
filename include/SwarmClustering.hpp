@@ -101,7 +101,7 @@ struct SwarmConfig {
  *
  * Stored information:
  *  - id: integer id of the amplicon within its pool (AmpliconCollection)
- *  - parentId: integer id of the parent amplicon within its pool (AmpliconCollection)
+ *  - parentId: integer id of the parent amplicon within its pool (AmpliconCollection) OR the pool id (only if gen = 0)
  *  - parentDist: (edit) distance between the amplicon and its parent
  *  - gen: generation number of the amplicon
  *  - rad: cumulated differences between the OTU seed and the amplicon

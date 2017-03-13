@@ -125,7 +125,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     long long signedVal;
 
     Config<std::string> config;
-    config.set(VERSION, "1.0");
+    config.set(VERSION, "0.7.0");
 
     /* Set default values */
 

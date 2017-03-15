@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -21,8 +21,8 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef SCT_PJ_WORKER_HPP
-#define SCT_PJ_WORKER_HPP
+#ifndef GEFAST_WORKER_HPP
+#define GEFAST_WORKER_HPP
 
 #include <thread>
 
@@ -33,7 +33,7 @@
 #include "Verification.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 class Worker {
 
@@ -55,4 +55,4 @@ private:
 
 }
 
-#endif //SCT_PJ_WORKER_HPP
+#endif //GEFAST_WORKER_HPP

@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -24,7 +24,7 @@
 #include "../include/Worker.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 Worker::Worker(AmpliconCollection& ac, Subpool& sp, Matches& matches, Config<std::string>& config) : ac_(ac), sp_(sp), matches_(matches), config_(config) {
     // nothing else to do

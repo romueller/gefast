@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -21,8 +21,8 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef SCT_PJ_BASE_HPP
-#define SCT_PJ_BASE_HPP
+#ifndef GEFAST_BASE_HPP
+#define GEFAST_BASE_HPP
 
 #include <map>
 #include <string>
@@ -31,7 +31,7 @@
 #define INPUT_RANK 1
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 // type for everything related to counts of amplicons / sequences
 typedef unsigned long numSeqs_t;
@@ -336,4 +336,4 @@ private:
 }
 
 
-#endif //SCT_PJ_BASE_HPP
+#endif //GEFAST_BASE_HPP

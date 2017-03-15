@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -29,7 +29,7 @@
 #include "../include/VerificationGotoh.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 val_t Verification::computeGotohScoreFull(const std::string &s, const std::string &t, const Scoring& scoring) {
 

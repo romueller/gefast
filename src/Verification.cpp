@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -24,7 +24,7 @@
 #include "../include/Verification.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 // ===== Exact computation =====
 

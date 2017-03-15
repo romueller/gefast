@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -26,7 +26,7 @@
 #include "../include/Preprocessor.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 Preprocessor::Defline Preprocessor::parseDescriptionLine(const std::string defline, const std::string sep) {
 

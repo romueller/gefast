@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -39,7 +39,7 @@
 
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 int run(int argc, const char* argv[]) {
 
@@ -240,6 +240,6 @@ int run(int argc, const char* argv[]) {
 
 int main(int argc, const char* argv[]) {
 
-    SCT_PJ::run(argc, argv);
+    GeFaST::run(argc, argv);
 
 }

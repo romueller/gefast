@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -21,8 +21,8 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef SCT_PJ_SWARMINGSEGMENTFILTER_HPP
-#define SCT_PJ_SWARMINGSEGMENTFILTER_HPP
+#ifndef GEFAST_SWARMINGSEGMENTFILTER_HPP
+#define GEFAST_SWARMINGSEGMENTFILTER_HPP
 
 #include <thread>
 
@@ -34,7 +34,7 @@
 
 #define CHILDREN_FINDER 1
 
-namespace SCT_PJ {
+namespace GeFaST {
 namespace SegmentFilter {
 
     /**
@@ -142,4 +142,4 @@ namespace SegmentFilter {
 }
 }
 
-#endif //SCT_PJ_SWARMINGSEGMENTFILTER_HPP
+#endif //GEFAST_SWARMINGSEGMENTFILTER_HPP

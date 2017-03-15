@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -21,8 +21,8 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef SCT_PJ_UTILITY_HPP
-#define SCT_PJ_UTILITY_HPP
+#ifndef GEFAST_UTILITY_HPP
+#define GEFAST_UTILITY_HPP
 
 #include <algorithm>
 #include <iostream>
@@ -33,10 +33,10 @@
 #include <vector>
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 const std::string DEFAULT_CONFIG_FILE = "default.conf";
-const std::string DEFAULT_JOB_NAME = "SCT-PJ";
+const std::string DEFAULT_JOB_NAME = "GeFaST";
 
 
 // list of configuration parameters (changes should be mirrored in method initParamNames() of Config)
@@ -248,4 +248,4 @@ unsigned long long gcd(unsigned long long a, unsigned long long b);
 
 }
 
-#endif //SCT_PJ_UTILITY_HPP
+#endif //GEFAST_UTILITY_HPP

@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -21,15 +21,15 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef SCT_PJ_VERIFICATIONGOTOH_HPP
-#define SCT_PJ_VERIFICATIONGOTOH_HPP
+#ifndef GEFAST_VERIFICATIONGOTOH_HPP
+#define GEFAST_VERIFICATIONGOTOH_HPP
 
 #include "Base.hpp"
 #include "Buffer.hpp"
 #include "Relation.hpp"
 #include "Utility.hpp"
 
-namespace SCT_PJ {
+namespace GeFaST {
 namespace Verification {
 
 
@@ -231,4 +231,4 @@ AlignmentInformation computeGotohCigarRow1(const std::string& s, const std::stri
 }
 }
 
-#endif //SCT_PJ_VERIFICATIONGOTOH_HPP
+#endif //GEFAST_VERIFICATIONGOTOH_HPP

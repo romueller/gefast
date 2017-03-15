@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -24,7 +24,7 @@
 #include "../include/Utility.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 std::vector<std::string> readFileList(const std::string listFile) {
 

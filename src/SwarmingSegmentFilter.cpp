@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -24,7 +24,7 @@
 #include "../include/SwarmingSegmentFilter.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
 

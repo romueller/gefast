@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -29,7 +29,7 @@
 #include "../include/Verification.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 SegmentFilter::Substrings SegmentFilter::selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex, const lenSeqs_t t, const lenSeqs_t k) {
 

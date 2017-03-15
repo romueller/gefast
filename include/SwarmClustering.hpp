@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -21,8 +21,8 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef SCT_PJ_SWARMCLUSTERING_HPP
-#define SCT_PJ_SWARMCLUSTERING_HPP
+#ifndef GEFAST_SWARMCLUSTERING_HPP
+#define GEFAST_SWARMCLUSTERING_HPP
 
 #include "Base.hpp"
 #include "Relation.hpp"
@@ -35,7 +35,7 @@
 #define FASTIDIOUS_PARALLEL_POOL 1
 #define FASTIDIOUS_PARALLEL_CHECK 1
 
-namespace SCT_PJ {
+namespace GeFaST {
 namespace SwarmClustering {
 
 /**
@@ -543,4 +543,4 @@ void outputDereplicate(const AmpliconPools& pools, const std::vector<Otu*>& otus
 }
 }
 
-#endif //SCT_PJ_SWARMCLUSTERING_HPP
+#endif //GEFAST_SWARMCLUSTERING_HPP

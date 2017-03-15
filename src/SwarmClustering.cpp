@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -31,7 +31,7 @@
 #include <thread>
 #include <unordered_set>
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu*>& otus, const SwarmConfig& sc) {
 

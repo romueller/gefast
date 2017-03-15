@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -26,7 +26,7 @@
 
 #include "../include/Base.hpp"
 
-namespace SCT_PJ {
+namespace GeFaST {
 
 // ===== amplicon comparer structures =====
 

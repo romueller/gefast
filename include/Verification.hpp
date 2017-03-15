@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -21,8 +21,8 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef SCT_PJ_VERIFICATION_HPP
-#define SCT_PJ_VERIFICATION_HPP
+#ifndef GEFAST_VERIFICATION_HPP
+#define GEFAST_VERIFICATION_HPP
 
 #include <iostream>
 
@@ -31,7 +31,7 @@
 #include "Relation.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 namespace Verification {
 
 
@@ -164,4 +164,4 @@ void verify(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, 
 }
 
 
-#endif //SCT_PJ_VERIFICATION_HPP
+#endif //GEFAST_VERIFICATION_HPP

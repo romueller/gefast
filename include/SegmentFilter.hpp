@@ -1,5 +1,5 @@
 /*
- * SCT-PJ
+ * GeFaST
  *
  * Copyright (C) 2016 - 2017 Robert Mueller
  *
@@ -21,15 +21,15 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef SCT_PJ_SEGMENTFILTER_HPP
-#define SCT_PJ_SEGMENTFILTER_HPP
+#ifndef GEFAST_SEGMENTFILTER_HPP
+#define GEFAST_SEGMENTFILTER_HPP
 
 #include "Base.hpp"
 #include "Buffer.hpp"
 #include "VerificationGotoh.hpp"
 
 
-namespace SCT_PJ {
+namespace GeFaST {
 namespace SegmentFilter {
 
     // describes a set of substrings chosen for comparison with a segment
@@ -109,4 +109,4 @@ namespace SegmentFilter {
 }
 }
 
-#endif //SCT_PJ_SEGMENTFILTER_HPP
+#endif //GEFAST_SEGMENTFILTER_HPP

@@ -29,6 +29,7 @@
 #include "include/Base.hpp"
 #include "include/Preprocessor.hpp"
 #include "include/Relation.hpp"
+#include "include/SIMD.hpp"
 #include "include/SwarmClustering.hpp"
 #include "include/Utility.hpp"
 #include "include/Worker.hpp"
@@ -45,6 +46,9 @@ int run(int argc, const char* argv[]) {
 
     /* Bootstrapping */
     Config<std::string> c = getConfiguration(argc, argv);
+#if QGRAM_FILTER
+    cpu_features_detect();
+#endif
 
 
     // if no list file is specified with -f / --files, then the first arguments not starting with a dash are assumed to be the input files

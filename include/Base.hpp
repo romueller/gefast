@@ -24,12 +24,19 @@
 #ifndef GEFAST_BASE_HPP
 #define GEFAST_BASE_HPP
 
+#include <cstring>
 #include <map>
 #include <string>
 #include <vector>
 
 #define INPUT_RANK 1
+#define QGRAM_FILTER 1
 
+#if QGRAM_FILTER
+#define QGRAMLENGTH 5
+#define QGRAMVECTORBITS (1<<(2*QGRAMLENGTH))
+#define QGRAMVECTORBYTES (QGRAMVECTORBITS/8)
+#endif
 
 namespace GeFaST {
 
@@ -44,10 +51,18 @@ typedef lenSeqs_t val_t;
 //const val_t NEG_INF = INT16_MIN;
 const val_t POS_INF = INT16_MAX;
 
+#if QGRAM_FILTER
+// mapping of nucleotides onto integers (a/A -> 1, c/C -> 2, g/G -> 3, t/T/u/U -> 4)
+extern char acgtuMap[256];
+#endif
+
+
+
 // =====================================================
 //              Data type for single amplicons
 // =====================================================
 
+// q-gram vector handling adapted from Swarm (findqgrams(...) in qgram.cc)
 struct Amplicon {
 
     std::string id;
@@ -55,6 +70,9 @@ struct Amplicon {
     numSeqs_t abundance;
 #if INPUT_RANK
     numSeqs_t rank;
+#endif
+#if QGRAM_FILTER
+    unsigned char qGramVector[QGRAMVECTORBYTES];
 #endif
 
     Amplicon() {
@@ -64,6 +82,9 @@ struct Amplicon {
         abundance = 0;
 #if INPUT_RANK
         rank = 0;
+#endif
+#if QGRAM_FILTER
+        memset(qGramVector, 0, QGRAMVECTORBYTES);
 #endif
 
     }
@@ -79,6 +100,27 @@ struct Amplicon {
         abundance = a;
 #if INPUT_RANK
         rank = r;
+#endif
+#if QGRAM_FILTER
+        memset(qGramVector, 0, QGRAMVECTORBYTES);
+
+        unsigned long qGram = 0;
+        unsigned long j = 0;
+
+        while((j < QGRAMLENGTH - 1) && (j < seq.length())) {
+
+            qGram = (qGram << 2) | (acgtuMap[seq[j]] - 1);
+            j++;
+
+        }
+
+        while(j < seq.length()) {
+
+            qGram = (qGram << 2) | (acgtuMap[seq[j]] - 1);
+            qGramVector[(qGram >> 3) & (QGRAMVECTORBYTES - 1)] ^= (1 << (qGram & 7));
+            j++;
+
+        }
 #endif
 
     }

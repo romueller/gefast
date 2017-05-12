@@ -21,6 +21,7 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
+#include "../include/SIMD.hpp"
 #include "../include/SwarmClustering.hpp"
 #include "../include/SwarmingSegmentFilter.hpp"
 
@@ -322,7 +323,11 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
                     // general pigeonhole principle: for being a candidate, at least sc.extraSegs segments have to be matched
                     for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
+#if QGRAM_FILTER
+                        if ((candIter->second >= sc.extraSegs) && (qgram_diff(acOtus[memberIter->id], acIndices[candIter->first]) <= sc.threshold)) {
+#else
                         if (candIter->second >= sc.extraSegs) {
+#endif
                             localCands.back().children.push_back(candIter->first);
                         }
 
@@ -420,7 +425,11 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 //                        }
 
                         std::unique_lock<std::mutex> lock(graftCandsMtx);
+#if QGRAM_FILTER
+                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], (*pools.get(graftCands[candIter->first].parentOtu->poolId))[graftCands[candIter->first].parentMember->id])) && (qgram_diff(acOtus[memberIter->id], acIndices[candIter->first]) <= sc.threshold)) {
+#else
                         if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(acOtus[memberIter->id], (*pools.get(graftCands[candIter->first].parentOtu->poolId))[graftCands[candIter->first].parentMember->id]))) {
+#endif
 
                             lock.unlock();
                             if ((sc.useScore ?

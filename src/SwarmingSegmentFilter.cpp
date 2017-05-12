@@ -21,6 +21,7 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
+#include "../include/SIMD.hpp"
 #include "../include/SwarmingSegmentFilter.hpp"
 
 
@@ -70,7 +71,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
         // general pigeonhole principle: for being a candidate, at least k segments have to be matched
         for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
+#if QGRAM_FILTER
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
             if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+#endif
 
                 dist = sc_.useScore ?
                          Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
@@ -125,7 +130,11 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
         // general pigeonhole principle: for being a candidate, at least k segments have to be matched
         for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
+#if QGRAM_FILTER
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
             if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+#endif
 
                 dist = sc_.useScore ?
                          Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
@@ -198,7 +207,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
                     cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
                 }
 
+#if QGRAM_FILTER
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
                 if (cnt == sc_.extraSegs) {
+#endif
 
                     dist = sc_.useScore ?
                              Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
@@ -278,7 +291,11 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
                     cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
                 }
 
+#if QGRAM_FILTER
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
                 if (cnt == sc_.extraSegs) {
+#endif
 
                     dist = sc_.useScore ?
                              Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
@@ -440,7 +457,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
         // general pigeonhole principle: for being a candidate, at least k segments have to be matched
         for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
+#if QGRAM_FILTER
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
             if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+#endif
 
                 cand = Candidate(id, candIter->first);
                 cbs_.push(cand);
@@ -514,7 +535,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
         // general pigeonhole principle: for being a candidate, at least k segments have to be matched
         for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
+#if QGRAM_FILTER
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
             if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+#endif
 
                 cand = Candidate(id, candIter->first);
                 cbs_.push(cand);
@@ -611,7 +636,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
                     cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
                 }
 
+#if QGRAM_FILTER
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
                 if (cnt == sc_.extraSegs) {
+#endif
 
                     cand = Candidate(id, candIter->first);
                     cbs_.push(cand);
@@ -710,7 +739,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
                     cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
                 }
 
+#if QGRAM_FILTER
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
                 if (cnt == sc_.extraSegs) {
+#endif
 
                     cand = Candidate(id, candIter->first);
                     cbs_.push(cand);
@@ -782,7 +815,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
         // general pigeonhole principle: for being a candidate, at least k segments have to be matched
         for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
+#if QGRAM_FILTER
+            if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+#else
             if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
+#endif
 
                 dist = sc.useScore ?
                                   Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
@@ -834,7 +871,11 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
         // general pigeonhole principle: for being a candidate, at least k segments have to be matched
         for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
+#if QGRAM_FILTER
+            if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+#else
             if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
+#endif
 
                 dist = sc.useScore ?
                                   Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
@@ -905,7 +946,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
                     cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
                 }
 
+#if QGRAM_FILTER
+                if ((cnt == sc.extraSegs) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+#else
                 if (cnt == sc.extraSegs) {
+#endif
 
                     dist = sc.useScore ?
                              Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
@@ -980,7 +1025,11 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
                     cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
                 }
 
+#if QGRAM_FILTER
+                if ((cnt == sc.extraSegs) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+#else
                 if (cnt == sc.extraSegs) {
+#endif
 
                     dist = sc.useScore ?
                              Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)

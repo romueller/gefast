@@ -281,6 +281,10 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
         }
     }
 
+#if QGRAM_FILTER
+    alphabet = "acgtu";
+    Preprocessor::filterAlphabet(*ampls, alphabet);
+#endif
     if (flagAlph) {
 
         alphabet = conf.get(ALPHABET);

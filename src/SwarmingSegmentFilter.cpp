@@ -37,6 +37,259 @@ SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, Roll
 
 }
 
+#if SIMD_VERIFICATION
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id) {
+
+    std::vector<numSeqs_t> cands;
+
+    std::vector<numSeqs_t> candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac_[id];
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices_.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+#if QGRAM_FILTER
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+#endif
+                cands.push_back(candIter->first);
+            }
+
+        }
+
+    }
+
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children) {
+
+    children.clear();
+
+    std::vector<numSeqs_t> cands;
+
+    std::vector<numSeqs_t> candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac_[id];
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices_.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+#if QGRAM_FILTER
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+#endif
+                cands.push_back(candIter->first);
+            }
+
+        }
+
+    }
+
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id) {
+
+    std::vector<numSeqs_t> cands;
+
+    std::vector<numSeqs_t> candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac_[id];
+
+    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+
+    std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
+    for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+    }
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices_.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        std::string candStr;
+        lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        //  + pipelined backward filtering
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+
+                candStr = ac_[candIter->first].seq;
+
+                for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs && cnt < sc_.extraSegs; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+#if QGRAM_FILTER
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
+                if (cnt == sc_.extraSegs) {
+#endif
+                    cands.push_back(candIter->first);
+                }
+
+                cnt = 0;
+
+            }
+
+        }
+
+    }
+
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((GeFaST::AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children) {
+
+    children.clear();
+
+    std::vector<numSeqs_t> cands;
+
+    std::vector<numSeqs_t> candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac_[id];
+
+    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+
+    std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
+    for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+    }
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices_.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        std::string candStr;
+        lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        //  + pipelined backward filtering
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+
+                candStr = ac_[candIter->first].seq;
+
+                for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs && cnt < sc_.extraSegs; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+#if QGRAM_FILTER
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
+                if (cnt == sc_.extraSegs) {
+#endif
+                    cands.push_back(candIter->first);
+                }
+
+                cnt = 0;
+
+            }
+
+        }
+
+    }
+
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+#else
+
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id) {
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
@@ -316,8 +569,255 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     }
 
 }
+#endif
 
+#if SIMD_VERIFICATION
+SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+    // nothing else to do
+}
 
+SegmentFilter::ParallelChildrenFinder::~ParallelChildrenFinder() {
+    // nothing to do
+}
+
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id) {
+
+    std::vector<numSeqs_t> cands, candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac_[id];
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices_.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+#if QGRAM_FILTER
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+#endif
+                cands.push_back(candIter->first);
+            }
+
+        }
+
+    }
+
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children) {
+
+    std::vector<numSeqs_t> cands, candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac_[id];
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices_.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+#if QGRAM_FILTER
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+#endif
+                cands.push_back(candIter->first);
+            }
+
+        }
+
+    }
+
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id) {
+
+    std::vector<numSeqs_t> cands, candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac_[id];
+
+    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+
+    std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
+    for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+    }
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices_.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        std::string candStr;
+        lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        //  + pipelined backward filtering
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+
+                candStr = ac_[candIter->first].seq;
+
+                for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs && cnt < sc_.extraSegs; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+#if QGRAM_FILTER
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
+                if (cnt == sc_.extraSegs) {
+#endif
+                    cands.push_back(candIter->first);
+                }
+
+                cnt = 0;
+
+            }
+
+        }
+
+    }
+
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children) {
+
+    std::vector<numSeqs_t> cands, candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac_[id];
+
+    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+
+    std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
+    for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+    }
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices_.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        std::string candStr;
+        lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        //  + pipelined backward filtering
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+
+                candStr = ac_[candIter->first].seq;
+
+                for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs && cnt < sc_.extraSegs; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+#if QGRAM_FILTER
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+#else
+                if (cnt == sc_.extraSegs) {
+#endif
+                    cands.push_back(candIter->first);
+                }
+
+                cnt = 0;
+
+            }
+
+        }
+
+    }
+
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+#else
 
 SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
 
@@ -779,8 +1279,244 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     }
 
 }
+#endif
 
+#if SIMD_VERIFICATION
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
+    std::vector<numSeqs_t> cands, candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac[id];
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+#if QGRAM_FILTER
+            if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+#else
+            if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
+#endif
+                cands.push_back(candIter->first);
+            }
+
+        }
+
+    }
+
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, id, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+
+    std::vector<numSeqs_t> cands, candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac[id];
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+#if QGRAM_FILTER
+            if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+#else
+            if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
+#endif
+                cands.push_back(candIter->first);
+            }
+
+        }
+
+    }
+
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, id, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+
+    std::vector<numSeqs_t> cands, candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac[id];
+    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc.threshold, sc.extraSegs);
+    std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
+    for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
+        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+    }
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        auto& candSubs = substrsArchive[childLen][amplicon.seq.length()];
+        std::string candStr;
+        lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        //  + pipelined backward filtering
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+            if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
+
+                candStr = ac[candIter->first].seq;
+
+                for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs && cnt < sc.extraSegs; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+#if QGRAM_FILTER
+                if ((cnt == sc.extraSegs) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+#else
+                if (cnt == sc.extraSegs) {
+#endif
+                    cands.push_back(candIter->first);
+                }
+
+                cnt = 0;
+
+            }
+
+        }
+
+    }
+
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, id, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+
+    std::vector<numSeqs_t> cands, candIntIds;
+    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+
+    auto& amplicon = ac[id];
+    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc.threshold, sc.extraSegs);
+    std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
+    for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
+        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+    }
+
+    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+
+        candCnts.clear();
+
+        for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
+
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            InvertedIndex& inv = indices.getIndex(childLen, i);
+
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
+
+                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+
+                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
+                    candCnts[*candIter]++;
+                }
+
+            }
+
+        }
+
+        auto& candSubs = substrsArchive[childLen][amplicon.seq.length()];
+        std::string candStr;
+        lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+
+        // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+        //  + pipelined backward filtering
+        for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+
+            if ((id != candIter->first) && (candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
+
+                candStr = ac[candIter->first].seq;
+
+                for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs && cnt < sc.extraSegs; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+#if QGRAM_FILTER
+                if ((cnt == sc.extraSegs) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+#else
+                if (cnt == sc.extraSegs) {
+#endif
+                    cands.push_back(candIter->first);
+                }
+
+                cnt = 0;
+
+            }
+
+        }
+
+    }
+
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, id, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+
+}
+
+#else
 
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
@@ -1050,6 +1786,8 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
     }
 
 }
+#endif
+
 
 void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc) {
 

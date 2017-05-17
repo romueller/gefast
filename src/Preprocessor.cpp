@@ -64,7 +64,11 @@ void Preprocessor::lowerCase(std::string& s) {
 
     //std::transform(s.begin(), s.end(), s.begin(), ::tolower); // safer, more general (but slower) version
     for (auto i = 0; i < s.size(); i++) {
+#if SIMD_VERIFICATION
+        s[i] = acgtuMap[(int)s[i]];
+#else
         s[i] = convert[s[i]];
+#endif
     }
 
 }
@@ -281,8 +285,12 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
         }
     }
 
-#if QGRAM_FILTER
+#if QGRAM_FILTER || SIMD_VERIFICATION
+#if SIMD_VERIFICATION
+    alphabet = "\1\2\3\4";
+#else
     alphabet = "acgtu";
+#endif
     Preprocessor::filterAlphabet(*ampls, alphabet);
 #endif
     if (flagAlph) {

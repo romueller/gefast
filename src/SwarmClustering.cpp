@@ -1218,6 +1218,19 @@ void SwarmClustering::cluster(const AmpliconPools& pools, const SwarmConfig& sc)
 }
 
 
+#if SIMD_VERIFICATION
+    std::string mapBack(std::string& s) {
+
+    std::string res(s);
+    for (auto i = 0; i < res.length(); i++) {
+        res[i] = SimdVerification::sym_nt[res[i]];
+    }
+
+    return res;
+
+}
+#endif
+
 void SwarmClustering::outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep) {
 
     std::ofstream oStream(oFile);
@@ -1375,7 +1388,11 @@ void SwarmClustering::outputSeeds(const std::string oFile, const AmpliconPools& 
 
         if (!otu->attached) {
 
+#if SIMD_VERIFICATION
+            sStream << ">" << (*ac)[otu->seedId].id << sepAbundance << otu->mass << std::endl << mapBack((*ac)[otu->seedId].seq) << std::endl;
+#else
             sStream << ">" << (*ac)[otu->seedId].id << sepAbundance << otu->mass << std::endl << (*ac)[otu->seedId].seq << std::endl;
+#endif
             oStream << sStream.rdbuf();
             sStream.str(std::string());
 

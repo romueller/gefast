@@ -88,15 +88,18 @@ namespace SegmentFilter {
         void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
 
     private:
+#if !SIMD_VERIFICATION
         void verify(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
 
         void verifyGotoh(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
+#endif
 
         const AmpliconCollection& ac_;
         RollingIndices<InvertedIndex>& indices_;
         std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive_;
         const SwarmClustering::SwarmConfig& sc_;
 
+#if !SIMD_VERIFICATION
         RotatingBuffers<Candidate> cbs_;
         std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches_;
         std::vector<std::thread> verifierThreads_;
@@ -104,6 +107,7 @@ namespace SegmentFilter {
         std::mutex mtxMatches_;
         std::mutex mtxDiscard_;
         numSeqs_t numDiscarded_;
+#endif
 
     };
 

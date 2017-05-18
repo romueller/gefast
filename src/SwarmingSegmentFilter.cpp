@@ -83,7 +83,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
     }
 
-    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, (Amplicon&) amplicon, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -134,7 +134,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
     }
 
-    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, (Amplicon&) amplicon, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -208,7 +208,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
     }
 
-    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((GeFaST::AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((GeFaST::AmpliconCollection&)ac_, (Amplicon&) amplicon, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -284,7 +284,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
     }
 
-    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, (Amplicon&) amplicon, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -622,7 +622,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
     }
 
-    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, (Amplicon&) amplicon, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -669,7 +669,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
     }
 
-    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, (Amplicon&) amplicon, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -741,7 +741,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
     }
 
-    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, (Amplicon&) amplicon, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -813,7 +813,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
     }
 
-    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, id, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac_, (Amplicon&) amplicon, cands, sc_.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -1325,7 +1325,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
     }
 
-    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, id, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, (Amplicon&) amplicon, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -1372,7 +1372,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
     }
 
-    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, id, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, (Amplicon&) amplicon, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -1442,7 +1442,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
     }
 
-    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, id, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    return cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, (Amplicon&) amplicon, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 
@@ -1512,7 +1512,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
     }
 
-    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, id, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
+    children = cands.size() > 0 ? SimdVerification::computeDiffsReduce((AmpliconCollection&)ac, (Amplicon&) amplicon, cands, sc.threshold) : std::vector<std::pair<numSeqs_t, lenSeqs_t>>();
 
 }
 

@@ -234,10 +234,10 @@ namespace SimdVerification {
 
     void swarm_simd_exit();
 
-    void swarm_simd_verify(AmpliconCollection& ac, numSeqs_t query_seq, std::vector<numSeqs_t>* index_seqs, std::vector<lenSeqs_t>* diffs, long bits);
+    void swarm_simd_verify(AmpliconCollection& ac, Amplicon& query_ampl, std::vector<numSeqs_t>* index_seqs, std::vector<lenSeqs_t>* diffs, long bits);
 
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> computeDiffs(AmpliconCollection& ac, numSeqs_t query_seq, std::vector<numSeqs_t>& index_seqs);
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> computeDiffsReduce(AmpliconCollection& ac, numSeqs_t query_seq, std::vector<numSeqs_t>& index_seqs, lenSeqs_t t);
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> computeDiffs(AmpliconCollection& ac, Amplicon& query_ampl, std::vector<numSeqs_t>& index_seqs);
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> computeDiffsReduce(AmpliconCollection& ac, Amplicon& query_ampl, std::vector<numSeqs_t>& index_seqs, lenSeqs_t t);
 
     void args_init(lenSeqs_t, int penMismatch, int penOpen, int penExtend);
 

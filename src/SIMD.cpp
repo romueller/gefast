@@ -419,11 +419,10 @@ namespace SimdVerification {
 
     }
 
-    void swarm_simd_verify(AmpliconCollection& ac, numSeqs_t query_seq, std::vector<numSeqs_t>* index_seqs, std::vector<lenSeqs_t>* diffs, long bits) {
+    void swarm_simd_verify(AmpliconCollection& ac, Amplicon& query_ampl, std::vector<numSeqs_t>* index_seqs, std::vector<lenSeqs_t>* diffs, long bits) {
 
-        auto& ampl = ac[query_seq];
-        query.seq = (char*) ampl.seq.data();
-        query.len = ampl.seq.length();
+        query.seq = (char*) query_ampl.seq.data();
+        query.len = query_ampl.seq.length();
 
         master_next = 0;
         master_pool = &ac;
@@ -468,11 +467,11 @@ namespace SimdVerification {
 
     }
 
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> computeDiffs(AmpliconCollection& ac, numSeqs_t query_seq, std::vector<numSeqs_t>& index_seqs) {
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> computeDiffs(AmpliconCollection& ac, Amplicon& query_ampl, std::vector<numSeqs_t>& index_seqs) {
 
         std::vector<lenSeqs_t> diffs(index_seqs.size());
 
-        swarm_simd_verify(ac, query_seq, &index_seqs, &diffs, 16);
+        swarm_simd_verify(ac, query_ampl, &index_seqs, &diffs, 16);
 
         std::vector<std::pair<numSeqs_t, lenSeqs_t>> res(diffs.size());
         for (auto i = 0; i < index_seqs.size(); i++) {
@@ -483,11 +482,11 @@ namespace SimdVerification {
 
     }
 
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> computeDiffsReduce(AmpliconCollection& ac, numSeqs_t query_seq, std::vector<numSeqs_t>& index_seqs, lenSeqs_t t) {
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> computeDiffsReduce(AmpliconCollection& ac, Amplicon& query_ampl, std::vector<numSeqs_t>& index_seqs, lenSeqs_t t) {
 
         std::vector<lenSeqs_t> diffs(index_seqs.size());
 
-        swarm_simd_verify(ac, query_seq, &index_seqs, &diffs, (t <= diff_saturation) ? 8 : 16);
+        swarm_simd_verify(ac, query_ampl, &index_seqs, &diffs, (t <= diff_saturation) ? 8 : 16);
 
         std::vector<std::pair<numSeqs_t, lenSeqs_t>> res;
         for (auto i = 0; i < index_seqs.size(); i++) {

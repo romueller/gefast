@@ -181,8 +181,8 @@ struct Otu {
  * Inverted indices for applying the segment filter in the fastidious clustering phase
  * Maps sequence substrings onto OTU members.
  */
-typedef SimpleBinaryRelation<std::string, OtuEntry*> InvertedIndexFastidious;
-typedef SimpleBinaryRelation<std::string, std::pair<Otu*, OtuEntry*>> InvertedIndexFastidious2;
+typedef SimpleBinaryRelation<StringIteratorPair, OtuEntry*, hashStringIteratorPair, equalStringIteratorPair> InvertedIndexFastidious;
+typedef SimpleBinaryRelation<StringIteratorPair, std::pair<Otu*, OtuEntry*>, hashStringIteratorPair, equalStringIteratorPair> InvertedIndexFastidious2;
 
 /**
  * Representation of a grafting candidate.

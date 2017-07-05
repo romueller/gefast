@@ -187,7 +187,7 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -226,7 +226,7 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq.begin() + substrPos, ac[curIntId].seq.begin() + substrPos +  subs.len));
 
                     for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                         candCnts[*candIter]++;
@@ -249,7 +249,7 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
         cands.push(candColl);
@@ -293,7 +293,7 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -332,7 +332,7 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq.begin() + substrPos, ac[curIntId].seq.begin() + substrPos + subs.len));
 
                     for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                         candCnts[*candIter]++;
@@ -363,7 +363,7 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -399,7 +399,7 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -441,7 +441,7 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq.begin() + substrPos, ac[curIntId].seq.begin() + substrPos + subs.len));
 
                     for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                         candCnts[*candIter]++;
@@ -464,7 +464,7 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
         cands.push(candColl);
@@ -508,7 +508,7 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -550,7 +550,7 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq.begin() + substrPos, ac[curIntId].seq.begin() + substrPos + subs.len));
 
                     for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                         candCnts[*candIter]++;
@@ -580,7 +580,7 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     } while (curIntId != sp.beginMatch);
@@ -617,7 +617,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -660,7 +660,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq.begin() + substrPos, ac[curIntId].seq.begin() + substrPos + subs.len));
 
                     for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                         candCnts[*candIter]++;
@@ -710,7 +710,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
         cands.push(candColl);
@@ -755,7 +755,7 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -798,7 +798,7 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq.begin() + substrPos, ac[curIntId].seq.begin() + substrPos + subs.len));
 
                     for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                         candCnts[*candIter]++;
@@ -856,7 +856,7 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -893,7 +893,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -939,7 +939,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq.begin() + substrPos, ac[curIntId].seq.begin() + substrPos + subs.len));
 
                     for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                         candCnts[*candIter]++;
@@ -989,7 +989,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
         cands.push(candColl);
@@ -1034,7 +1034,7 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     }
@@ -1080,7 +1080,7 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 
                 for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                    candIntIds = inv.getLabelsOf(std::string(ac[curIntId].seq, substrPos, subs.len));
+                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq.begin() + substrPos, ac[curIntId].seq.begin() + substrPos + subs.len));
 
                     for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                         candCnts[*candIter]++;
@@ -1138,7 +1138,7 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(segmentStrs[i], curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
         }
 
     } while (curIntId != sp.beginMatch);

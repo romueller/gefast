@@ -58,7 +58,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -109,7 +109,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -166,7 +166,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -242,7 +242,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -311,7 +311,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -370,7 +370,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -434,7 +434,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -518,7 +518,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -598,7 +598,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -644,7 +644,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -699,7 +699,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -771,7 +771,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -944,7 +944,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1022,7 +1022,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1110,7 +1110,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1213,7 +1213,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1300,7 +1300,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1347,7 +1347,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1400,7 +1400,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1470,7 +1470,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1538,7 +1538,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1594,7 +1594,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1656,7 +1656,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1735,7 +1735,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(std::string(amplicon.seq, substrPos, subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1834,7 +1834,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
             }
 
             for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
-                indices.getIndex(seqLen, i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+                indices.getIndex(seqLen, i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
             }
 
         }
@@ -1847,7 +1847,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 
     SwarmClustering::OtuEntry curSeed, newSeed;
     bool unique;
-    std::unordered_set<std::string> nonUniques;
+    std::unordered_set<StringIteratorPair, hashStringIteratorPair, equalStringIteratorPair> nonUniques;
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> next;
     lenSeqs_t lastGen;
     numSeqs_t pos;
@@ -1927,7 +1927,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 
                 // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
                 // and when dereplicating each contributes (numUniqueSequences used to count the multiplicity of the sequence)
-                unique = unique || sc.dereplicate || nonUniques.insert(ac[curSeed.id].seq).second;
+                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(ac[curSeed.id].seq.begin(), ac[curSeed.id].seq.end())).second;
                 curOtu->numUniqueSequences += unique;
 
                 lastGen = curSeed.gen;
@@ -1989,7 +1989,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
             }
 
             for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
-                indices.getIndex(seqLen, i).add(ac[curIntId].seq.substr(segments[i].first, segments[i].second), curIntId);
+                indices.getIndex(seqLen, i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
             }
 
         }
@@ -2002,7 +2002,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 
     SwarmClustering::OtuEntry curSeed, newSeed;
     bool unique;
-    std::unordered_set<std::string> nonUniques;
+    std::unordered_set<StringIteratorPair, hashStringIteratorPair, equalStringIteratorPair> nonUniques;
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> next;
     lenSeqs_t lastGen;
     numSeqs_t pos;
@@ -2092,7 +2092,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 
                 // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
                 // and when dereplicating each contributes (numUniqueSequences used to count the multiplicity of the sequence)
-                unique = unique || sc.dereplicate || nonUniques.insert(ac[curSeed.id].seq).second;
+                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(ac[curSeed.id].seq.begin(), ac[curSeed.id].seq.end())).second;
                 curOtu->numUniqueSequences += unique;
 
                 lastGen = curSeed.gen;

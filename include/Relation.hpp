@@ -41,7 +41,7 @@ namespace GeFaST {
  * STL-based (unordered_map, vector).
  * Prefers object-based operations.
  */
-template<typename O, typename L>
+template<typename O, typename L, typename H = std::hash<O>, typename P = std::equal_to<O>>
 class SimpleBinaryRelation {
 
 public:
@@ -228,7 +228,7 @@ public:
 
 
 private:
-    std::unordered_map<O, std::vector<L>> binRel_;
+    std::unordered_map<O, std::vector<L>, H, P> binRel_;
 
 };
 
@@ -394,7 +394,7 @@ private:
  * Instead of iterating over all rows, each column (label) can be processed by following vertical links
  * pointing to the next row containing the label.
  */
-template<typename O, typename L>
+template<typename O, typename L, typename H = std::hash<O>, typename P = std::equal_to<O>>
 class TwoLinkBinaryRelation {
 
     struct Entry;
@@ -662,7 +662,7 @@ public:
 
 private:
     std::unordered_map<L, std::pair<const O, LinkedRow>*> labels_;
-    std::unordered_map<O, LinkedRow> binRel_;
+    std::unordered_map<O, LinkedRow, H, P> binRel_;
 
 };
 
@@ -939,7 +939,7 @@ private:
 
 // maps sequence segments to amplicon 'ids' (represented by their indices within the AmpliconPool)
 //typedef SimpleBinaryRelation<std::string, numSeqs_t> InvertedIndex; // use with iterative index
-typedef TwoLinkBinaryRelation<std::string, numSeqs_t> InvertedIndex; // use with full index
+typedef TwoLinkBinaryRelation<StringIteratorPair, numSeqs_t, hashStringIteratorPair, equalStringIteratorPair> InvertedIndex; // use with full index
 
 
 /*

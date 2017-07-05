@@ -152,7 +152,7 @@ void SwarmClustering::fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>
         }
 
         for (lenSeqs_t i = 0; i < sc.fastidiousThreshold + sc.extraSegs; i++) {
-            indices.getIndex(seqLen, i).add(ac[memberIter->id].seq.substr(segments[i].first, segments[i].second), &(*memberIter));
+            indices.getIndex(seqLen, i).add(StringIteratorPair(ac[memberIter->id].seq.begin() + segments[i].first, ac[memberIter->id].seq.begin() + segments[i].first + segments[i].second), &(*memberIter));
         }
 
         graftCands[memberIter->id].childOtu = &otu;
@@ -310,7 +310,7 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 
                         for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                            candMembers = inv.getLabelsOf(std::string(acOtus[memberIter->id].seq, substrPos, subs.len));
+                            candMembers = inv.getLabelsOf(StringIteratorPair(acOtus[memberIter->id].seq.begin() + substrPos, acOtus[memberIter->id].seq.begin() + substrPos + subs.len));
 
                             for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
                                 candCnts[(*candIter)->id]++;
@@ -402,7 +402,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 
                         for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                            candMembers = inv.getLabelsOf(std::string(acOtus[memberIter->id].seq, substrPos, subs.len));
+                            candMembers = inv.getLabelsOf(StringIteratorPair(acOtus[memberIter->id].seq.begin() + substrPos, acOtus[memberIter->id].seq.begin() + substrPos + subs.len));
 
                             for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
                                 candCnts[(*candIter)->id]++;
@@ -520,7 +520,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 
                         for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                            candMembers = inv.getLabelsOf(std::string(acOtus[memberIter->id].seq, substrPos, subs.len));
+                            candMembers = inv.getLabelsOf(StringIteratorPair(acOtus[memberIter->id].seq.begin() + substrPos, acOtus[memberIter->id].seq.begin() + substrPos + subs.len));
 
                             for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
                                 candCnts[(*candIter)->id]++;
@@ -919,7 +919,7 @@ AmpliconCollection::iterator SwarmClustering::shiftIndexWindow(RollingIndices<In
             }
 
             for (lenSeqs_t i = 0; i < sc.fastidiousThreshold + sc.extraSegs; i++) {
-                indices.getIndex(seqLen, i).add(newIter->seq.substr(segments[i].first, segments[i].second), std::make_pair(curGraftCands[a].childOtu, curGraftCands[a].childMember));
+                indices.getIndex(seqLen, i).add(StringIteratorPair(newIter->seq.begin() + segments[i].first, newIter->seq.begin() + segments[i].first + segments[i].second), std::make_pair(curGraftCands[a].childOtu, curGraftCands[a].childMember));
             }
 
         }
@@ -951,7 +951,7 @@ AmpliconCollection::iterator SwarmClustering::shiftIndexWindow(RollingIndices<In
                 }
 
                 for (lenSeqs_t i = 0; i < sc.fastidiousThreshold + sc.extraSegs; i++) {
-                    indices.getIndex(seqLen, i).add(newIter->seq.substr(segments[i].first, segments[i].second), std::make_pair(nextGraftCands[a].childOtu, nextGraftCands[a].childMember));
+                    indices.getIndex(seqLen, i).add(StringIteratorPair(newIter->seq.begin() + segments[i].first, newIter->seq.begin() + segments[i].first + segments[i].second), std::make_pair(nextGraftCands[a].childOtu, nextGraftCands[a].childMember));
                 }
 
             }
@@ -1031,7 +1031,7 @@ void SwarmClustering::graftOtus2(numSeqs_t& maxSize, numSeqs_t& numOtus, const A
 
                     for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                        candMembers = inv.getLabelsOf(std::string(amplIter->seq, substrPos, subs.len));
+                        candMembers = inv.getLabelsOf(StringIteratorPair(amplIter->seq.begin() + substrPos, amplIter->seq.begin() + substrPos + subs.len));
 
                         for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
                             candCnts[candIter->first][candIter->second]++;

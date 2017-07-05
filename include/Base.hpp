@@ -266,6 +266,28 @@ private:
 // pair of amplicon 'ids', amplicons are potentially similar (have passed the filter, but not yet verified)
 typedef std::pair<numSeqs_t, numSeqs_t> Candidate;
 
+//TODO description
+typedef std::pair<std::string::const_iterator, std::string::const_iterator> StringIteratorPair;
+
+
+struct hashStringIteratorPair {
+    size_t operator()(const StringIteratorPair& p) const {
+        return std::hash<std::string>{}(std::string(p.first, p.second));
+    }
+};
+
+struct equalStringIteratorPair {
+    bool operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const {
+        return ((lhs.second - lhs.first) == (rhs.second - rhs.first)) && std::equal(lhs.first, lhs.second, rhs.first);
+    }
+};
+
+struct lessStringIteratorPair {
+    bool operator()(const StringIteratorPair& a, const StringIteratorPair& b) const {
+        return std::lexicographical_compare(a.first, a.second, b.first, b.second);
+    }
+};
+
 /*
 * Collection of (inverted) indices for the segment filter.
 *
@@ -363,6 +385,9 @@ public:
         return (indices_.find(len) != indices_.end());
     }
 
+    lenSeqs_t minLength() const {
+        return indices_.begin()->first;
+    }
     lenSeqs_t maxLength() const {
         return indices_.rbegin()->first;
     }

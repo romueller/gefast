@@ -28,7 +28,7 @@
 
 namespace GeFaST {
 
-Preprocessor::Defline Preprocessor::parseDescriptionLine(const std::string defline, const std::string sep) {
+Preprocessor::Defline Preprocessor::parseDescriptionLine(const std::string& defline, const std::string sep) {
 
     auto pos = defline.find(' ');
     numSeqs_t abundance = 1;
@@ -73,210 +73,27 @@ void Preprocessor::lowerCase(std::string& s) {
 
 }
 
-// adds contents of specified file (if readable) to the given LengthGroups object, returns pointer to this object
-// "normalises" to lower-case letters
-LengthGroups& Preprocessor::appendInput(LengthGroups& ampls, const std::string fileName, const std::string sep) {
+bool Preprocessor::checkSequence(const std::string& seq, const std::string& alphabet, lenSeqs_t minLen, lenSeqs_t maxLen, bool flagAlph, int flagLen) {
 
-    std::ifstream iStream(fileName);
-    if (!iStream.good()) {
+    bool valid = true;
 
-        std::cerr << "ERROR: File '" << fileName << "' not opened correctly. No sequences are read from it."
-                  << std::endl;
-        return ampls;
-
+    if (flagAlph) {
+        valid = seq.find_first_not_of(alphabet) == std::string::npos;
     }
 
-#if INPUT_RANK
-    numSeqs_t prevSize = ampls.size();
-#endif
-    numSeqs_t cnt = 0;
-    Defline dl;
-    std::string line, seq;
-
-
-    while (std::getline(iStream, line).good()) {
-
-        if (line.empty() || line[0] == ';') continue; // skip empty and comment lines (begin with ';')
-
-        if (line[0] == '>') { // header line
-
-            cnt++;
-
-            if (cnt == 1) { // first entry found (no previous entry to finish), simply parse header
-
-                dl = parseDescriptionLine(line, sep);
-
-            } else { // finish and store previous entry, then collect parse header of new entry
-
-                lowerCase(seq);
-#if INPUT_RANK
-                ampls.add(Amplicon(dl.id, seq, dl.abundance, prevSize + cnt));
-#else
-                ampls.add(Amplicon(dl.id, seq, dl.abundance));
-#endif
-
-                seq.clear();
-                dl = parseDescriptionLine(line, sep);
-
-            }
-
-        } else { // still the same entry, continue to collect sequence
-
-            seq += line;
-
-        }
-    }
-
-    if (cnt > 0) { // ensures that last entry (if any) is written to file.
-
-        lowerCase(seq);
-#if INPUT_RANK
-        ampls.add(Amplicon(dl.id, seq, dl.abundance, prevSize + cnt));
-#else
-        ampls.add(Amplicon(dl.id, seq, dl.abundance));
-#endif
-
-    }
-
-    return ampls;
-
-
-}
-
-
-LengthGroups& Preprocessor::filterMinLength(LengthGroups& lg, const numSeqs_t minLen) {
-
-    auto& groups = lg.getGroups();
-    auto endIter = groups.begin();
-    for (; endIter != groups.end() && endIter->first < minLen; endIter++) {}
-
-    groups.erase(groups.begin(), endIter);
-
-    return lg;
-
-}
-
-
-LengthGroups& Preprocessor::filterMaxLength(LengthGroups& lg, const numSeqs_t maxLen) {
-
-    auto& groups = lg.getGroups();
-    auto beginIter = groups.begin();
-    for (; beginIter != groups.end() && beginIter->first <= maxLen; beginIter++) {}
-
-    groups.erase(beginIter, groups.end());
-
-    return lg;
-
-}
-
-
-LengthGroups& Preprocessor::filterMinMaxLength(LengthGroups& lg, const numSeqs_t minLen, const numSeqs_t maxLen) {
-
-    return filterMaxLength(filterMinLength(lg, minLen), maxLen);
-
-}
-
-
-LengthGroups& Preprocessor::filterAlphabet(LengthGroups& lg, const std::string& alph) {
-
-    auto& groups = lg.getGroups();
-
-    // remove (in each length group) all amplicons with unsuitable sequences
-    for (auto groupIter = groups.begin(); groupIter != groups.end(); groupIter++) {
-
-        groupIter->second.erase(
-                std::remove_if(
-                        groupIter->second.begin(),
-                        groupIter->second.end(),
-                        [alph](Amplicon& a) {
-                            return a.seq.find_first_not_of(alph) != std::string::npos;
-                        }),
-                groupIter->second.end()
-        );
-
-    }
-
-    // clear LengthGroups from empty groups
-    for (auto iter = groups.begin(); iter != groups.end();) {
-        if (iter->second.size() == 0) {
-            iter = groups.erase(iter);
-        } else {
-            iter++;
-        }
-    }
-
-    return lg;
-
-}
-
-
-LengthGroups& Preprocessor::filterRegex(LengthGroups& lg, const std::regex& expr) {
-
-    auto& groups = lg.getGroups();
-
-    // remove (in each length group) all amplicons with unsuitable sequences
-    for (auto groupIter = groups.begin(); groupIter != groups.end(); groupIter++) {
-
-        groupIter->second.erase(
-                std::remove_if(
-                        groupIter->second.begin(),
-                        groupIter->second.end(),
-                        [expr](Amplicon& a) {
-                            return !std::regex_search(a.seq, expr);
-                        }),
-                groupIter->second.end()
-        );
-
-    }
-
-    // clear LengthGroups from empty groups
-    for (auto iter = groups.begin(); iter != groups.end();) {
-        if (iter->second.size() == 0) {
-            iter = groups.erase(iter);
-        } else {
-            iter++;
-        }
-    }
-
-    return lg;
-
-}
-
-
-AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vector<std::string>& fileNames) {
-
-    // collect amplicons from all input files
-    LengthGroups* ampls = new LengthGroups();
-    std::string sep = conf.get(SEPARATOR_ABUNDANCE);
-    for (auto iter = fileNames.begin(); iter != fileNames.end(); iter++) {
-        appendInput(*ampls, *iter, sep);
-    }
-
-
-    // apply filters (depending on configuration)
-    lenSeqs_t minLength, maxLength;
-    std::string alphabet;
-
-    int flagLength = std::stoi(conf.get(FILTER_LENGTH));
-    bool flagAlph = bool(std::stoi(conf.get(FILTER_ALPHABET)));
-
-    switch (flagLength) {
+    switch (flagLen) {
         case 1: { // 01 = only max
-            maxLength = std::stoul(conf.get(MAX_LENGTH));
-            Preprocessor::filterMaxLength(*ampls, maxLength);
+            valid = valid && seq.length() <= maxLen;
             break;
         }
 
         case 2: { // 10 = only min
-            minLength = std::stoul(conf.get(MIN_LENGTH));
-            Preprocessor::filterMinLength(*ampls, minLength);
+            valid = valid && minLen <= seq.length();
             break;
         }
 
         case 3: { // 11 = min & max
-            minLength = std::stoul(conf.get(MIN_LENGTH));
-            maxLength = std::stoul(conf.get(MAX_LENGTH));
-            Preprocessor::filterMinMaxLength(*ampls, minLength, maxLength);
+            valid = valid && minLen <= seq.length() && seq.length() <= maxLen;
             break;
         }
 
@@ -285,27 +102,249 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
         }
     }
 
+    return valid;
+
+}
+
+unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, std::map<lenSeqs_t, numSeqs_t>& counts, const std::string fileName, const std::string sep) {
+
+    std::ifstream iStream(fileName);
+    if (!iStream.good()) {
+
+        std::cerr << "ERROR: File '" << fileName << "' not opened correctly. No sequences are read from it." << std::endl;
+        return 0;
+
+    }
+
+    // set up filters (depending on configuration)
+    lenSeqs_t minLength, maxLength;
+    std::string alphabet;
+    unsigned long long totalLength = 0;
+
+    int flagLength = std::stoi(conf.get(FILTER_LENGTH));
+
 #if QGRAM_FILTER || SIMD_VERIFICATION
+
+    bool flagAlph = true;
 #if SIMD_VERIFICATION
     alphabet = "\1\2\3\4";
 #else
     alphabet = "acgtu";
 #endif
-    Preprocessor::filterAlphabet(*ampls, alphabet);
-#endif
+
+#else
+
+    bool flagAlph = bool(std::stoi(conf.get(FILTER_ALPHABET)));
     if (flagAlph) {
-
         alphabet = conf.get(ALPHABET);
-        Preprocessor::filterAlphabet(*ampls, alphabet);
+    }
 
+#endif
+
+    switch (flagLength) {
+        case 1: { // 01 = only max
+            maxLength = std::stoul(conf.get(MAX_LENGTH));
+            break;
+        }
+
+        case 2: { // 10 = only min
+            minLength = std::stoul(conf.get(MIN_LENGTH));
+            break;
+        }
+
+        case 3: { // 11 = min & max
+            minLength = std::stoul(conf.get(MIN_LENGTH));
+            maxLength = std::stoul(conf.get(MAX_LENGTH));
+            break;
+        }
+
+        default: {
+            // do nothing
+        }
     }
 
 
-    // pool length groups into amplicon collections
-    lenSeqs_t threshold = std::stoul(conf.get(THRESHOLD));
-    AmpliconPools* pools = ampls->pool(threshold);
+    Defline dl;
+    std::string line, seq;
+    bool first = true;
 
-    delete ampls;
+    while (std::getline(iStream, line).good()) {
+
+        if (line.empty() || line[0] == ';') continue; // skip empty and comment lines (begin with ';')
+
+        if (line[0] == '>') { // header line
+
+            if (first) { // first entry found (no previous entry to finish), simply parse header
+
+                dl = parseDescriptionLine(line, sep);
+                first = false;
+
+            } else { // finish and store previous entry, then collect parse header of new entry
+
+                lowerCase(seq);
+
+                if (checkSequence(seq, alphabet, minLength, maxLength, flagAlph, flagLength)) {
+
+                    counts[seq.length()]++;
+                    totalLength += dl.id.length() + seq.length() + 2;
+
+                }
+
+                seq.clear();
+
+            }
+
+        } else { // still the same entry, continue to collect sequence
+            seq += line;
+        }
+    }
+
+    if (!first) { // ensures that last entry (if any) is written to file.
+
+        lowerCase(seq);
+
+        if (checkSequence(seq, alphabet, minLength, maxLength, flagAlph, flagLength)) {
+
+            counts[seq.length()]++;
+            totalLength += dl.id.length() + seq.length() + 2;
+
+        }
+
+    }
+
+    return totalLength;
+
+}
+
+//TODO adapt description
+// adds contents of specified file (if readable) to the given LengthGroups object, returns pointer to this object
+// "normalises" to lower-case letters
+void Preprocessor::appendInput(const Config<std::string>& conf, AmpliconPools& pools, std::map<lenSeqs_t, numSeqs_t>& poolMap, const std::string fileName, const std::string sep) {
+
+    std::ifstream iStream(fileName);
+    if (!iStream.good()) {
+
+        std::cerr << "ERROR: File '" << fileName << "' not opened correctly. No sequences are read from it." << std::endl;
+        return;
+
+    }
+
+    // set up filters (depending on configuration)
+    lenSeqs_t minLength, maxLength;
+    std::string alphabet;
+
+    int flagLength = std::stoi(conf.get(FILTER_LENGTH));
+
+#if QGRAM_FILTER || SIMD_VERIFICATION
+
+    bool flagAlph = true;
+#if SIMD_VERIFICATION
+    alphabet = "\1\2\3\4";
+#else
+    alphabet = "acgtu";
+#endif
+
+#else
+
+    bool flagAlph = bool(std::stoi(conf.get(FILTER_ALPHABET)));
+    if (flagAlph) {
+        alphabet = conf.get(ALPHABET);
+    }
+
+#endif
+
+    switch (flagLength) {
+        case 1: { // 01 = only max
+            maxLength = std::stoul(conf.get(MAX_LENGTH));
+            break;
+        }
+
+        case 2: { // 10 = only min
+            minLength = std::stoul(conf.get(MIN_LENGTH));
+            break;
+        }
+
+        case 3: { // 11 = min & max
+            minLength = std::stoul(conf.get(MIN_LENGTH));
+            maxLength = std::stoul(conf.get(MAX_LENGTH));
+            break;
+        }
+
+        default: {
+            // do nothing
+        }
+    }
+
+
+    Defline dl;
+    std::string line, seq;
+    bool first = true;
+
+
+    while (std::getline(iStream, line).good()) {
+
+        if (line.empty() || line[0] == ';') continue; // skip empty and comment lines (begin with ';')
+
+        if (line[0] == '>') { // header line
+
+            if (first) { // first entry found (no previous entry to finish), simply parse header
+
+                dl = parseDescriptionLine(line, sep);
+                first = false;
+
+            } else { // finish and store previous entry, then collect parse header of new entry
+
+                lowerCase(seq);
+
+                if (checkSequence(seq, alphabet, minLength, maxLength, flagAlph, flagLength)) {
+                    pools.add(poolMap[seq.length()], dl.id, seq, dl.abundance);
+                }
+
+                seq.clear();
+                dl = parseDescriptionLine(line, sep);
+
+            }
+
+        } else { // still the same entry, continue to collect sequence
+            seq += line;
+        }
+    }
+
+    if (!first) { // ensures that last entry (if any) is written to file.
+
+        lowerCase(seq);
+
+        if (checkSequence(seq, alphabet, minLength, maxLength, flagAlph, flagLength)) {
+            pools.add(poolMap[seq.length()], dl.id, seq, dl.abundance);
+        }
+
+    }
+
+}
+
+
+AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vector<std::string>& fileNames) {
+
+    std::string sep = conf.get(SEPARATOR_ABUNDANCE);
+
+    unsigned long long totalLength = 0;
+    std::map<lenSeqs_t, numSeqs_t> counts;
+    for (auto iter = fileNames.begin(); iter != fileNames.end(); iter++) {
+        totalLength += analyseInput(conf, counts, *iter, sep);
+    }
+
+    AmpliconPools* pools = new AmpliconPools(counts, totalLength, std::stoul(conf.get(THRESHOLD)));
+
+    for (auto iter = fileNames.begin(); iter != fileNames.end(); iter++) {
+        appendInput(conf, *pools, counts, *iter, sep);
+    }
+
+    for (lenSeqs_t i = 0; i < pools->numPools(); i++) {
+
+        auto p = pools->get(i);
+        std::sort(p->begin(), p->end(), AmpliconCompareAlph());
+
+    }
 
     return pools;
 

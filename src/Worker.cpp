@@ -52,9 +52,9 @@ void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
         cbs.close();
 
         if (useScore) {
-            Verification::verifyGotoh(ac_, localMatches, cbs.getBuffer(0), ac_.back().seq.length() + 1, threshold, scoring);
+            Verification::verifyGotoh(ac_, localMatches, cbs.getBuffer(0), ac_.back().len + 1, threshold, scoring);
         } else {
-            Verification::verify(ac_, localMatches, cbs.getBuffer(0), ac_.back().seq.length() + 1, threshold);
+            Verification::verify(ac_, localMatches, cbs.getBuffer(0), ac_.back().len + 1, threshold);
         }
 
 #else
@@ -77,8 +77,8 @@ void Worker::run(const lenSeqs_t threshold, const lenSeqs_t numExtraSegments) {
         std::thread verifierThreads[numThreads - 1];
         for (unsigned long v = 0; v < numThreads - 1; v++) {
             verifierThreads[v] = useScore ?
-                                   std::thread(&Verification::verifyGotoh, std::ref(ac_), std::ref(*(matchesPerThread[v])), std::ref(cbs.getBuffer(v)), ac_.back().seq.length() + 1, threshold, std::ref(scoring))
-                                 : std::thread(&Verification::verify, std::ref(ac_), std::ref(*(matchesPerThread[v])), std::ref(cbs.getBuffer(v)), ac_.back().seq.length() + 1, threshold);
+                                   std::thread(&Verification::verifyGotoh, std::ref(ac_), std::ref(*(matchesPerThread[v])), std::ref(cbs.getBuffer(v)), ac_.back().len + 1, threshold, std::ref(scoring))
+                                 : std::thread(&Verification::verify, std::ref(ac_), std::ref(*(matchesPerThread[v])), std::ref(cbs.getBuffer(v)), ac_.back().len + 1, threshold);
         }
 
         SegmentFilter::filter(ac_, sp_, cbs, threshold, numExtraSegments, mode);

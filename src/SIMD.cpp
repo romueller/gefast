@@ -421,8 +421,8 @@ namespace SimdVerification {
 
     void swarm_simd_verify(AmpliconCollection& ac, Amplicon& query_ampl, std::vector<numSeqs_t>* index_seqs, std::vector<lenSeqs_t>* diffs, long bits) {
 
-        query.seq = (char*) query_ampl.seq.data();
-        query.len = query_ampl.seq.length();
+        query.seq = query_ampl.seq;
+        query.len = query_ampl.len;
 
         master_next = 0;
         master_pool = &ac;

@@ -251,11 +251,9 @@ struct CandidateFastidious {
 
 /*
  * Diverse comparer structures for the two swarm clustering phases.
- *
- * They can make use of the input order (rank, ascending) of amplicons in order to break ties and to mimic swarm's behaviour.
- * The usage can be toggled on / off through setting INPUT_RANK (in Base.hpp) to 1 resp. 0.
  */
 // Sort indices [1:n] according to the respective abundances (descending) of the amplicons in the referenced AmpliconCollection
+// Use the "rank" of the associated amplicons as the tie-breaker
 struct CompareIndicesAbund {
 
     const AmpliconCollection& ac;
@@ -265,16 +263,13 @@ struct CompareIndicesAbund {
     }
 
     bool operator()(numSeqs_t a, numSeqs_t b) {
-        return (ac[a].abundance > ac[b].abundance)
-#if INPUT_RANK
-            || ((ac[a].abundance == ac[b].abundance) && (ac[a].rank < ac[b].rank))
-#endif
-                ;
+        return (ac[a].abundance > ac[b].abundance)|| ((ac[a].abundance == ac[b].abundance) && (ac[a].seq < ac[b].seq));
     }
 
 };
 
 // Sort OTU members according to the respective abundance (descending) of the amplicons in the referenced AmpliconCollection
+// Use the "rank" of the amplicons as the tie-breaker
 struct CompareOtuEntriesAbund {
 
     const AmpliconCollection& ac;
@@ -284,16 +279,13 @@ struct CompareOtuEntriesAbund {
     }
 
     bool operator()(const OtuEntry& a, const OtuEntry& b) {
-        return (ac[a.id].abundance > ac[b.id].abundance)
-#if INPUT_RANK
-            || ((ac[a.id].abundance == ac[b.id].abundance) && (ac[a.id].rank < ac[b.id].rank))
-#endif
-                ;
+        return (ac[a.id].abundance > ac[b.id].abundance) || ((ac[a.id].abundance == ac[b.id].abundance) && (ac[a.id].seq < ac[b.id].seq));
     }
 
 };
 
 // Sort OTUs by their mass (descending)
+// Use the rank of the seeds as the tie-breaker
 struct CompareOtusMass {
 
     const AmpliconPools& pools;
@@ -303,11 +295,7 @@ struct CompareOtusMass {
     }
 
     bool operator()(const Otu* a, const Otu* b) {
-        return (a->mass > b->mass)
-#if INPUT_RANK
-            || ((a->mass == b->mass) && ((*pools.get(a->poolId))[a->seedId].rank < (*pools.get(b->poolId))[b->seedId].rank))
-#endif
-                ;
+        return (a->mass > b->mass) || ((a->mass == b->mass) && ((*pools.get(a->poolId))[a->seedId].seq < (*pools.get(b->poolId))[b->seedId].seq));
     }
 };
 
@@ -321,15 +309,12 @@ struct CompareOtusSeedAbund {
     }
 
     bool operator()(const Otu* a, const Otu* b) {
-        return (a->seedAbundance > b->seedAbundance)
-#if INPUT_RANK
-            || ((a->seedAbundance == b->seedAbundance) && ((*pools.get(a->poolId))[a->seedId].rank < (*pools.get(b->poolId))[b->seedId].rank))
-#endif
-                ;
+        return (a->seedAbundance > b->seedAbundance) || ((a->seedAbundance == b->seedAbundance) && ((*pools.get(a->poolId))[a->seedId].seq < (*pools.get(b->poolId))[b->seedId].seq));
     }
 };
 
 // Sort grafting candidates by the abundances of the parents and, if necessary, break ties through the abundances of the children (both descending)
+// Use the rank of the amplicons as the tie-breaker for the abundance comparison
 struct CompareGraftCandidatesAbund {
 
     const AmpliconPools& pools;
@@ -338,11 +323,9 @@ struct CompareGraftCandidatesAbund {
         // nothing more to do
     }
 
-#if INPUT_RANK
     inline bool compareMember(const AmpliconCollection& poolA, numSeqs_t memberIdA, const AmpliconCollection& poolB, numSeqs_t memberIdB) {
-        return (poolA[memberIdA].abundance > poolB[memberIdB].abundance) || ((poolA[memberIdA].abundance == poolB[memberIdB].abundance) && (poolA[memberIdA].rank < poolB[memberIdB].rank));
+        return (poolA[memberIdA].abundance > poolB[memberIdB].abundance) || ((poolA[memberIdA].abundance == poolB[memberIdB].abundance) && (poolA[memberIdA].seq < poolB[memberIdB].seq));
     }
-#endif
 
     bool operator()(const GraftCandidate& a, const GraftCandidate& b) {
 
@@ -351,14 +334,7 @@ struct CompareGraftCandidatesAbund {
         AmpliconCollection& childPoolA = *pools.get(a.childOtu->poolId);
         AmpliconCollection& childPoolB = *pools.get(b.childOtu->poolId);
 
-        return
-#if INPUT_RANK
-         compareMember(parentPoolA, a.parentMember->id, parentPoolB, b.parentMember->id)
-                || (parentPoolA[a.parentMember->id].rank == parentPoolB[b.parentMember->id].rank && compareMember(childPoolA, a.childMember->id, childPoolB, b.childMember->id));
-#else
-        (parentPoolA[a.parentMember->id].abundance > parentPoolB[b.parentMember->id].abundance)
-                || ((parentPoolA[a.parentMember->id].abundance == parentPoolB[b.parentMember->id].abundance) && (childPoolA[a.childMember->id].abundance > childPoolB[b.childMember->id].abundance));
-#endif
+        return compareMember(parentPoolA, a.parentMember->id, parentPoolB, b.parentMember->id) || (parentPoolA[a.parentMember->id].seq == parentPoolB[b.parentMember->id].seq && compareMember(childPoolA, a.childMember->id, childPoolB, b.childMember->id));
 
     }
 

@@ -564,8 +564,8 @@ namespace SimdVerification {
                             long length;
 
                             auto& ampl = ac[seqno];
-                            address = (char*) ampl.seq.data();
-                            length = ampl.seq.length();
+                            address = ampl.seq;
+                            length = ampl.len;
 
                             // printf("Seqno: %ld Address: %p\n", seqno, address);
                             d_address[c] = (BYTE *) address;

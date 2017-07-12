@@ -58,22 +58,39 @@ namespace Preprocessor {
     };
 
 
-    Defline parseDescriptionLine(const std::string defline, const std::string sep);
+    // splits description line into actual header, abundance value and additional information (if any)
+    Defline parseDescriptionLine(const std::string& defline, const std::string sep);
 
     void lowerCase(std::string& s);
 
-    LengthGroups& appendInput(LengthGroups& lg, const std::string fileName, const std::string sep);
+    // checks whether the given sequence satisfies the given filter criteria
+    bool checkSequence(const std::string& seq, const std::string& alphabet, lenSeqs_t minLen, lenSeqs_t maxLen, bool flagAlph, int flagLen);
 
-    LengthGroups& filterMinLength(LengthGroups& lg, const numSeqs_t minLen);
+    /*
+     * Scans the given input file for sequences that satisfy the preprocessor's filters.
+     * The sequences passing the filters are counted and, according to their length, recorded in the counts mapping.
+     * For passing sequences, also the combined length of identifier and sequence (+2 for terminating \0's) is summed up
+     * and finally returned.
+     */
+    unsigned long long analyseInput(const Config<std::string>& conf, std::map<lenSeqs_t, numSeqs_t>& counts, const std::string fileName, const std::string sep);
 
-    LengthGroups& filterMaxLength(LengthGroups& lg, const numSeqs_t maxLen);
+    /*
+     * Rereads the analysed input and inserts the suitable amplicons into the pools.
+     * poolMap assigns each sequence length the index of the pool into which it is to be inserted.
+     */
+    void appendInput(const Config<std::string>& conf, AmpliconPools& pools, std::map<lenSeqs_t, numSeqs_t>& poolMap, const std::string fileName, const std::string sep);
 
-    LengthGroups& filterMinMaxLength(LengthGroups& lg, const numSeqs_t minLen, const numSeqs_t maxLen);
-
-    LengthGroups& filterAlphabet(LengthGroups& lg, const std::string& alph);
-
-    LengthGroups& filterRegex(LengthGroups& lg, const std::regex& expr);
-
+    /*
+     * Manages the overall preprocessing step.
+     *
+     * First, all input files are analysed to determine
+     *  (a) how many sequences of which lengths will be retained after the preprocessing, and
+     *  (b) how much characters are necessary to store the sequences and their identifiers as C-strings in one long char array.
+     * Second, the amplicon pools are initialised based on the results of above analysis (see the constructor of
+     * AmpliconPools for important details).
+     * Third, all input files are read a second time to get the actual amplicons and fill the amplicon pools.
+     * Finally, sort the amplicons within each pool lexicographically.
+     */
     AmpliconPools* run(const Config<std::string>& conf, const std::vector<std::string>& fileNames);
 
 }

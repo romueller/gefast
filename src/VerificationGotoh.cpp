@@ -31,21 +31,21 @@
 
 namespace GeFaST {
 
-val_t Verification::computeGotohScoreFull(const std::string &s, const std::string &t, const Scoring& scoring) {
+val_t Verification::computeGotohScoreFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring) {
 
-    val_t D[s.size() + 1][t.size() + 1];
-    val_t P[s.size() + 1][t.size() + 1];
-    val_t Q[s.size() + 1][t.size() + 1];
+    val_t D[lenS + 1][lenT + 1];
+    val_t P[lenS + 1][lenT + 1];
+    val_t Q[lenS + 1][lenT + 1];
 
     // initialisation
     D[0][0] = scoring.penOpen;
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         D[i][0] = D[i - 1][0] + scoring.penExtend;
         Q[i][0] = POS_INF;
 
     }
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[0][j] = D[0][j - 1] + scoring.penExtend;
         P[0][j] = POS_INF;
@@ -54,9 +54,9 @@ val_t Verification::computeGotohScoreFull(const std::string &s, const std::strin
     D[0][0] = 0;
 
     // fill matrix
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             P[i][j] = std::min({
                                        D[i - 1][j] + scoring.penOpen + scoring.penExtend,
@@ -78,27 +78,27 @@ val_t Verification::computeGotohScoreFull(const std::string &s, const std::strin
 
     }
 
-    return D[s.size()][t.size()];
+    return D[lenS][lenT];
 
 }
 
-std::pair<val_t, std::string> Verification::computeGotohAlignmentFull(const std::string &s, const std::string &t, const Scoring& scoring) {
+std::pair<val_t, std::string> Verification::computeGotohAlignmentFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring) {
 
-    val_t D[s.size() + 1][t.size() + 1];
-    val_t P[s.size() + 1][t.size() + 1];
-    val_t Q[s.size() + 1][t.size() + 1];
-    char BT[s.size() + 1][t.size() + 1];
+    val_t D[lenS + 1][lenT + 1];
+    val_t P[lenS + 1][lenT + 1];
+    val_t Q[lenS + 1][lenT + 1];
+    char BT[lenS + 1][lenT + 1];
 
     // initialisation
     D[0][0] = scoring.penOpen;
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         D[i][0] = D[i - 1][0] + scoring.penExtend;
         BT[i][0] = UP_IN_P;
         Q[i][0] = POS_INF;
 
     }
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[0][j] = D[0][j - 1] + scoring.penExtend;
         BT[0][j] = LEFT_IN_Q;
@@ -110,9 +110,9 @@ std::pair<val_t, std::string> Verification::computeGotohAlignmentFull(const std:
     BT[0][1] = LEFT_TO_D;
 
     // fill matrix
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             P[i][j] = std::min({
                                        D[i - 1][j] + scoring.penOpen + scoring.penExtend,
@@ -144,8 +144,8 @@ std::pair<val_t, std::string> Verification::computeGotohAlignmentFull(const std:
 
     // backtracking (priorities: left > up > diagonal)
     std::string path = "";
-    lenSeqs_t i = s.size();
-    lenSeqs_t j = t.size();
+    lenSeqs_t i = lenS;
+    lenSeqs_t j = lenT;
 
     long MATRIX = 0;
 
@@ -218,24 +218,24 @@ std::pair<val_t, std::string> Verification::computeGotohAlignmentFull(const std:
 
     std::reverse(path.begin(), path.end());
 
-    return std::make_pair(D[s.size()][t.size()], path);
+    return std::make_pair(D[lenS][lenT], path);
 
 }
 
 
-lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string &t, const Scoring& scoring) {
+lenSeqs_t Verification::computeGotohFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring) {
 
-    val_t D[s.size() + 1][t.size() + 1];
-    val_t P[s.size() + 1][t.size() + 1];
-    val_t Q[s.size() + 1][t.size() + 1];
-    char BT[s.size() + 1][t.size() + 1];
-    lenSeqs_t cntDiffs[s.size() + 1][t.size() + 1];
-    lenSeqs_t cntDiffsP[s.size() + 1][t.size() + 1];
-    lenSeqs_t cntDiffsQ[s.size() + 1][t.size() + 1];
+    val_t D[lenS + 1][lenT + 1];
+    val_t P[lenS + 1][lenT + 1];
+    val_t Q[lenS + 1][lenT + 1];
+    char BT[lenS + 1][lenT + 1];
+    lenSeqs_t cntDiffs[lenS + 1][lenT + 1];
+    lenSeqs_t cntDiffsP[lenS + 1][lenT + 1];
+    lenSeqs_t cntDiffsQ[lenS + 1][lenT + 1];
 
     // initialisation
     D[0][0] = scoring.penOpen;
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         D[i][0] = D[i - 1][0] + scoring.penExtend;
         BT[i][0] = UP_IN_P;
@@ -243,7 +243,7 @@ lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string
         cntDiffs[i][0] = i;
 
     }
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[0][j] = D[0][j - 1] + scoring.penExtend;
         BT[0][j] = LEFT_IN_Q;
@@ -258,9 +258,9 @@ lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string
 
 
     // fill matrix
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             P[i][j] = std::min({
                                        D[i - 1][j] + scoring.penOpen + scoring.penExtend,
@@ -314,56 +314,56 @@ lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string
 #if 0
     std::cout << s << " vs. " << t << std::endl;
     std::cout << "===========D=============" << std::endl;
-    for (auto i = 0; i <= s.size(); i++) {
-        for (auto j = 0; j <= t.size(); j++) {
+    for (auto i = 0; i <= lenS; i++) {
+        for (auto j = 0; j <= lenT; j++) {
             std::cout << D[i][j] << " ";
         }
         std::cout << std::endl;
     }
     std::cout << "========================" << std::endl;
     std::cout << "===========P=============" << std::endl;
-    for (auto i = 0; i <= s.size(); i++) {
-        for (auto j = 0; j <= t.size(); j++) {
+    for (auto i = 0; i <= lenS; i++) {
+        for (auto j = 0; j <= lenT; j++) {
             std::cout << P[i][j] << " ";
         }
         std::cout << std::endl;
     }
     std::cout << "========================" << std::endl;
     std::cout << "===========Q=============" << std::endl;
-    for (auto i = 0; i <= s.size(); i++) {
-        for (auto j = 0; j <= t.size(); j++) {
+    for (auto i = 0; i <= lenS; i++) {
+        for (auto j = 0; j <= lenT; j++) {
             std::cout << Q[i][j] << " ";
         }
         std::cout << std::endl;
     }
     std::cout << "========================" << std::endl;
     std::cout << "===========BT=============" << std::endl;
-    for (auto i = 0; i <= s.size(); i++) {
-        for (auto j = 0; j <= t.size(); j++) {
+    for (auto i = 0; i <= lenS; i++) {
+        for (auto j = 0; j <= lenT; j++) {
             std::cout << (BT[i][j] & JUMP_TO_Q) << (BT[i][j] & JUMP_TO_P) << (BT[i][j] & DIAGONAL_IN_D) << " ";
         }
         std::cout << std::endl;
     }
     std::cout << "========================" << std::endl;
     std::cout << "=============cntDiffs===========" << std::endl;
-    for (auto i = 0; i <= s.size(); i++) {
-        for (auto j = 0; j <= t.size(); j++) {
+    for (auto i = 0; i <= lenS; i++) {
+        for (auto j = 0; j <= lenT; j++) {
             std::cout << cntDiffs[i][j] << " ";
         }
         std::cout << std::endl;
     }
     std::cout << "========================" << std::endl;
     std::cout << "=============cntDiffsP===========" << std::endl;
-    for (auto i = 0; i <= s.size(); i++) {
-        for (auto j = 0; j <= t.size(); j++) {
+    for (auto i = 0; i <= lenS; i++) {
+        for (auto j = 0; j <= lenT; j++) {
             std::cout << cntDiffsP[i][j] << " ";
         }
         std::cout << std::endl;
     }
     std::cout << "========================" << std::endl;
     std::cout << "=============cntDiffsQ===========" << std::endl;
-    for (auto i = 0; i <= s.size(); i++) {
-        for (auto j = 0; j <= t.size(); j++) {
+    for (auto i = 0; i <= lenS; i++) {
+        for (auto j = 0; j <= lenT; j++) {
             std::cout << cntDiffsQ[i][j] << " ";
         }
         std::cout << std::endl;
@@ -371,15 +371,15 @@ lenSeqs_t Verification::computeGotohFull(const std::string &s, const std::string
     std::cout << "========================" << std::endl;
 #endif
 
-    return cntDiffs[s.size()][t.size()];
+    return cntDiffs[lenS][lenT];
 
 }
 
-lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string &t, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // initialise first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
@@ -394,7 +394,7 @@ lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string 
     val_t match, tmpD, tmpP;
     lenSeqs_t diff, tmp;
 
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -405,7 +405,7 @@ lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string 
         cntDiffs[0] = i;
 
         // fill remaining row
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             // arrays D, P, Q, BT
             tmpP = std::min({
@@ -473,15 +473,15 @@ lenSeqs_t Verification::computeGotohRow(const std::string &s, const std::string 
 
     }
 
-    return cntDiffs[t.size()];
+    return cntDiffs[lenT];
 
 }
 
-lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // initialise first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
@@ -497,7 +497,7 @@ lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::st
     lenSeqs_t diff, tmp;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -510,7 +510,7 @@ lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::st
         early = true; // early termination flag
 
         // fill remaining row
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             // arrays D, P, Q, BT
             tmpP = std::min({
@@ -584,15 +584,15 @@ lenSeqs_t Verification::computeGotohEarlyRow(const std::string &s, const std::st
 
     }
 
-    return (cntDiffs[t.size()] > bound) ? (bound + 1) : cntDiffs[t.size()];
+    return (cntDiffs[lenT] > bound) ? (bound + 1) : cntDiffs[lenT];
 
 }
 
 #if 0
-lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohBoundedEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -602,7 +602,7 @@ lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const 
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= bound && j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= bound && j <= lenT; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
@@ -618,7 +618,7 @@ lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const 
     lenSeqs_t diff, tmp;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -631,7 +631,7 @@ lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const 
         early = true; // early termination flag
 
         // fill remaining row
-        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= t.size(); j++) { // same as starting from j = max(1, i - bound) with signed integers
+        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= lenT; j++) { // same as starting from j = max(1, i - bound) with signed integers
 
             // arrays D, P, Q, BT
             if (j == ((i > bound) * (i - bound))) {
@@ -737,14 +737,14 @@ lenSeqs_t Verification::computeGotohBoundedEarlyRow(const std::string &s, const 
 
     }
 
-    return (cntDiffs[t.size()] > bound) ? (bound + 1) : cntDiffs[t.size()];
+    return (cntDiffs[lenT] > bound) ? (bound + 1) : cntDiffs[lenT];
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -752,16 +752,15 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
         return lenSeqs_t(s != t);
     }
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) {
-        shorter.swap(longer);
-    }
-    lenSeqs_t delta = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t delta = lenLonger - lenShorter;
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= lenLonger; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
@@ -777,7 +776,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
     lenSeqs_t diff, tmp;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -790,7 +789,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
         early = true; // early termination flag
 
         // fill remaining row
-        for (lenSeqs_t j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); j <= i + (bound + delta) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
+        for (lenSeqs_t j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); j <= i + (bound + delta) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
 
             // arrays D, P, Q, BT
             if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
@@ -899,14 +898,14 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const std::string &s, co
 
     }
 
-    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+    return (cntDiffs[lenLonger] > bound) ? (bound + 1) : cntDiffs[lenLonger];
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -914,16 +913,17 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
         return lenSeqs_t(s != t);
     }
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) shorter.swap(longer);
-    lenSeqs_t delta = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t delta = lenLonger - lenShorter;
 
     // (mis)match is the only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
     if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
 
         lenSeqs_t diffs = 0;
-        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+        for (auto i = 0; diffs <= bound && i < lenShorter; i++) {
             diffs += (shorter[i] != longer[i]);
         }
 
@@ -933,7 +933,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= lenLonger; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
@@ -949,7 +949,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
     lenSeqs_t diff, tmp;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -962,7 +962,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
         early = true; // early termination flag
 
         // fill remaining row
-        for (lenSeqs_t j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); j <= i + (bound + delta) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
+        for (lenSeqs_t j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); j <= i + (bound + delta) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
 
             // arrays D, P, Q, BT
             if (j == ((i > (bound - delta) / 2) * (i - (bound - delta) / 2))) {
@@ -1067,14 +1067,14 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow2(const std::string &s, c
 
     }
 
-    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+    return (cntDiffs[lenLonger] > bound) ? (bound + 1) : cntDiffs[lenLonger];
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -1082,16 +1082,17 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
         return lenSeqs_t(s != t);
     }
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) shorter.swap(longer);
-    lenSeqs_t delta = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t delta = lenLonger - lenShorter;
 
     // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
     if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
 
         lenSeqs_t diffs = 0;
-        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+        for (auto i = 0; diffs <= bound && i < lenShorter; i++) {
             diffs += (shorter[i] != longer[i]);
         }
 
@@ -1101,7 +1102,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= lenLonger; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         P[j] = POS_INF;
@@ -1115,7 +1116,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
     lenSeqs_t diff, tmp;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -1127,7 +1128,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
         early = true; // early termination flag
 
         // fill remaining row
-        for (lenSeqs_t j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); j <= i + (bound + delta) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
+        for (lenSeqs_t j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); j <= i + (bound + delta) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
 
             // arrays D, P, Q, BT
             if (j == ((i > (bound - delta) / 2) * (i - (bound - delta) / 2))) {
@@ -1224,14 +1225,14 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow3(const std::string &s, c
 
     }
 
-    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+    return (cntDiffs[lenLonger] > bound) ? (bound + 1) : cntDiffs[lenLonger];
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -1239,16 +1240,17 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
         return lenSeqs_t(s != t);
     }
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) shorter.swap(longer);
-    lenSeqs_t delta = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t delta = lenLonger - lenShorter;
 
     // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
     if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
 
         lenSeqs_t diffs = 0;
-        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+        for (auto i = 0; diffs <= bound && i < lenShorter; i++) {
             diffs += (shorter[i] != longer[i]);
         }
 
@@ -1258,7 +1260,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= lenLonger; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         P[j] = POS_INF;
@@ -1272,7 +1274,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
     lenSeqs_t j, diff, tmp;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -1286,8 +1288,8 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
         // fill remaining row
         j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1);
         D[j - 1] = Q[j - 1] = POS_INF;
-        if (i + (bound + delta) / 2 <= longer.size()) {D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;}
-        for (; j <= i + (bound + delta) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
+        if (i + (bound + delta) / 2 <= lenLonger) {D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;}
+        for (; j <= i + (bound + delta) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
 
             // arrays D, P, Q, BT
             tmpP = std::min({
@@ -1353,14 +1355,14 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow4(const std::string &s, c
 
     }
 
-    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+    return (cntDiffs[lenLonger] > bound) ? (bound + 1) : cntDiffs[lenLonger];
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -1368,16 +1370,17 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
         return lenSeqs_t(s != t);
     }
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) shorter.swap(longer);
-    lenSeqs_t delta = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t delta = lenLonger - lenShorter;
 
     // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
     if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
 
         lenSeqs_t diffs = 0;
-        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+        for (auto i = 0; diffs <= bound && i < lenShorter; i++) {
             diffs += (shorter[i] != longer[i]);
         }
 
@@ -1390,7 +1393,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= br && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= br && j <= lenLonger; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         P[j] = POS_INF;
@@ -1404,7 +1407,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
     lenSeqs_t diff, tmp;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -1418,8 +1421,8 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
         // fill remaining row
         lenSeqs_t j = 1 + (i > bl) * (i - bl - 1);
         D[j - 1] = Q[j - 1] = POS_INF;
-        if (i + br <= longer.size()) {D[i + br] = P[i + br] = POS_INF;}
-        for (; j <= i + br && j <= longer.size(); j++) { // same as starting from j = max(1, i - bl) with signed integers
+        if (i + br <= lenLonger) {D[i + br] = P[i + br] = POS_INF;}
+        for (; j <= i + br && j <= lenLonger; j++) { // same as starting from j = max(1, i - bl) with signed integers
 
             // arrays D, P, Q, BT
             tmpP = std::min({
@@ -1485,14 +1488,14 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow5(const std::string &s, c
 
     }
 
-    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+    return (cntDiffs[lenLonger] > bound) ? (bound + 1) : cntDiffs[lenLonger];
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -1500,16 +1503,17 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
         return lenSeqs_t(s != t);
     }
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) shorter.swap(longer);
-    lenSeqs_t delta = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t delta = lenLonger - lenShorter;
 
     // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
     if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
 
         lenSeqs_t diffs = 0;
-        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+        for (auto i = 0; diffs <= bound && i < lenShorter; i++) {
             diffs += (shorter[i] != longer[i]);
         }
 
@@ -1519,7 +1523,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= lenLonger; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         P[j] = POS_INF;
@@ -1533,7 +1537,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
     lenSeqs_t j, diff, maxDiff;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -1547,10 +1551,10 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
         // fill remaining row
         j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1);
         D[j - 1] = Q[j - 1] = POS_INF;
-        if (i + (bound + delta) / 2 <= longer.size()) {
+        if (i + (bound + delta) / 2 <= lenLonger) {
             D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;
         }
-        for (; j <= i + (bound + delta) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
+        for (; j <= i + (bound + delta) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
 
             // arrays D, P, Q, cntDiffs, cntDiffsP, cntDiffsQ
             if ((D[j] + scoring.penOpen + scoring.penExtend) <= (P[j] + scoring.penExtend)) {
@@ -1608,15 +1612,15 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow6(const std::string &s, c
 
     }
 
-    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+    return (cntDiffs[lenLonger] > bound) ? (bound + 1) : cntDiffs[lenLonger];
 
 }
 #endif
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow7(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow7(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -1624,16 +1628,17 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow7(const std::string &s, c
         return lenSeqs_t(s != t);
     }
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) shorter.swap(longer);
-    lenSeqs_t delta = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t delta = lenLonger - lenShorter;
 
     // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
     if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
 
         lenSeqs_t diffs = 0;
-        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+        for (auto i = 0; diffs <= bound && i < lenShorter; i++) {
             diffs += (shorter[i] != longer[i]);
         }
 
@@ -1643,7 +1648,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow7(const std::string &s, c
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= lenLonger; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         P[j] = POS_INF;
@@ -1657,7 +1662,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow7(const std::string &s, c
     lenSeqs_t j, diff, minValDiff, diffsQ;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -1671,11 +1676,11 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow7(const std::string &s, c
         // fill remaining row
         j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
         D[j - 1] = POS_INF;
-        if (i + (bound + delta) / 2 <= longer.size()) {
+        if (i + (bound + delta) / 2 <= lenLonger) {
             D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;
         }
 
-        for (; j <= i + (bound + delta) / 2 && j <= longer.size(); j++) {
+        for (; j <= i + (bound + delta) / 2 && j <= lenLonger; j++) {
 
             // arrays P & cntDiffsP
             if ((D[j] + scoring.penOpen + scoring.penExtend) <= (P[j] + scoring.penExtend)) {
@@ -1735,14 +1740,14 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow7(const std::string &s, c
 
     }
 
-    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+    return (cntDiffs[lenLonger] > bound) ? (bound + 1) : cntDiffs[lenLonger];
 
 }
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow8(const std::string &s, const std::string &t, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow8(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -1750,16 +1755,17 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow8(const std::string &s, c
         return lenSeqs_t(s != t);
     }
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) shorter.swap(longer);
-    lenSeqs_t delta = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t delta = lenLonger - lenShorter;
 
     // (mis)match is only possibility when we have to consider only one diagonal [happens only if (a) bound = delta = 0, or (b) bound = 1 and delta = 0, but (a) is already covered above]
     if ((bound - delta) / 2 == 0 && (bound + delta) / 2 == 0) {
 
         lenSeqs_t diffs = 0;
-        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+        for (auto i = 0; diffs <= bound && i < lenShorter; i++) {
             diffs += (shorter[i] != longer[i]);
         }
 
@@ -1769,7 +1775,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow8(const std::string &s, c
 
     // initialise necessary section of first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + delta) / 2 && j <= lenLonger; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         P[j] = POS_INF;
@@ -1783,7 +1789,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow8(const std::string &s, c
     lenSeqs_t j, diff, minValDiff, diffsQ;
     bool early;
 
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -1797,11 +1803,11 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow8(const std::string &s, c
         // fill remaining row
         j = 1 + (i > (bound - delta) / 2) * (i - (bound - delta) / 2 - 1); // same as starting from j = max(1, i - (bound - delta) / 2) with signed integers
         D[j - 1] = POS_INF;
-        if (i + (bound + delta) / 2 <= longer.size()) {
+        if (i + (bound + delta) / 2 <= lenLonger) {
             D[i + (bound + delta) / 2] = P[i + (bound + delta) / 2] = POS_INF;
         }
 
-        for (; j <= i + (bound + delta) / 2 && j <= longer.size(); j++) {
+        for (; j <= i + (bound + delta) / 2 && j <= lenLonger; j++) {
 
             // arrays P & cntDiffsP
             fromD = D[j] + scoring.penOpen + scoring.penExtend;
@@ -1866,7 +1872,7 @@ lenSeqs_t Verification::computeGotohLengthAwareEarlyRow8(const std::string &s, c
 
     }
 
-    return (cntDiffs[longer.size()] > bound) ? (bound + 1) : cntDiffs[longer.size()];
+    return (cntDiffs[lenLonger] > bound) ? (bound + 1) : cntDiffs[lenLonger];
 
 }
 
@@ -1889,7 +1895,7 @@ void Verification::verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffe
 
             if (!mat.contains(c.first, c.second)) {
 
-                lenSeqs_t d = computeGotohLengthAwareEarlyRow8(ac[c.first].seq, ac[c.second].seq, t, scoring, D, P, cntDiffs, cntDiffsP);
+                lenSeqs_t d = computeGotohLengthAwareEarlyRow8(ac[c.first].seq, ac[c.first].len, ac[c.second].seq, ac[c.second].len, t, scoring, D, P, cntDiffs, cntDiffsP);
 
                 if (d <= t) {
                     mat.add(c.first, c.second, d);
@@ -1905,23 +1911,23 @@ void Verification::verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffe
 
 
 
-Verification::AlignmentInformation Verification::computeGotohCigarFull(const std::string &s, const std::string &t, const Scoring& scoring) {
+Verification::AlignmentInformation Verification::computeGotohCigarFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring) {
 
-    val_t D[s.size() + 1][t.size() + 1];
-    val_t P[s.size() + 1][t.size() + 1];
-    val_t Q[s.size() + 1][t.size() + 1];
-    char BT[s.size() + 1][t.size() + 1];
+    val_t D[lenS + 1][lenT + 1];
+    val_t P[lenS + 1][lenT + 1];
+    val_t Q[lenS + 1][lenT + 1];
+    char BT[lenS + 1][lenT + 1];
 
     // initialisation
     D[0][0] = scoring.penOpen;
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         D[i][0] = D[i - 1][0] + scoring.penExtend;
         BT[i][0] = UP_IN_P;
         Q[i][0] = POS_INF;
 
     }
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[0][j] = D[0][j - 1] + scoring.penExtend;
         BT[0][j] = LEFT_IN_Q;
@@ -1936,9 +1942,9 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
     val_t fromD, fromPQ, minVal;
     char tmp;
 
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             // array P
             fromD = D[i - 1][j] + scoring.penOpen + scoring.penExtend;
@@ -2000,8 +2006,8 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
     std::vector<std::pair<char, lenSeqs_t >> cigarSegs = {std::make_pair('N',0)};
     lenSeqs_t len = 0;
     lenSeqs_t numDiffs = 0;
-    lenSeqs_t i = s.size();
-    lenSeqs_t j = t.size();
+    lenSeqs_t i = lenS;
+    lenSeqs_t j = lenT;
 
     while (i != 0 && j != 0) {
 
@@ -2102,20 +2108,20 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const std
 
 }
 
-Verification::AlignmentInformation Verification::computeGotohCigarFull1(const std::string &s, const std::string &t, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT) {
+Verification::AlignmentInformation Verification::computeGotohCigarFull1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT) {
 
-    lenSeqs_t width = t.size() + 1;
+    lenSeqs_t width = lenT + 1;
 
     // initialisation
     D[0] = scoring.penOpen;
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         D[i * width] = D[(i - 1) * width] + scoring.penExtend;
         BT[i * width] = UP_IN_P;
         Q[i * width] = POS_INF;
 
     }
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         BT[j] = LEFT_IN_Q;
@@ -2130,9 +2136,9 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull1(const st
     val_t fromD, fromPQ, minVal;
     char tmp;
 
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             // array P
             fromD = D[(i - 1) * width + j] + scoring.penOpen + scoring.penExtend;
@@ -2194,8 +2200,8 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull1(const st
     std::vector<std::pair<char, lenSeqs_t >> cigarSegs = {std::make_pair('N',0)};
     lenSeqs_t len = 0;
     lenSeqs_t numDiffs = 0;
-    lenSeqs_t i = s.size();
-    lenSeqs_t j = t.size();
+    lenSeqs_t i = lenS;
+    lenSeqs_t j = lenT;
 
     while (i != 0 && j != 0) {
 
@@ -2297,15 +2303,15 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull1(const st
 }
 
 
-Verification::AlignmentInformation Verification::computeGotohCigarRow(const std::string &s, const std::string &t, const Scoring& scoring) {
+Verification::AlignmentInformation Verification::computeGotohCigarRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring) {
 
-    val_t D[t.size() + 1];
-    val_t P[t.size() + 1];
-    char BT[s.size() + 1][t.size() + 1];
+    val_t D[lenT + 1];
+    val_t P[lenT + 1];
+    char BT[lenS + 1][lenT + 1];
 
     // initialise first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         P[j] = POS_INF;
@@ -2317,7 +2323,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow(const std:
     val_t match, valQ, fromD, fromPQ, minVal;
     char tmp;
 
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -2325,7 +2331,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow(const std:
         valQ = POS_INF;
 
         // fill remaining row
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             // array P
             fromD = D[j] + scoring.penOpen + scoring.penExtend;
@@ -2388,8 +2394,8 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow(const std:
     std::vector<std::pair<char, lenSeqs_t >> cigarSegs = {std::make_pair('N',0)};
     lenSeqs_t len = 0;
     lenSeqs_t numDiffs = 0;
-    lenSeqs_t i = s.size();
-    lenSeqs_t j = t.size();
+    lenSeqs_t i = lenS;
+    lenSeqs_t j = lenT;
 
     while (i != 0 && j != 0) {
 
@@ -2490,13 +2496,13 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow(const std:
 
 }
 
-Verification::AlignmentInformation Verification::computeGotohCigarRow1(const std::string &s, const std::string &t, const Scoring& scoring, val_t* D, val_t* P, char* BT) {
+Verification::AlignmentInformation Verification::computeGotohCigarRow1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, char* BT) {
 
-    lenSeqs_t width = t.size() + 1;
+    lenSeqs_t width = lenT + 1;
 
     // initialise first row
     D[0] = scoring.penOpen;
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
 
         D[j] = D[j - 1] + scoring.penExtend;
         P[j] = POS_INF;
@@ -2508,7 +2514,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow1(const std
     val_t match, valQ, fromD, fromPQ, minVal;
     char tmp;
 
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         // handle left end
         D[0] = scoring.penOpen + i * scoring.penExtend;
@@ -2516,7 +2522,7 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow1(const std
         valQ = POS_INF;
 
         // fill remaining row
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             // array P
             fromD = D[j] + scoring.penOpen + scoring.penExtend;
@@ -2579,8 +2585,8 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow1(const std
     std::vector<std::pair<char, lenSeqs_t >> cigarSegs = {std::make_pair('N',0)};
     lenSeqs_t len = 0;
     lenSeqs_t numDiffs = 0;
-    lenSeqs_t i = s.size();
-    lenSeqs_t j = t.size();
+    lenSeqs_t i = lenS;
+    lenSeqs_t j = lenT;
 
     while (i != 0 && j != 0) {
 

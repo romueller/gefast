@@ -47,18 +47,18 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
     auto& amplicon = ac_[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -98,18 +98,18 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
     auto& amplicon = ac_[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -148,25 +148,25 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     auto& amplicon = ac_[id];
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
         segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -176,7 +176,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         }
 
-        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive_[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -224,25 +224,25 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     auto& amplicon = ac_[id];
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
         segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -252,7 +252,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
         }
 
-        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive_[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -300,18 +300,18 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
     auto& amplicon = ac_[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -331,8 +331,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 #endif
 
                 dist = sc_.useScore ?
-                         Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
-                       : Verification::computeLengthAwareRow(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, M_);
+                         Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac_[candIter->first].seq, ac_[candIter->first].len, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
+                       : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac_[candIter->first].seq, ac_[candIter->first].len, sc_.threshold, M_);
 
                 if (dist <= sc_.threshold) {
                     matches.push_back(std::make_pair(candIter->first, dist));
@@ -359,18 +359,18 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
     auto& amplicon = ac_[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -390,8 +390,8 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 #endif
 
                 dist = sc_.useScore ?
-                         Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
-                       : Verification::computeLengthAwareRow(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, M_);
+                         Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac_[candIter->first].seq, ac_[candIter->first].len, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
+                       : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac_[candIter->first].seq, ac_[candIter->first].len, sc_.threshold, M_);
 
                 if (dist <= sc_.threshold) {
                     children.push_back(std::make_pair(candIter->first, dist));
@@ -416,25 +416,25 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     auto& amplicon = ac_[id];
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -444,7 +444,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         }
 
-        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive_[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -467,8 +467,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 #endif
 
                     dist = sc_.useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
-                           : Verification::computeLengthAwareRow(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, M_);
+                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac_[candIter->first].seq, ac_[candIter->first].len, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
+                           : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac_[candIter->first].seq, ac_[candIter->first].len, sc_.threshold, M_);
 
                     if (dist <= sc_.threshold) {
                         matches.push_back(std::make_pair(candIter->first, dist));
@@ -500,25 +500,25 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     auto& amplicon = ac_[id];
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -528,7 +528,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
         }
 
-        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive_[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -551,8 +551,8 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 #endif
 
                     dist = sc_.useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
-                           : Verification::computeLengthAwareRow(amplicon.seq, ac_[candIter->first].seq, sc_.threshold, M_);
+                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac_[candIter->first].seq, ac_[candIter->first].len, sc_.threshold, sc_.scoring, D_, P_, cntDiffs_, cntDiffsP_)
+                           : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac_[candIter->first].seq, ac_[candIter->first].len, sc_.threshold, M_);
 
                     if (dist <= sc_.threshold) {
                         children.push_back(std::make_pair(candIter->first, dist));
@@ -587,18 +587,18 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
     auto& amplicon = ac_[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -633,18 +633,18 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
     auto& amplicon = ac_[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -681,25 +681,25 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     auto& amplicon = ac_[id];
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
         segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -709,7 +709,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         }
 
-        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive_[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -753,25 +753,25 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     auto& amplicon = ac_[id];
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
         segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -781,7 +781,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
         }
 
-        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive_[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -857,7 +857,7 @@ void SegmentFilter::ParallelChildrenFinder::verify(std::vector<std::pair<numSeqs
 
             c = localBuffer.pop();
 
-            lenSeqs_t d = Verification::computeLengthAwareRow(ac_[c.first].seq, ac_[c.second].seq, sc_.threshold, M);
+            lenSeqs_t d = Verification::computeLengthAwareRow(ac_[c.first].seq, ac_[c.first].len, ac_[c.second].seq, ac_[c.second].len, sc_.threshold, M);
 
             if (d <= sc_.threshold) {
 
@@ -894,7 +894,7 @@ void SegmentFilter::ParallelChildrenFinder::verifyGotoh(std::vector<std::pair<nu
 
             c = localBuffer.pop();
 
-            lenSeqs_t d = Verification::computeGotohLengthAwareEarlyRow8(ac_[c.first].seq, ac_[c.second].seq, sc_.threshold, sc_.scoring, D, P, cntDiffs, cntDiffsP);
+            lenSeqs_t d = Verification::computeGotohLengthAwareEarlyRow8(ac_[c.first].seq, ac_[c.first].len, ac_[c.second].seq, ac_[c.second].len, sc_.threshold, sc_.scoring, D, P, cntDiffs, cntDiffsP);
 
             if (d <= sc_.threshold) {
 
@@ -933,18 +933,18 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
     auto& amplicon = ac_[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1011,18 +1011,18 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
     auto& amplicon = ac_[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1092,25 +1092,25 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     auto& amplicon = ac_[id];
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1120,7 +1120,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         }
 
-        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive_[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -1195,25 +1195,25 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     auto& amplicon = ac_[id];
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc_.threshold, sc_.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc_.threshold) * (amplicon.seq.length() - sc_.threshold); childLen <= amplicon.seq.length() + sc_.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1223,7 +1223,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
         }
 
-        auto& candSubs = substrsArchive_[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive_[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -1289,18 +1289,18 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
     auto& amplicon = ac[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1336,18 +1336,18 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
     auto& amplicon = ac[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1383,24 +1383,24 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
     auto& amplicon = ac[id];
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc.threshold, sc.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1410,7 +1410,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
         }
 
-        auto& candSubs = substrsArchive[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -1453,24 +1453,24 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
     auto& amplicon = ac[id];
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc.threshold, sc.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1480,7 +1480,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
         }
 
-        auto& candSubs = substrsArchive[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -1527,18 +1527,18 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
     auto& amplicon = ac[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1558,8 +1558,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 #endif
 
                 dist = sc.useScore ?
-                                  Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-                                : Verification::computeLengthAwareRow(amplicon.seq, ac[candIter->first].seq, sc.threshold, M);
+                                  Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, M);
 
                 if (dist <= sc.threshold) {
                     matches.push_back(std::make_pair(candIter->first, dist));
@@ -1583,18 +1583,18 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
     auto& amplicon = ac[id];
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1614,8 +1614,8 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 #endif
 
                 dist = sc.useScore ?
-                                  Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-                                : Verification::computeLengthAwareRow(amplicon.seq, ac[candIter->first].seq, sc.threshold, M);
+                                  Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, M);
 
                 if (dist <= sc.threshold) {
                     children.push_back(std::make_pair(candIter->first, dist));
@@ -1639,24 +1639,24 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
     auto& amplicon = ac[id];
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc.threshold, sc.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1666,7 +1666,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
         }
 
-        auto& candSubs = substrsArchive[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -1689,8 +1689,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 #endif
 
                     dist = sc.useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-                           : Verification::computeLengthAwareRow(amplicon.seq, ac[candIter->first].seq, sc.threshold, M);
+                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                           : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, M);
 
                     if (dist <= sc.threshold) {
                         matches.push_back(std::make_pair(candIter->first, dist));
@@ -1718,24 +1718,24 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
     auto& amplicon = ac[id];
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.seq.length(), sc.threshold, sc.extraSegs);
+    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
-    for (lenSeqs_t childLen = (amplicon.seq.length() > sc.threshold) * (amplicon.seq.length() - sc.threshold); childLen <= amplicon.seq.length() + sc.threshold; childLen++) {
+    for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
         candCnts.clear();
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.seq.length()][childLen][i];
+            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
 
             for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
 
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq.begin() + substrPos, amplicon.seq.begin() + substrPos + subs.len));
+                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
 
                 for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
                     candCnts[*candIter]++;
@@ -1745,7 +1745,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
         }
 
-        auto& candSubs = substrsArchive[childLen][amplicon.seq.length()];
+        auto& candSubs = substrsArchive[childLen][amplicon.len];
         std::string candStr;
         lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
 
@@ -1768,8 +1768,8 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 #endif
 
                     dist = sc.useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, ac[candIter->first].seq, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-                           : Verification::computeLengthAwareRow(amplicon.seq, ac[candIter->first].seq, sc.threshold, M);
+                             Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                           : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, M);
 
                     if (dist <= sc.threshold) {
                         children.push_back(std::make_pair(candIter->first, dist));
@@ -1803,7 +1803,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
         // index all amplicons
         for (numSeqs_t curIntId = 0; curIntId < ac.size(); curIntId++) {
 
-            seqLen = ac[curIntId].seq.length();
+            seqLen = ac[curIntId].len;
 
             if (!indices.contains(seqLen)) {
 
@@ -1834,7 +1834,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
             }
 
             for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
-                indices.getIndex(seqLen, i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
+                indices.getIndex(seqLen, i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
             }
 
         }
@@ -1916,7 +1916,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
                         curOtu->members.push_back(newSeed);
                         visited[matchIter->first] = true;
 
-                        auto& invs = indices.getIndicesRow(ac[matchIter->first].seq.length());
+                        auto& invs = indices.getIndicesRow(ac[matchIter->first].len);
                         for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
                             invs[i].removeLabel(matchIter->first);
                         }
@@ -1927,7 +1927,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 
                 // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
                 // and when dereplicating each contributes (numUniqueSequences used to count the multiplicity of the sequence)
-                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(ac[curSeed.id].seq.begin(), ac[curSeed.id].seq.end())).second;
+                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(ac[curSeed.id].seq, ac[curSeed.id].seq + ac[curSeed.id].len)).second;
                 curOtu->numUniqueSequences += unique;
 
                 lastGen = curSeed.gen;
@@ -1958,7 +1958,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
         // index all amplicons
         for (numSeqs_t curIntId = 0; curIntId < ac.size(); curIntId++) {
 
-            seqLen = ac[curIntId].seq.length();
+            seqLen = ac[curIntId].len;
 
             if (!indices.contains(seqLen)) {
 
@@ -1989,7 +1989,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
             }
 
             for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
-                indices.getIndex(seqLen, i).add(StringIteratorPair(ac[curIntId].seq.begin() + segments[i].first, ac[curIntId].seq.begin() + segments[i].first + segments[i].second), curIntId);
+                indices.getIndex(seqLen, i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
             }
 
         }
@@ -2081,7 +2081,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
                         curOtu->members.push_back(newSeed);
                         visited[matchIter->first] = true;
 
-                        auto& invs = indices.getIndicesRow(ac[matchIter->first].seq.length());
+                        auto& invs = indices.getIndicesRow(ac[matchIter->first].len);
                         for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
                             invs[i].removeLabel(matchIter->first);
                         }
@@ -2092,7 +2092,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 
                 // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
                 // and when dereplicating each contributes (numUniqueSequences used to count the multiplicity of the sequence)
-                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(ac[curSeed.id].seq.begin(), ac[curSeed.id].seq.end())).second;
+                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(ac[curSeed.id].seq, ac[curSeed.id].seq + ac[curSeed.id].len)).second;
                 curOtu->numUniqueSequences += unique;
 
                 lastGen = curSeed.gen;

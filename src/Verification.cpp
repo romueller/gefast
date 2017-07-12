@@ -28,22 +28,22 @@ namespace GeFaST {
 
 // ===== Exact computation =====
 
-lenSeqs_t Verification::computeClassicFull(const std::string& s, const std::string& t) {
+lenSeqs_t Verification::computeClassicFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT) {
 
-    lenSeqs_t M[s.size() + 1][t.size() + 1];
+    lenSeqs_t M[lenS + 1][lenT + 1];
 
     // initialise first column and row
-    for (lenSeqs_t i = 0; i <= s.size(); i++) {
+    for (lenSeqs_t i = 0; i <= lenS; i++) {
         M[i][0] = i;
     }
-    for (lenSeqs_t j = 1; j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= lenT; j++) {
         M[0][j] = j;
     }
 
     // compute remaining rows
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             M[i][j] = std::min({
                                        M[i - 1][j - 1] + (s[i - 1] != t[j - 1]), // (mis)match
@@ -55,28 +55,28 @@ lenSeqs_t Verification::computeClassicFull(const std::string& s, const std::stri
 
     }
 
-    return M[s.size()][t.size()];
+    return M[lenS][lenT];
 
 }
 
 
-lenSeqs_t Verification::computeClassicRow(const std::string& s, const std::string& t, lenSeqs_t* M) {
+lenSeqs_t Verification::computeClassicRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, lenSeqs_t* M) {
 
-//    lenSeqs_t M[t.size() + 1];
+//    lenSeqs_t M[lenT + 1];
     lenSeqs_t match, tmp;
 
     // initialise first row
-    for (lenSeqs_t j = 0; j <= t.size(); j++) {
+    for (lenSeqs_t j = 0; j <= lenT; j++) {
         M[j] = j;
     }
 
     // compute remaining rows
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         match = i - 1; // value of the epsilon column in the current row
         M[0] = i;
 
-        for (lenSeqs_t j = 1; j <= t.size(); j++) {
+        for (lenSeqs_t j = 1; j <= lenT; j++) {
 
             tmp = std::min({
                                    match + (s[i - 1] != t[j - 1]), // (mis)match
@@ -90,7 +90,7 @@ lenSeqs_t Verification::computeClassicRow(const std::string& s, const std::strin
 
     }
 
-    return M[t.size()];
+    return M[lenT];
 
 }
 
@@ -104,10 +104,10 @@ lenSeqs_t Verification::mapColIndex(const lenSeqs_t j, const lenSeqs_t i, const 
 
 // rationale for condition of the first case of the entry calculation: avoid underflow (due to unsigned integer type) by basically "disabling" this case for rows where it should not occur
 
-lenSeqs_t Verification::computeBoundedFull(const std::string& s, const std::string& t, const lenSeqs_t bound) {
+lenSeqs_t Verification::computeBoundedFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -116,13 +116,13 @@ lenSeqs_t Verification::computeBoundedFull(const std::string& s, const std::stri
     }
 
 
-    lenSeqs_t M[s.size() + 1][t.size() + 1];
+    lenSeqs_t M[lenS + 1][lenT + 1];
 
     // initialise necessary sections of first column and row
-    for (lenSeqs_t i = 0; i <= bound && i <= s.size(); i++) {
+    for (lenSeqs_t i = 0; i <= bound && i <= lenS; i++) {
         M[i][0] = i;
     }
-    for (lenSeqs_t j = 1; j <= bound && j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= bound && j <= lenT; j++) {
         M[0][j] = j;
     }
 
@@ -130,11 +130,11 @@ lenSeqs_t Verification::computeBoundedFull(const std::string& s, const std::stri
     bool early;
 
     // compute sections of remaining rows
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         early = true; // early termination flag
 
-        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= t.size(); j++) { // same as starting from j = max(1, i - bound) with signed integers
+        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= lenT; j++) { // same as starting from j = max(1, i - bound) with signed integers
 
             if (j == ((i > bound) * (i - bound))) {
 
@@ -170,14 +170,14 @@ lenSeqs_t Verification::computeBoundedFull(const std::string& s, const std::stri
 
     }
 
-    return (M[s.size()][t.size()] > bound) ? (bound + 1) : M[s.size()][t.size()];
+    return (M[lenS][lenT] > bound) ? (bound + 1) : M[lenS][lenT];
 
 }
 
-lenSeqs_t Verification::computeBoundedRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M) {
+lenSeqs_t Verification::computeBoundedRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, lenSeqs_t* M) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -186,25 +186,25 @@ lenSeqs_t Verification::computeBoundedRow(const std::string& s, const std::strin
     }
 
 
-//    lenSeqs_t M[t.size() + 1];
+//    lenSeqs_t M[lenT + 1];
     lenSeqs_t match, tmp;
 
     // initialise necessary section of first row
-    for (lenSeqs_t j = 0; j <= bound && j <= t.size(); j++) {
+    for (lenSeqs_t j = 0; j <= bound && j <= lenT; j++) {
         M[j] = j;
     }
 
     bool early;
 
     // compute sections of remaining rows
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         early = true; // early termination flag
 
         match = (i <= bound + 1) * (i - 1)  + (i > bound + 1) * M[i - bound - 1]; // same as: match = (i <= bound + 1) ? (i - 1) : M[i - bound - 1]
         M[0] = i;
 
-        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= t.size(); j++) { // same as starting from j = max(1, i - bound) with signed integers
+        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= lenT; j++) { // same as starting from j = max(1, i - bound) with signed integers
 
             if (j == ((i > bound) * (i - bound))) {
 
@@ -243,14 +243,14 @@ lenSeqs_t Verification::computeBoundedRow(const std::string& s, const std::strin
 
     }
 
-    return (M[t.size()] > bound) ? (bound + 1) : M[t.size()];
+    return (M[lenT] > bound) ? (bound + 1) : M[lenT];
 
 }
 
-lenSeqs_t Verification::computeBoundedFullSlim(const std::string& s, const std::string& t, const lenSeqs_t bound) {
+lenSeqs_t Verification::computeBoundedFullSlim(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -259,13 +259,13 @@ lenSeqs_t Verification::computeBoundedFullSlim(const std::string& s, const std::
     }
 
 
-    lenSeqs_t M[s.size() + 1][std::min(t.size() + 1, 2 * bound + 1)];
+    lenSeqs_t M[lenS + 1][std::min(lenT + 1, 2 * bound + 1)];
 
     // initialise necessary sections of first column and row
-    for (lenSeqs_t i = 0; i <= bound && i <= s.size(); i++) {
+    for (lenSeqs_t i = 0; i <= bound && i <= lenS; i++) {
         M[i][0] = i;
     }
-    for (lenSeqs_t j = 1; j <= bound && j <= t.size(); j++) {
+    for (lenSeqs_t j = 1; j <= bound && j <= lenT; j++) {
         M[0][j] = j;
     }
 
@@ -273,11 +273,11 @@ lenSeqs_t Verification::computeBoundedFullSlim(const std::string& s, const std::
     bool early;
 
     // compute sections of remaining rows
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         early = true; // early termination flag
 
-        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= t.size(); j++) { // same as starting from j = max(1, i - bound) with signed integers
+        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= lenT; j++) { // same as starting from j = max(1, i - bound) with signed integers
 
             if (j == ((i > bound) * (i - bound))) {
 
@@ -312,14 +312,14 @@ lenSeqs_t Verification::computeBoundedFullSlim(const std::string& s, const std::
 
     }
 
-    return (M[s.size()][t.size() - (s.size() > bound) * (s.size() - bound)] > bound) ? (bound + 1) : M[s.size()][t.size() - (s.size() > bound) * (s.size() - bound)];
+    return (M[lenS][lenT - (lenS > bound) * (lenS - bound)] > bound) ? (bound + 1) : M[lenS][lenT - (lenS > bound) * (lenS - bound)];
 
 }
 
-lenSeqs_t Verification::computeBoundedRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M) {
+lenSeqs_t Verification::computeBoundedRowSlim(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, lenSeqs_t* M) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -328,18 +328,18 @@ lenSeqs_t Verification::computeBoundedRowSlim(const std::string& s, const std::s
     }
 
 
-//    lenSeqs_t M[std::min(t.size() + 1, 2 * bound + 1)];
+//    lenSeqs_t M[std::min(lenT + 1, 2 * bound + 1)];
     lenSeqs_t match, tmp;
 
     // initialise necessary section of first row
-    for (lenSeqs_t j = 0; j <= bound && j <= t.size(); j++) {
+    for (lenSeqs_t j = 0; j <= bound && j <= lenT; j++) {
         M[j] = j;
     }
 
     bool early;
 
     // compute sections of remaining rows
-    for (lenSeqs_t i = 1; i <= s.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenS; i++) {
 
         early = true; // early termination flag
 
@@ -347,7 +347,7 @@ lenSeqs_t Verification::computeBoundedRowSlim(const std::string& s, const std::s
         M[0] = i;
 
 
-        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= t.size(); j++) { // same as starting from j = max(1, i - bound) with signed integers
+        for (lenSeqs_t j = 1 + (i > bound) * (i - bound - 1); j <= i + bound && j <= lenT; j++) { // same as starting from j = max(1, i - bound) with signed integers
 
             if (j == ((i > bound) * (i - bound))) {
 
@@ -388,7 +388,7 @@ lenSeqs_t Verification::computeBoundedRowSlim(const std::string& s, const std::s
 
     }
 
-    return (M[mapColIndex(t.size(), s.size(), bound)] > bound) ? (bound + 1) : M[mapColIndex(t.size(), s.size(), bound)];
+    return (M[mapColIndex(lenT, lenS, bound)] > bound) ? (bound + 1) : M[mapColIndex(lenT, lenS, bound)];
 
 }
 
@@ -398,10 +398,10 @@ lenSeqs_t Verification::computeBoundedRowSlim(const std::string& s, const std::s
 
 // rationale for condition of the first case of the entry calculation: avoid underflow (due to unsigned integer type) by basically "disabling" this case for rows where it should not occur
 
-lenSeqs_t Verification::computeLengthAwareFull(const std::string& s, const std::string& t, const lenSeqs_t bound) {
+lenSeqs_t Verification::computeLengthAwareFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -410,17 +410,19 @@ lenSeqs_t Verification::computeLengthAwareFull(const std::string& s, const std::
     }
 
 
-    std::string shorter = (s.size() < t.size()) ? s : t;
-    std::string longer = (s.size() >= t.size()) ? s : t;
-    lenSeqs_t diff = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t diff = lenLonger - lenShorter;
 
-    lenSeqs_t M[shorter.size() + 1][longer.size() + 1];
+    lenSeqs_t M[lenShorter + 1][lenLonger + 1];
 
     // initialise necessary sections of first column and row
-    for (lenSeqs_t i = 0; i <= (bound - diff) / 2 && i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 0; i <= (bound - diff) / 2 && i <= lenShorter; i++) {
         M[i][0] = i;
     }
-    for (lenSeqs_t j = 1; j <= (bound + diff) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + diff) / 2 && j <= lenLonger; j++) {
         M[0][j] = j;
     }
 
@@ -428,11 +430,11 @@ lenSeqs_t Verification::computeLengthAwareFull(const std::string& s, const std::
     bool early;
 
     // compute sections of remaining rows
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         early = true; // early termination flag
 
-        for (lenSeqs_t j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1); j <= i + (bound + diff) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
+        for (lenSeqs_t j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1); j <= i + (bound + diff) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
 
             if ((bound - diff) / 2 == 0 && (bound + diff) / 2 == 0) {
 
@@ -472,14 +474,14 @@ lenSeqs_t Verification::computeLengthAwareFull(const std::string& s, const std::
 
     }
 
-    return (M[shorter.size()][longer.size()] > bound) ? (bound + 1) : M[shorter.size()][longer.size()];
+    return (M[lenShorter][lenLonger] > bound) ? (bound + 1) : M[lenShorter][lenLonger];
 
 }
 
-lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M) {
+lenSeqs_t Verification::computeLengthAwareRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, lenSeqs_t* M) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -488,10 +490,11 @@ lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::s
     }
 
 
-    std::string shorter = s;
-    std::string longer = t;
-    if (shorter.size() > longer.size()) shorter.swap(longer);
-    lenSeqs_t diff = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t diff = lenLonger - lenShorter;
 
 
     lenSeqs_t match, tmp;
@@ -500,7 +503,7 @@ lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::s
     if ((bound - diff) / 2 == 0 && (bound + diff) / 2 == 0) {
 
         lenSeqs_t diffs = 0;
-        for (auto i = 0; diffs <= bound && i < shorter.size(); i++) {
+        for (auto i = 0; diffs <= bound && i < lenShorter; i++) {
             diffs += (shorter[i] != longer[i]);
         }
 
@@ -509,7 +512,7 @@ lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::s
     }
 
     // initialise necessary sections of first row
-    for (lenSeqs_t j = 0; j <= (bound + diff) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 0; j <= (bound + diff) / 2 && j <= lenLonger; j++) {
         M[j] = j;
     }
 
@@ -517,18 +520,18 @@ lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::s
     bool early;
 
     // compute sections of remaining rows
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         early = true; // early termination flag
 
         j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1);
         match = M[j - 1];
         M[j - 1] = (i <= (bound - diff) / 2) ? i : POS_INF; // handle left end to avoid case distinction
-        if (i + (bound + diff) / 2 <= longer.size()) { // handle right end to avoid case distinction
+        if (i + (bound + diff) / 2 <= lenLonger) { // handle right end to avoid case distinction
             M[i + (bound + diff) / 2] = POS_INF;
         }
 
-        for (; j <= i + (bound + diff) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
+        for (; j <= i + (bound + diff) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
 
             tmp = std::min({
                                    match + (shorter[i - 1] != longer[j - 1]), // (mis)match
@@ -550,14 +553,14 @@ lenSeqs_t Verification::computeLengthAwareRow(const std::string& s, const std::s
 
     }
 
-    return (M[longer.size()] > bound) ? (bound + 1) : M[longer.size()];
+    return (M[lenLonger] > bound) ? (bound + 1) : M[lenLonger];
 
 }
 
-lenSeqs_t Verification::computeLengthAwareFullSlim(const std::string& s, const std::string& t, const lenSeqs_t bound) {
+lenSeqs_t Verification::computeLengthAwareFullSlim(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -566,17 +569,19 @@ lenSeqs_t Verification::computeLengthAwareFullSlim(const std::string& s, const s
     }
 
 
-    std::string shorter = (s.size() < t.size()) ? s : t;
-    std::string longer = (s.size() >= t.size()) ? s : t;
-    lenSeqs_t diff = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t diff = lenLonger - lenShorter;
 
-    lenSeqs_t M[shorter.size() + 1][std::min(longer.size() + 1, (bound - diff) / 2 + 1 + (bound + diff) / 2)];
+    lenSeqs_t M[lenShorter + 1][std::min(lenLonger + 1, (bound - diff) / 2 + 1 + (bound + diff) / 2)];
 
     // initialise necessary sections of first column and row
-    for (lenSeqs_t i = 0; i <= (bound - diff) / 2 && i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 0; i <= (bound - diff) / 2 && i <= lenShorter; i++) {
         M[i][0] = i;
     }
-    for (lenSeqs_t j = 1; j <= (bound + diff) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 1; j <= (bound + diff) / 2 && j <= lenLonger; j++) {
         M[0][j] = j;
     }
 
@@ -584,11 +589,11 @@ lenSeqs_t Verification::computeLengthAwareFullSlim(const std::string& s, const s
     bool early;
 
     // compute sections of remaining rows
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         early = true; // early termination flag
 
-        for (lenSeqs_t j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1); j <= i + (bound + diff) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
+        for (lenSeqs_t j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1); j <= i + (bound + diff) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
 
             if ((bound - diff) / 2 == 0 && (bound + diff) / 2 == 0) {
 
@@ -627,14 +632,14 @@ lenSeqs_t Verification::computeLengthAwareFullSlim(const std::string& s, const s
 
     }
 
-    return (M[shorter.size()][mapColIndex(longer.size(), shorter.size(), (bound - diff) / 2)] > bound) ? (bound + 1) : M[shorter.size()][mapColIndex(longer.size(), shorter.size(), (bound - diff) / 2)];
+    return (M[lenShorter][mapColIndex(lenLonger, lenShorter, (bound - diff) / 2)] > bound) ? (bound + 1) : M[lenShorter][mapColIndex(lenLonger, lenShorter, (bound - diff) / 2)];
 
 }
 
-lenSeqs_t Verification::computeLengthAwareRowSlim(const std::string& s, const std::string& t, const lenSeqs_t bound, lenSeqs_t* M) {
+lenSeqs_t Verification::computeLengthAwareRowSlim(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, lenSeqs_t* M) {
 
     // long computation not necessary if lengths differ too much
-    if (((s.size() > t.size()) ? (s.size() - t.size()) : (t.size() - s.size())) > bound) {
+    if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
         return bound + 1;
     }
 
@@ -643,30 +648,32 @@ lenSeqs_t Verification::computeLengthAwareRowSlim(const std::string& s, const st
     }
 
 
-    std::string shorter = (s.size() < t.size()) ? s : t;
-    std::string longer = (s.size() >= t.size()) ? s : t;
-    lenSeqs_t diff = longer.size() - shorter.size();
+    const char* shorter = (lenS < lenT) ? s : t;
+    lenSeqs_t lenShorter = std::min(lenS, lenT);
+    const char* longer = (lenS >= lenT) ? s : t;
+    lenSeqs_t lenLonger = std::max(lenS, lenT);
+    lenSeqs_t diff = lenLonger - lenShorter;
 
 
-//    lenSeqs_t M[std::min(longer.size() + 1, (bound - diff) / 2 + 1 + (bound + diff) / 2)];
+//    lenSeqs_t M[std::min(lenLonger + 1, (bound - diff) / 2 + 1 + (bound + diff) / 2)];
     lenSeqs_t match, tmp;
 
     // initialise necessary sections of first row
-    for (lenSeqs_t j = 0; j <= (bound + diff) / 2 && j <= longer.size(); j++) {
+    for (lenSeqs_t j = 0; j <= (bound + diff) / 2 && j <= lenLonger; j++) {
         M[j] = j;
     }
 
     bool early;
 
     // compute sections of remaining rows
-    for (lenSeqs_t i = 1; i <= shorter.size(); i++) {
+    for (lenSeqs_t i = 1; i <= lenShorter; i++) {
 
         early = true; // early termination flag
 
         match = (i <= (bound - diff) / 2) * (i - 1) + (i > (bound - diff) / 2) * M[mapColIndex(i - (bound - diff) / 2 - 1, i - 1, (bound - diff) / 2)]; // same as match = (i <= (bound - diff) / 2) ? (i - 1) : M[mapColIndex(i - (bound - diff) / 2 - 1, i - 1, (bound - diff) / 2)]
         M[0] = i;
 
-        for (lenSeqs_t j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1); j <= i + (bound + diff) / 2 && j <= longer.size(); j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
+        for (lenSeqs_t j = 1 + (i > (bound - diff) / 2) * (i - (bound - diff) / 2 - 1); j <= i + (bound + diff) / 2 && j <= lenLonger; j++) { // same as starting from j = max(1, i - (bound - diff) / 2) with signed integers
 
             if ((bound - diff) / 2 == 0 && (bound + diff) / 2 == 0) {
 
@@ -709,7 +716,7 @@ lenSeqs_t Verification::computeLengthAwareRowSlim(const std::string& s, const st
 
     }
 
-    return (M[mapColIndex(longer.size(), shorter.size(), (bound - diff) / 2)] > bound) ? (bound + 1) : M[mapColIndex(longer.size(), shorter.size(), (bound - diff) / 2)];
+    return (M[mapColIndex(lenLonger, lenShorter, (bound - diff) / 2)] > bound) ? (bound + 1) : M[mapColIndex(lenLonger, lenShorter, (bound - diff) / 2)];
 
 }
 
@@ -730,7 +737,7 @@ void Verification::verify(const AmpliconCollection& ac, Matches& mat, Buffer<Can
 
             if (!mat.contains(c.first, c.second)) {
 
-                lenSeqs_t d = computeLengthAwareRow(ac[c.first].seq, ac[c.second].seq, t, M);
+                lenSeqs_t d = computeLengthAwareRow(ac[c.first].seq, ac[c.first].len, ac[c.second].seq, ac[c.second].len, t, M);
 
                 if (d <= t) {
                     mat.add(c.first, c.second, d);

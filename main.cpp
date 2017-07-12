@@ -152,13 +152,11 @@ int run(int argc, const char* argv[]) {
     for (numSeqs_t p = 0; p < pools->numPools(); p++) {
 
         ac = pools->get(p);
-        sort(ac->begin(), ac->end(), [](const Amplicon& amplA, const Amplicon& amplB) {
-            return (amplA.abundance > amplB.abundance)
-#if INPUT_RANK
-                   || ((amplA.abundance == amplB.abundance) && (amplA.rank < amplB.rank))
-#endif
-                    ;
-        });
+        sort(ac->begin(), ac->end(),
+             [](const Amplicon& amplA, const Amplicon& amplB) {
+                 return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (amplA.seq < amplB.seq));
+             }
+        );
 
     }
 
@@ -168,7 +166,7 @@ int run(int argc, const char* argv[]) {
     lenSeqs_t maxLen = 0;
     AmpliconCollection* pool = pools->get(pools->numPools() - 1);
     for (auto& ampl : *pool) {
-        maxLen = std::max(maxLen, ampl.seq.length());
+        maxLen = std::max(maxLen, ampl.len);
     }
 
     if (sc.useScore) {
@@ -199,6 +197,14 @@ int run(int argc, const char* argv[]) {
     std::cout << "DONE" << std::endl;
 #else // iterative index, swarming via matches
     std::cout << "DONE" << std::endl;
+
+    AmpliconCollection* ac;
+    for (numSeqs_t p = 0; p < pools->numPools(); p++) {
+
+        ac = pools->get(p);
+        sort(ac->begin(), ac->end(), AmpliconCompareLen());
+
+    }
 
     /* Matching */
     std::cout << "Matching..." << std::flush;

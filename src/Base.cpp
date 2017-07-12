@@ -52,38 +52,66 @@ char acgtuMap[256] =
 
 // ===== amplicon comparer structures =====
 
-struct AmpliconCompareAlph { // lexicographic, ascending
-    bool operator()(Amplicon amplA, Amplicon amplB) {
+bool AmpliconCompareAlph::operator()(const Amplicon& amplA, const Amplicon& amplB) {
+    return strcmp(amplA.seq, amplB.seq) < 0;
+}
 
-        return (amplA.seq < amplB.seq);
-    }
-} ampliconCompareAlph;
+bool AmpliconCompareLen::operator()(const Amplicon& amplA, const Amplicon& amplB) {
+    return (amplA.len < amplB.len);
+}
 
-struct AmpliconCompareLen { // by length, ascending
-    bool operator()(Amplicon amplA, Amplicon amplB) {
+bool AmpliconCompareAbund::operator()(const Amplicon& amplA, const Amplicon& amplB) {
+    return (amplA.abundance < amplB.abundance);
+}
 
-        return (amplA.seq.length() < amplB.seq.length());
-    }
-} ampliconCompLen;
-
-struct AmpliconCompareAbund { // by abundance, ascending
-    bool operator()(Amplicon amplA, Amplicon amplB) {
-
-        return (amplA.abundance < amplB.abundance);
-    }
-} ampliconCompAbund;
-
-struct AmpliconSeqEqual {
-    bool operator()(const Amplicon& amplA, const Amplicon& amplB) {
-        return (amplA.seq == amplB.seq);
-    }
-} ampliconSeqEqual;
+bool AmpliconSeqEqual::operator()(const Amplicon& amplA, const Amplicon& amplB) {
+    return strcmp(amplA.seq, amplB.seq) == 0;
+}
 
 
 // ===== AmpliconPools =====
 
-AmpliconPools::AmpliconPools() {
-    // nothing to do
+AmpliconPools::AmpliconPools(std::map<lenSeqs_t, numSeqs_t>& counts, const unsigned long long capacity, const lenSeqs_t threshold) {
+
+    strings_ = new char[capacity];
+    nextPos_ = strings_;
+    capacity_ = capacity;
+
+    if (counts.size() != 0) {
+
+        AmpliconCollection* curPool = 0;
+        numSeqs_t curPoolSize = 0;
+
+        // start the pool that will comprise the shortest amplicons
+        lenSeqs_t lastLen = counts.begin()->first;
+        curPool = new AmpliconCollection();
+        curPoolSize += counts.begin()->second;
+        counts.begin()->second = pools_.size();
+
+        // iterate over the remaining length groups, starting a new one if a break is detected
+        for (auto iter = ++counts.begin(); iter != counts.end(); iter++) {
+
+            if ((lastLen + threshold) < iter->first) { // new pool
+
+                curPool->reserve(curPoolSize);
+                pools_.push_back(curPool);
+
+                curPool = new AmpliconCollection();
+                curPoolSize = 0;
+
+            }
+
+            curPoolSize += iter->second;
+            iter->second = pools_.size();
+            lastLen = iter->first;
+
+        }
+
+        curPool->reserve(curPoolSize);
+        pools_.push_back(curPool);
+
+    }
+
 }
 
 AmpliconPools::~AmpliconPools() {
@@ -92,12 +120,23 @@ AmpliconPools::~AmpliconPools() {
         delete *iter;
     }
 
+    delete strings_;
+
 }
 
-void AmpliconPools::add(AmpliconCollection* ac) {
-    pools_.push_back(ac);
-}
+void AmpliconPools::add(const lenSeqs_t i, const std::string& header, const std::string& sequence, const numSeqs_t abundance) {
 
+    char* h = nextPos_;
+    strcpy(nextPos_, header.c_str());
+    nextPos_ += header.length() + 1;
+
+    char* s = nextPos_;
+    nextPos_ = strcpy(nextPos_, sequence.c_str());
+    nextPos_ += sequence.length() + 1;
+
+    pools_[i]->push_back(Amplicon(h, s, sequence.length(), abundance));
+
+}
 
 AmpliconCollection* AmpliconPools::get(const lenSeqs_t i) const {
     return (i < pools_.size()) ? pools_[i] : 0;
@@ -119,12 +158,26 @@ numSeqs_t AmpliconPools::numAmplicons() const {
 }
 
 
+//TODO? custom hash function (e.g. FNV) to avoid construction of temporary string
+size_t hashStringIteratorPair::operator()(const StringIteratorPair& p) const {
+    return std::hash<std::string>{}(std::string(p.first, p.second));
+}
+
+bool equalStringIteratorPair::operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const {
+    return ((lhs.second - lhs.first) == (rhs.second - rhs.first)) && std::equal(lhs.first, lhs.second, rhs.first);
+}
+
+bool lessStringIteratorPair::operator()(const StringIteratorPair& a, const StringIteratorPair& b) const {
+    return std::lexicographical_compare(a.first, a.second, b.first, b.second);
+}
+
+
 std::vector<Subpool> getSubpoolBoundaries(const AmpliconCollection& ac, const numSeqs_t num, const lenSeqs_t threshold) { // with even-partitioning scheme
 
     std::vector<Subpool> subpools;
 
     // use only one subpool if there are not enough sequences or every index-only part would start at the same position
-    if ((ac.size() < num) || ((ac.back().seq.size() - ac.front().seq.size()) <= threshold)) {
+    if ((ac.size() < num) || ((ac.back().len - ac.front().len) <= threshold)) {
 
         Subpool sp(0, 0, ac.size());
         subpools.push_back(sp);
@@ -150,10 +203,10 @@ std::vector<Subpool> getSubpoolBoundaries(const AmpliconCollection& ac, const nu
     // by moving backwards from beginMatch until sequences in the pool get too short w.r.t. the given threshold
     for (numSeqs_t i = 1; i < num; i++) {
 
-        lenSeqs_t lowerBound = (ac[subpools[i].beginMatch].seq.length() > threshold) * (ac[subpools[i].beginMatch].seq.length() - threshold);
+        lenSeqs_t lowerBound = (ac[subpools[i].beginMatch].len > threshold) * (ac[subpools[i].beginMatch].len - threshold);
 
         numSeqs_t j = subpools[i].beginMatch;
-        for (; j > 0 && ac[j - 1].seq.length() >= lowerBound; j--) { }
+        for (; j > 0 && ac[j - 1].len >= lowerBound; j--) { }
         subpools[i].beginIndex = j;
 
     }
@@ -187,7 +240,7 @@ std::vector<Subpool> getSubpoolBoundariesBackward(const AmpliconCollection& ac, 
     std::vector<Subpool> subpools;
 
     // use only one subpool if there are not enough sequences or every index-only part would end at the same position
-    if (ac.size() < num || ((ac.back().seq.size() - ac.front().seq.size()) <= threshold)) {
+    if (ac.size() < num || ((ac.back().len - ac.front().len) <= threshold)) {
 
         Subpool sp(ac.size(), 0, ac.size());
         subpools.push_back(sp);
@@ -213,10 +266,10 @@ std::vector<Subpool> getSubpoolBoundariesBackward(const AmpliconCollection& ac, 
     // by moving backwards from beginIndex until sequences in the pool get too long w.r.t. the given threshold
     for (numSeqs_t i = 0; i < num - 1; i++) {
 
-        lenSeqs_t upperBound = ac[subpools[i].beginIndex - 1].seq.length() + threshold;
+        lenSeqs_t upperBound = ac[subpools[i].beginIndex - 1].len + threshold;
 
         numSeqs_t j = subpools[i].beginIndex;
-        for (; j < ac.size() && ac[j].seq.length() <= upperBound; j++) { }
+        for (; j < ac.size() && ac[j].len <= upperBound; j++) { }
         subpools[i].end = j;
 
     }
@@ -241,93 +294,6 @@ std::vector<Subpool> getSubpoolBoundariesBackward(const AmpliconCollection& ac, 
     }
 
     return reducedSubpools;
-
-}
-
-
-// ===== LengthGroups =====
-
-LengthGroups::LengthGroups() {
-    // nothing to do
-}
-
-LengthGroups::LengthGroups(const AmpliconCollection& amplicons) {
-
-    for (auto iter = amplicons.begin(); iter != amplicons.end(); iter++) {
-        add(*iter);
-    }
-
-}
-
-void LengthGroups::add(const Amplicon& ampl) {
-    groups_[ampl.seq.length()].push_back(ampl);
-}
-
-std::map<lenSeqs_t, AmpliconCollection>& LengthGroups::getGroups() {
-    return groups_;
-}
-
-numSeqs_t LengthGroups::size() {
-
-    numSeqs_t res = 0;
-    for (auto iter = groups_.begin(); iter != groups_.end(); iter++) {
-        res += iter->second.size();
-    }
-
-    return res;
-
-}
-
-AmpliconPools* LengthGroups::pool(const lenSeqs_t threshold) {
-
-    AmpliconPools* pools = new AmpliconPools();
-    AmpliconCollection* curPool = 0;
-
-    if (groups_.size() == 0) return pools;
-
-    // sort alphabetically within the groups
-    sortInGroupsByLength();
-
-
-    // start the pool by initialising it with the length group comprising the shortest amplicons
-    lenSeqs_t lastLen = groups_.begin()->first;
-    curPool = new AmpliconCollection();
-    curPool->insert(curPool->end(), groups_.begin()->second.begin(), groups_.begin()->second.end());
-    groups_.begin()->second.erase(groups_.begin()->second.begin(), groups_.begin()->second.end());
-
-
-    // iterate over the remaining length groups, appending to the current pool or starting a new one
-    // if a break is detected
-    for (auto iter = ++groups_.begin(); iter != groups_.end(); iter++) {
-
-        if ((lastLen + threshold) < iter->first) { // new pool
-
-            pools->add(curPool);
-            curPool = new AmpliconCollection();
-
-        }
-
-        curPool->insert(curPool->end(), iter->second.begin(), iter->second.end());
-        iter->second.erase(iter->second.begin(), iter->second.end());
-
-        lastLen = iter->first;
-
-    }
-
-    pools->add(curPool);
-
-    // prepare object for inserting new amplicons
-    groups_ = std::map<lenSeqs_t, AmpliconCollection>();
-
-    return pools;
-
-}
-
-void LengthGroups::sortInGroupsByLength() {
-
-    for (auto iter = groups_.begin(); iter != groups_.end(); iter++) {
-        sort(iter->second.begin(), iter->second.end(), ampliconCompareAlph);
-    }
 
 }
 

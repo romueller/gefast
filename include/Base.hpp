@@ -29,7 +29,6 @@
 #include <string>
 #include <vector>
 
-#define INPUT_RANK 1
 #define QGRAM_FILTER 1
 #define SIMD_VERIFICATION 0
 
@@ -66,49 +65,39 @@ extern char acgtuMap[256];
 // q-gram vector handling adapted from Swarm (findqgrams(...) in qgram.cc)
 struct Amplicon {
 
-    std::string id;
-    std::string seq;
+    char* id;
+    char* seq;
+    lenSeqs_t len;
     numSeqs_t abundance;
-#if INPUT_RANK
-    numSeqs_t rank;
-#endif
 #if QGRAM_FILTER
     unsigned char qGramVector[QGRAMVECTORBYTES];
 #endif
 
     Amplicon() {
 
-        id = "";
-        seq = "";
+        id = 0;
+        seq = 0;
+        len = 0;
         abundance = 0;
-#if INPUT_RANK
-        rank = 0;
-#endif
 #if QGRAM_FILTER
         memset(qGramVector, 0, QGRAMVECTORBYTES);
 #endif
 
     }
 
-#if INPUT_RANK
-    Amplicon(std::string i, std::string s, numSeqs_t a, numSeqs_t r) {
-#else
-    Amplicon(std::string i, std::string s, numSeqs_t a) {
-#endif
+    Amplicon(char* i, char* s, lenSeqs_t l, numSeqs_t a) {
 
         id = i;
         seq = s;
+        len = l;
         abundance = a;
-#if INPUT_RANK
-        rank = r;
-#endif
 #if QGRAM_FILTER
         memset(qGramVector, 0, QGRAMVECTORBYTES);
 
         unsigned long qGram = 0;
         unsigned long j = 0;
 
-        while((j < QGRAMLENGTH - 1) && (j < seq.length())) {
+        while((j < QGRAMLENGTH - 1) && (j < len)) {
 
 #if SIMD_VERIFICATION
             qGram = (qGram << 2) | (seq[j] - 1);
@@ -119,7 +108,7 @@ struct Amplicon {
 
         }
 
-        while(j < seq.length()) {
+        while(j < len) {
 
 #if SIMD_VERIFICATION
             qGram = (qGram << 2) | (seq[j] - 1);
@@ -137,10 +126,21 @@ struct Amplicon {
 };
 
 // comparer structures for Amplicon structures
-struct AmpliconCompareAlph;
-struct AmpliconCompareLen;
-struct AmpliconCompareAbund;
-struct AmpliconSeqEqual;
+struct AmpliconCompareAlph { // lexicographic, ascending
+    bool operator()(const Amplicon& amplA, const Amplicon& amplB);
+};
+
+struct AmpliconCompareLen { // by length, ascending
+    bool operator()(const Amplicon& amplA, const Amplicon& amplB);
+};
+
+struct AmpliconCompareAbund { // by abundance, ascending
+    bool operator()(const Amplicon& amplA, const Amplicon& amplB);
+};
+
+struct AmpliconSeqEqual { // string equality
+    bool operator()(const Amplicon& amplA, const Amplicon& amplB);
+};
 
 
 // =====================================================
@@ -152,16 +152,14 @@ typedef std::vector<Amplicon> AmpliconCollection;
 
 
 // multiple amplicon collections
-// intended use: see pool() method of LengthGroups
 class AmpliconPools {
 
 public:
-    AmpliconPools();
+    AmpliconPools(std::map<lenSeqs_t, numSeqs_t>& counts, const unsigned long long capacity, const lenSeqs_t threshold);
 
     ~AmpliconPools();
 
-    // append specified AmpliconCollection as a new pool
-    void add(AmpliconCollection* ac);
+    void add(const lenSeqs_t i, const std::string& header, const std::string& sequence, const numSeqs_t abundance);
 
     // return pointer to pool with the specified index (or null pointer if i is too large)
     AmpliconCollection* get(const lenSeqs_t i) const;
@@ -172,6 +170,9 @@ public:
     numSeqs_t numAmplicons() const;
 
 private:
+    char* strings_;
+    char* nextPos_;
+    unsigned long long capacity_;
     std::vector<AmpliconCollection*> pools_;
 
 };
@@ -221,44 +222,6 @@ std::vector<Subpool> getSubpoolBoundariesBackward(const AmpliconCollection& ac, 
 
 
 
-// amplicons grouped by (and accessed by) their (sequence) length
-// intended use: during preprocessing (for more efficiency)
-class LengthGroups {
-
-public:
-    LengthGroups();
-
-    LengthGroups(const AmpliconCollection& amplicons);
-
-    // add specified amplicon in the corresponding group based on its length (opens up new group if necessary)
-    void add(const Amplicon& ampl);
-
-    // return reference to all length groups
-    std::map<lenSeqs_t, AmpliconCollection>& getGroups();
-
-    // return total number of amplicons in all length groups
-    numSeqs_t size();
-
-    /*
-     * 	Split the total amplicon collection at 'breaks' into 'pools'.
-     *	A 'break' (conceptually) lies between two neighboured length groups whose difference
-     *	w.r.t. the length of the contained amplicon sequences is strictly larger than the specified threshold.
-     *	There is also a break before the first and after the last length group.
-     *	Then, a pool is a collection of amplicons created by combining all the length groups between two
-     *	neighboured breaks. The amplicons within a pool are sorted by length and (then) alphabet in ascending order.
-     *	Empties the LengthGroups structure.
-     */
-    AmpliconPools* pool(const lenSeqs_t threshold);
-
-private:
-    std::map<lenSeqs_t, AmpliconCollection> groups_;
-
-    // sort every group separately (alphabetically, ascending)
-    void sortInGroupsByLength();
-
-};
-
-
 // =====================================================
 //                          Misc
 // =====================================================
@@ -266,26 +229,19 @@ private:
 // pair of amplicon 'ids', amplicons are potentially similar (have passed the filter, but not yet verified)
 typedef std::pair<numSeqs_t, numSeqs_t> Candidate;
 
-//TODO description
-typedef std::pair<std::string::const_iterator, std::string::const_iterator> StringIteratorPair;
-
+// pair of pointers (first, second) describing the string [first, last) + custom operators
+typedef std::pair<const char*, const char*> StringIteratorPair;
 
 struct hashStringIteratorPair {
-    size_t operator()(const StringIteratorPair& p) const {
-        return std::hash<std::string>{}(std::string(p.first, p.second));
-    }
+    size_t operator()(const StringIteratorPair& p) const;
 };
 
 struct equalStringIteratorPair {
-    bool operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const {
-        return ((lhs.second - lhs.first) == (rhs.second - rhs.first)) && std::equal(lhs.first, lhs.second, rhs.first);
-    }
+    bool operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const;
 };
 
 struct lessStringIteratorPair {
-    bool operator()(const StringIteratorPair& a, const StringIteratorPair& b) const {
-        return std::lexicographical_compare(a.first, a.second, b.first, b.second);
-    }
+    bool operator()(const StringIteratorPair& a, const StringIteratorPair& b) const;
 };
 
 /*

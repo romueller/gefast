@@ -818,8 +818,8 @@ namespace SimdVerification {
                             long length;
 
                             auto& ampl = ac[seqno];
-                            address = (char*) ampl.seq.data();
-                            length = ampl.seq.length();
+                            address = ampl.seq;
+                            length = ampl.len;
 
                             d_address[c] = (BYTE *) address;
                             d_length[c] = length;

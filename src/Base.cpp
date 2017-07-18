@@ -69,6 +69,86 @@ bool AmpliconSeqEqual::operator()(const Amplicon& amplA, const Amplicon& amplB) 
 }
 
 
+// ===== AmpliconCollection =====
+
+AmpliconCollection::AmpliconCollection(const numSeqs_t capacity, const std::vector<std::pair<lenSeqs_t, numSeqs_t>>& counts) {
+
+    amplicons_ = new Amplicon[capacity];
+    size_ = 0;
+    capacity_ = capacity;
+    numLengths_ = counts.size();
+    counts_ = new std::pair<lenSeqs_t, numSeqs_t>[numLengths_];
+    for (lenSeqs_t i = 0; i < numLengths_; i++) {
+        counts_[i] = counts[i];
+    }
+
+}
+
+AmpliconCollection::~AmpliconCollection() {
+
+    delete[] counts_;
+    delete[] amplicons_;
+
+}
+
+void AmpliconCollection::push_back(const Amplicon& ampl) {
+    amplicons_[size_++] = ampl;
+}
+
+Amplicon& AmpliconCollection::operator[](const numSeqs_t i) {
+    return amplicons_[i];
+}
+
+const Amplicon& AmpliconCollection::operator[](const numSeqs_t i) const {
+    return amplicons_[i];
+}
+
+Amplicon& AmpliconCollection::front() const {
+    return amplicons_[0];
+}
+
+Amplicon& AmpliconCollection::back() const {
+    return amplicons_[size_ - 1];
+}
+
+Amplicon* AmpliconCollection::begin() const {
+    return amplicons_;
+}
+
+Amplicon* AmpliconCollection::end() const {
+    return amplicons_ + size_;
+}
+
+numSeqs_t AmpliconCollection::size() const {
+    return size_;
+}
+
+numSeqs_t AmpliconCollection::numSeqsOfLen(const lenSeqs_t len) const {
+
+    auto iter = std::lower_bound(counts_, counts_ + numLengths_, len,
+                                 [](const std::pair<lenSeqs_t, numSeqs_t>& pair, lenSeqs_t l) {
+                                     return pair.first < l;
+                                 });
+
+    return (iter != (counts_ + numLengths_) && iter->first == len) ? iter->second : 0;
+
+}
+
+void AmpliconCollection::reserve(const numSeqs_t newCapacity) {
+
+    if (capacity_ >= newCapacity || size_ >= newCapacity) return;
+
+    Amplicon* tmp = new Amplicon[newCapacity];
+    for (numSeqs_t i = 0; i < size_; i++) {
+        tmp[i] = amplicons_[i];
+    }
+
+    delete[] amplicons_;
+    amplicons_ = tmp;
+
+}
+
+
 // ===== AmpliconPools =====
 
 AmpliconPools::AmpliconPools(std::map<lenSeqs_t, numSeqs_t>& counts, const unsigned long long capacity, const lenSeqs_t threshold) {
@@ -79,13 +159,13 @@ AmpliconPools::AmpliconPools(std::map<lenSeqs_t, numSeqs_t>& counts, const unsig
 
     if (counts.size() != 0) {
 
-        AmpliconCollection* curPool = 0;
         numSeqs_t curPoolSize = 0;
+        std::vector<std::pair<lenSeqs_t, numSeqs_t>> localCounts;
 
         // start the pool that will comprise the shortest amplicons
         lenSeqs_t lastLen = counts.begin()->first;
-        curPool = new AmpliconCollection();
         curPoolSize += counts.begin()->second;
+        localCounts.push_back(std::make_pair(lastLen, curPoolSize));
         counts.begin()->second = pools_.size();
 
         // iterate over the remaining length groups, starting a new one if a break is detected
@@ -93,22 +173,21 @@ AmpliconPools::AmpliconPools(std::map<lenSeqs_t, numSeqs_t>& counts, const unsig
 
             if ((lastLen + threshold) < iter->first) { // new pool
 
-                curPool->reserve(curPoolSize);
-                pools_.push_back(curPool);
+                pools_.push_back(new AmpliconCollection(curPoolSize, localCounts));
 
-                curPool = new AmpliconCollection();
                 curPoolSize = 0;
+                localCounts.clear();
 
             }
 
+            localCounts.push_back(std::make_pair(iter->first, iter->second));
             curPoolSize += iter->second;
             iter->second = pools_.size();
             lastLen = iter->first;
 
         }
 
-        curPool->reserve(curPoolSize);
-        pools_.push_back(curPool);
+        pools_.push_back(new AmpliconCollection(curPoolSize, localCounts));
 
     }
 
@@ -120,7 +199,7 @@ AmpliconPools::~AmpliconPools() {
         delete *iter;
     }
 
-    delete strings_;
+    delete[] strings_;
 
 }
 

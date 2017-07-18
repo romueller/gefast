@@ -1871,6 +1871,12 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
             curOtu->members.push_back(newSeed);
 
             visited[seedIter] = true;
+            {
+                auto& invs = indices.getIndicesRow(ac[seedIter].len);
+                for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
+                    invs[i].removeLabel(seedIter);
+                }
+            }
             nonUniques.clear();
 
             lastGen = 0;
@@ -2032,6 +2038,12 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
             curOtu->members.push_back(newSeed);
 
             visited[seedIter] = true;
+            {
+                auto& invs = indices.getIndicesRow(ac[seedIter].len);
+                for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
+                    invs[i].removeLabel(seedIter);
+                }
+            }
             nonUniques.clear();
 
             lastGen = 0;

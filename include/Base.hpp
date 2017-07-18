@@ -24,6 +24,7 @@
 #ifndef GEFAST_BASE_HPP
 #define GEFAST_BASE_HPP
 
+#include <algorithm>
 #include <cstring>
 #include <map>
 #include <string>
@@ -123,6 +124,26 @@ struct Amplicon {
 
     }
 
+    Amplicon& operator=(const Amplicon& other) {
+
+        // check for self-assignment
+        if (&other == this) {
+            return *this;
+        }
+
+        id = other.id;
+        seq = other.seq;
+        len = other.len;
+        abundance = other.abundance;
+
+        for (numSeqs_t i = 0; i < QGRAMVECTORBYTES; i++) {
+            qGramVector[i] = other.qGramVector[i];
+        }
+
+        return *this;
+
+    }
+
 };
 
 // comparer structures for Amplicon structures
@@ -147,9 +168,43 @@ struct AmpliconSeqEqual { // string equality
 //           Data types for multiple amplicons
 // =====================================================
 
-// (unspecific) type for referring to multiple amplicons
-typedef std::vector<Amplicon> AmpliconCollection;
+// multiple amplicons + counts of different sequence lengths (given by the user before adding the amplicons)
+class AmpliconCollection {
 
+public:
+    AmpliconCollection(const numSeqs_t capacity, const std::vector<std::pair<lenSeqs_t, numSeqs_t>>& counts);
+
+    ~AmpliconCollection();
+
+    void push_back(const Amplicon& ampl);
+
+    Amplicon& operator[](const numSeqs_t i);
+
+    const Amplicon& operator[](const numSeqs_t i) const;
+
+    Amplicon& front() const;
+
+    Amplicon& back() const;
+
+    Amplicon* begin() const;
+
+    Amplicon* end() const;
+
+    numSeqs_t size() const;
+
+    numSeqs_t numSeqsOfLen(const lenSeqs_t len) const;
+
+    void reserve(const numSeqs_t newCapacity);
+
+private:
+    Amplicon* amplicons_;
+    numSeqs_t size_;
+    numSeqs_t capacity_;
+
+    std::pair<lenSeqs_t, numSeqs_t>* counts_;
+    lenSeqs_t numLengths_;
+
+};
 
 // multiple amplicon collections
 class AmpliconPools {

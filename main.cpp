@@ -152,7 +152,7 @@ int run(int argc, const char* argv[]) {
     for (numSeqs_t p = 0; p < pools->numPools(); p++) {
 
         ac = pools->get(p);
-        sort(ac->begin(), ac->end(),
+        std::sort(ac->begin(), ac->end(),
              [](const Amplicon& amplA, const Amplicon& amplB) {
                  return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (amplA.seq < amplB.seq));
              }
@@ -202,7 +202,7 @@ int run(int argc, const char* argv[]) {
     for (numSeqs_t p = 0; p < pools->numPools(); p++) {
 
         ac = pools->get(p);
-        sort(ac->begin(), ac->end(), AmpliconCompareLen());
+        std::sort(ac->begin(), ac->end(), AmpliconCompareLen());
 
     }
 

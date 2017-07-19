@@ -104,9 +104,9 @@ struct SwarmConfig {
  *  - parentId: integer id of the parent amplicon within its pool (AmpliconCollection) OR the pool id (only if gen = 0)
  *  - parentDist: (edit) distance between the amplicon and its parent
  *  - gen: generation number of the amplicon
- *  - rad: cumulated differences between the OTU seed and the amplicon
+ *  - rad: cumulated differences between the OTU seed and the amplicon (only in precursor)
  */
-struct OtuEntry {
+struct OtuEntryPrecursor {
 
     const Amplicon* member;
     const Amplicon* parent;
@@ -114,20 +114,63 @@ struct OtuEntry {
     lenSeqs_t gen;
     lenSeqs_t rad;
 
-    OtuEntry() {
+    OtuEntryPrecursor() {
 
         member = parent = 0;
         parentDist = gen = rad = 0;
 
     }
 
-    OtuEntry(const Amplicon* m, const Amplicon* p, lenSeqs_t pd, lenSeqs_t g, lenSeqs_t r) {
+    OtuEntryPrecursor(const Amplicon* m, const Amplicon* p, lenSeqs_t pd, lenSeqs_t g, lenSeqs_t r) {
 
         member = m;
         parent = p;
         parentDist = pd;
         gen = g;
         rad = r;
+
+    }
+
+};
+
+struct OtuEntry {
+
+    const Amplicon* member;
+    const Amplicon* parent;
+    lenSeqs_t parentDist;
+    lenSeqs_t gen;
+
+    OtuEntry() {
+
+        member = parent = 0;
+        parentDist = gen = 0;
+
+    }
+
+    OtuEntry(const Amplicon* m, const Amplicon* p, lenSeqs_t pd, lenSeqs_t g) {
+
+        member = m;
+        parent = p;
+        parentDist = pd;
+        gen = g;
+
+    }
+
+    OtuEntry(const OtuEntry& other) {
+
+        member = other.member;
+        parent = other.parent;
+        parentDist = other.parentDist;
+        gen = other.gen;
+
+    }
+
+    OtuEntry(const OtuEntryPrecursor& other) {
+
+        member = other.member;
+        parent = other.parent;
+        parentDist = other.parentDist;
+        gen = other.gen;
 
     }
 
@@ -151,13 +194,37 @@ struct Otu {
 
     numSeqs_t numUniqueSequences;
     numSeqs_t mass;
-    std::vector<OtuEntry> members; // always entry for seed at index 0 (with itself as its parent)
+    OtuEntry* members; // always entry for seed at index 0 (with itself as its parent)
+    numSeqs_t numMembers;
+    lenSeqs_t maxRad;
 
     Otu() {
 
         numUniqueSequences = 0;
         mass = 0;
-        members = std::vector<OtuEntry>(0);
+        members = 0;
+        numMembers = 0;
+        maxRad = 0;
+
+    }
+
+    ~Otu() {
+        delete[] members;
+    }
+
+    void setMembers(const std::vector<OtuEntryPrecursor>& mems) {
+
+        delete[] members;
+        numMembers = mems.size();
+        members = new SwarmClustering::OtuEntry[numMembers];
+
+        maxRad = 0;
+        for (numSeqs_t i = 0; i < numMembers; i++) {
+
+            members[i] = SwarmClustering::OtuEntry(mems[i]);
+            maxRad = std::max(maxRad, mems[i].rad);
+
+        }
 
     }
 
@@ -169,8 +236,27 @@ struct Otu {
         return members[0].member->abundance;
     }
 
-    void attach() {
-        mass = 0;
+    void attach(Otu* childOtu) {
+
+        OtuEntry* tmp = new OtuEntry[numMembers + childOtu->numMembers];
+        auto pos = std::copy(members, members + numMembers, tmp);
+        delete[] members;
+
+        std::copy(childOtu->members, childOtu->members + childOtu->numMembers, pos);
+        delete[] childOtu->members;
+
+        childOtu->members = new OtuEntry[1];
+        childOtu->members[0] = tmp[numMembers];
+
+        members = tmp;
+        numMembers += childOtu->numMembers;
+        childOtu->numMembers = 1;
+
+        numUniqueSequences += childOtu->numUniqueSequences;
+        mass += childOtu->mass;
+
+        childOtu->mass = 0;
+
     }
 
     bool attached() const {
@@ -180,8 +266,8 @@ struct Otu {
     numSeqs_t numSingletons() const {
 
         numSeqs_t cnt = 0;
-        for (auto iter = members.begin(); iter != members.end(); iter++) {
-            cnt += (iter->member->abundance == 1);
+        for (numSeqs_t i = 0; i < numMembers; i++) {
+            cnt += (members[i].member->abundance == 1);
         }
 
         return cnt;
@@ -191,37 +277,21 @@ struct Otu {
     std::pair<lenSeqs_t, lenSeqs_t> maxGenRad() {
 
         lenSeqs_t mg = 0;
-        lenSeqs_t mr = 0;
-//        for (auto iter = members.begin(); iter != members.end(); iter++) {
-        for (auto iter = members.begin() + 1; iter != members.end() && iter->gen != 0; iter++) { // do not consider members added by fastidious clustering
-
-            mg = std::max(mg, iter->gen);
-            mr = std::max(mr, iter->rad);
-
+//        for (numSeqs_t i = 0; i < numMembers; i++) {
+        for (numSeqs_t i = 1; i < numMembers && members[i].gen != 0; i++) { // do not consider members added by fastidious clustering
+            mg = std::max(mg, members[i].gen);
         }
 
-        return std::make_pair(mg, mr);
+        return std::make_pair(mg, maxRad);
 
     };
 
     lenSeqs_t maxGen() {
 
         lenSeqs_t max = 0;
-//        for (auto iter = members.begin(); iter != members.end(); iter++) {
-        for (auto iter = members.begin() + 1; iter != members.end() && iter->gen != 0; iter++) { // do not consider members added by fastidious clustering
-            max = std::max(max, iter->gen);
-        }
-
-        return max;
-
-    };
-
-    lenSeqs_t maxRad() {
-
-        lenSeqs_t max = 0;
-//        for (auto iter = members.begin(); iter != members.end(); iter++) {
-        for (auto iter = members.begin() + 1; iter != members.end() && iter->gen != 0; iter++) { // do not consider members added by fastidious clustering
-            max = std::max(max, iter->rad);
+//        for (numSeqs_t i = 0; i < numMembers; i++) {
+        for (numSeqs_t i = 1; i < numMembers && members[i].gen != 0; i++) { // do not consider members added by fastidious clustering
+            max = std::max(max, members[i].gen);
         }
 
         return max;

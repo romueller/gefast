@@ -1843,9 +1843,10 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 
     // determine order of amplicons based on abundance (descending) without invalidating the integer (position) ids of the amplicons
     SwarmClustering::Otu* curOtu = 0;
+    std::vector<SwarmClustering::OtuEntryPrecursor> tmpMembers;
     std::vector<bool> visited(ac.size(), false); // visited amplicons are already included in an OTU
 
-    SwarmClustering::OtuEntry curSeed, newSeed;
+    SwarmClustering::OtuEntryPrecursor curSeed, newSeed;
     bool unique;
     std::unordered_set<StringIteratorPair, hashStringIteratorPair, equalStringIteratorPair> nonUniques;
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> next;
@@ -1870,7 +1871,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
             newSeed.parentDist = 0;
             newSeed.gen = 0;
             newSeed.rad = 0;
-            curOtu->members.push_back(newSeed);
+            tmpMembers.push_back(newSeed);
 
             visited[seedIter] = true;
             {
@@ -1886,14 +1887,14 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 
             /* (b) BFS through 'match space' */
             pos = 0;
-            while (pos < curOtu->members.size()) { // expand current OTU until no further similar amplicons can be added
+            while (pos < tmpMembers.size()) { // expand current OTU until no further similar amplicons can be added
 
-                if (lastGen != curOtu->members[pos].gen) { // work through generation by decreasing abundance
-                    std::sort(curOtu->members.begin() + pos, curOtu->members.end(), SwarmClustering::CompareOtuEntriesAbund());
+                if (lastGen != tmpMembers[pos].gen) { // work through generation by decreasing abundance
+                    std::sort(tmpMembers.begin() + pos, tmpMembers.end(), SwarmClustering::CompareOtuEntriesAbund());
                 }
 
                 // get next OTU (sub)seed
-                curSeed = curOtu->members[pos];
+                curSeed = tmpMembers[pos];
 
                 unique = true;
 
@@ -1917,7 +1918,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
                         newSeed.parentDist = matchIter->second;
                         newSeed.gen = curSeed.gen + 1;
                         newSeed.rad = curSeed.rad + matchIter->second;
-                        curOtu->members.push_back(newSeed);
+                        tmpMembers.push_back(newSeed);
                         visited[matchIter->first] = true;
 
                         auto& invs = indices.getIndicesRow(ac[matchIter->first].len);
@@ -1940,6 +1941,8 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
             }
 
             /* (c) Close the no longer extendable OTU */
+            curOtu->setMembers(tmpMembers);
+            std::vector<SwarmClustering::OtuEntryPrecursor>().swap(tmpMembers);
             otus.push_back(curOtu);
 
         }
@@ -2002,9 +2005,10 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 
     // determine order of amplicons based on abundance (descending) without invalidating the integer (position) ids of the amplicons
     SwarmClustering::Otu* curOtu = 0;
+    std::vector<SwarmClustering::OtuEntryPrecursor> tmpMembers;
     std::vector<bool> visited(ac.size(), false); // visited amplicons are already included in an OTU
 
-    SwarmClustering::OtuEntry curSeed, newSeed;
+    SwarmClustering::OtuEntryPrecursor curSeed, newSeed;
     bool unique;
     std::unordered_set<StringIteratorPair, hashStringIteratorPair, equalStringIteratorPair> nonUniques;
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> next;
@@ -2035,7 +2039,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
             newSeed.parentDist = 0;
             newSeed.gen = 0;
             newSeed.rad = 0;
-            curOtu->members.push_back(newSeed);
+            tmpMembers.push_back(newSeed);
 
             visited[seedIter] = true;
             {
@@ -2051,14 +2055,14 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 
             /* (b) BFS through 'match space' */
             pos = 0;
-            while (pos < curOtu->members.size()) { // expand current OTU until no further similar amplicons can be added
+            while (pos < tmpMembers.size()) { // expand current OTU until no further similar amplicons can be added
 
-                if (lastGen != curOtu->members[pos].gen) { // work through generation by decreasing abundance
-                    std::sort(curOtu->members.begin() + pos, curOtu->members.end(), SwarmClustering::CompareOtuEntriesAbund());
+                if (lastGen != tmpMembers[pos].gen) { // work through generation by decreasing abundance
+                    std::sort(tmpMembers.begin() + pos, tmpMembers.end(), SwarmClustering::CompareOtuEntriesAbund());
                 }
 
                 // get next OTU (sub)seed
-                curSeed = curOtu->members[pos];
+                curSeed = tmpMembers[pos];
 
                 unique = true;
 
@@ -2086,7 +2090,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
                         newSeed.parentDist = matchIter->second;
                         newSeed.gen = curSeed.gen + 1;
                         newSeed.rad = curSeed.rad + matchIter->second;
-                        curOtu->members.push_back(newSeed);
+                        tmpMembers.push_back(newSeed);
                         visited[matchIter->first] = true;
 
                         auto& invs = indices.getIndicesRow(ac[matchIter->first].len);
@@ -2109,6 +2113,8 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
             }
 
             /* (c) Close the no longer extendable OTU */
+            curOtu->setMembers(tmpMembers);
+            std::vector<SwarmClustering::OtuEntryPrecursor>().swap(tmpMembers);
             otus.push_back(curOtu);
 
         }

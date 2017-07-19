@@ -152,7 +152,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
@@ -228,7 +228,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
@@ -685,7 +685,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
@@ -757,7 +757,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
@@ -1386,7 +1386,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
@@ -1456,7 +1456,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
-        segmentStrs[i] = amplicon.seq.substr(segments[i].first, segments[i].second);
+        segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
     }
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
@@ -1856,15 +1856,17 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
     ParallelChildrenFinder cf(ac, indices, substrsArchive, width, sc);
 
     // open new OTU for the amplicon with the highest abundance that is not yet included in an OTU
-    for (numSeqs_t seedIter = 0; seedIter < ac.size(); seedIter++) {
+    const Amplicon* begin = ac.begin();
+    const Amplicon* seed = begin;
+    for (numSeqs_t seedIter = 0; seedIter < ac.size(); seedIter++, seed++) {
 
         if (!visited[seedIter]) {
 
             /* (a) Initialise new OTU with seed */
-            curOtu = new SwarmClustering::Otu(seedIter, ac[seedIter].abundance);
+            curOtu = new SwarmClustering::Otu();
 
-            newSeed.id = seedIter;
-            newSeed.parentId = newSeed.id;
+            newSeed.member = seed;
+            newSeed.parent = newSeed.member;
             newSeed.parentDist = 0;
             newSeed.gen = 0;
             newSeed.rad = 0;
@@ -1887,7 +1889,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
             while (pos < curOtu->members.size()) { // expand current OTU until no further similar amplicons can be added
 
                 if (lastGen != curOtu->members[pos].gen) { // work through generation by decreasing abundance
-                    std::sort(curOtu->members.begin() + pos, curOtu->members.end(), SwarmClustering::CompareOtuEntriesAbund(ac));
+                    std::sort(curOtu->members.begin() + pos, curOtu->members.end(), SwarmClustering::CompareOtuEntriesAbund());
                 }
 
                 // get next OTU (sub)seed
@@ -1896,17 +1898,13 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
                 unique = true;
 
                 // update OTU information
-                curOtu->mass += ac[curSeed.id].abundance;
-                curOtu->numSingletons += (ac[curSeed.id].abundance == 1);
-
-                if (curSeed.gen > curOtu->maxGen) curOtu->maxGen = curSeed.gen;
-                if (curSeed.rad > curOtu->maxRad) curOtu->maxRad = curSeed.rad;
+                curOtu->mass += curSeed.member->abundance;
 
                 // Consider yet unseen (unvisited) amplicons to continue the exploration.
                 // An amplicon is marked as 'visited' as soon as it occurs the first time as matching partner
                 // in order to prevent the algorithm from queueing it more than once coming from different amplicons.
-                next = sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.id) : cf.getChildren(curSeed.id);
-//                sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.id, next) : cf.getChildren(curSeed.id, next);
+                next = sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.member - begin) : cf.getChildren(curSeed.member - begin);
+//                sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.member - begin, next) : cf.getChildren(curSeed.member - begin, next);
 
                 for (auto matchIter = next.begin(); matchIter != next.end(); matchIter++) {
 
@@ -1914,8 +1912,8 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 
                     if (!visited[matchIter->first]) {
 
-                        newSeed.id = matchIter->first;
-                        newSeed.parentId = curSeed.id;
+                        newSeed.member = begin + matchIter->first;
+                        newSeed.parent = curSeed.member;
                         newSeed.parentDist = matchIter->second;
                         newSeed.gen = curSeed.gen + 1;
                         newSeed.rad = curSeed.rad + matchIter->second;
@@ -1933,7 +1931,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 
                 // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
                 // and when dereplicating each contributes (numUniqueSequences used to count the multiplicity of the sequence)
-                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(ac[curSeed.id].seq, ac[curSeed.id].seq + ac[curSeed.id].len)).second;
+                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(curSeed.member->seq, curSeed.member->seq + curSeed.member->len)).second;
                 curOtu->numUniqueSequences += unique;
 
                 lastGen = curSeed.gen;
@@ -2023,15 +2021,17 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 #endif
 
     // open new OTU for the amplicon with the highest abundance that is not yet included in an OTU
-    for (numSeqs_t seedIter = 0; seedIter < ac.size(); seedIter++) {
+    const Amplicon* begin = ac.begin();
+    const Amplicon* seed = begin;
+    for (numSeqs_t seedIter = 0; seedIter < ac.size(); seedIter++, seed++) {
 
         if (!visited[seedIter]) {
 
             /* (a) Initialise new OTU with seed */
-            curOtu = new SwarmClustering::Otu(seedIter, ac[seedIter].abundance);
+            curOtu = new SwarmClustering::Otu();
 
-            newSeed.id = seedIter;
-            newSeed.parentId = newSeed.id;
+            newSeed.member = seed;
+            newSeed.parent = newSeed.member;
             newSeed.parentDist = 0;
             newSeed.gen = 0;
             newSeed.rad = 0;
@@ -2054,7 +2054,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
             while (pos < curOtu->members.size()) { // expand current OTU until no further similar amplicons can be added
 
                 if (lastGen != curOtu->members[pos].gen) { // work through generation by decreasing abundance
-                    std::sort(curOtu->members.begin() + pos, curOtu->members.end(), SwarmClustering::CompareOtuEntriesAbund(ac));
+                    std::sort(curOtu->members.begin() + pos, curOtu->members.end(), SwarmClustering::CompareOtuEntriesAbund());
                 }
 
                 // get next OTU (sub)seed
@@ -2063,21 +2063,17 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
                 unique = true;
 
                 // update OTU information
-                curOtu->mass += ac[curSeed.id].abundance;
-                curOtu->numSingletons += (ac[curSeed.id].abundance == 1);
-
-                if (curSeed.gen > curOtu->maxGen) curOtu->maxGen = curSeed.gen;
-                if (curSeed.rad > curOtu->maxRad) curOtu->maxRad = curSeed.rad;
+                curOtu->mass += curSeed.member->abundance;
 
                 // Consider yet unseen (unvisited) amplicons to continue the exploration.
                 // An amplicon is marked as 'visited' as soon as it occurs the first time as matching partner
                 // in order to prevent the algorithm from queueing it more than once coming from different amplicons.
 #if CHILDREN_FINDER
-                next = sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.id) : cf.getChildren(curSeed.id);
-//                sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.id, next) : cf.getChildren(curSeed.id, next);
+                next = sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.member - begin) : cf.getChildren(curSeed.member - begin);
+//                sc.filterTwoWay ? cf.getChildrenTwoWay(curSeed.member - begin, next) : cf.getChildren(curSeed.member - begin, next);
 #else
-                next = sc.filterTwoWay ? getChildrenTwoWay(curSeed.id, next, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc) : getChildren(curSeed.id, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc);
-//                sc.filterTwoWay ? getChildrenTwoWay(curSeed.id, next, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc) : getChildren(curSeed.id, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc);
+                next = sc.filterTwoWay ? getChildrenTwoWay(curSeed.member - begin, next, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc) : getChildren(curSeed.member - begin, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc);
+//                sc.filterTwoWay ? getChildrenTwoWay(curSeed.member - begin, next, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc) : getChildren(curSeed.member - begin, ac, indices, substrsArchive, M, D, P, cntDiffs, cntDiffsP, sc);
 #endif
                 for (auto matchIter = next.begin(); matchIter != next.end(); matchIter++) {
 
@@ -2085,8 +2081,8 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 
                     if (!visited[matchIter->first]) {
 
-                        newSeed.id = matchIter->first;
-                        newSeed.parentId = curSeed.id;
+                        newSeed.member = begin + matchIter->first;
+                        newSeed.parent = curSeed.member;
                         newSeed.parentDist = matchIter->second;
                         newSeed.gen = curSeed.gen + 1;
                         newSeed.rad = curSeed.rad + matchIter->second;
@@ -2104,7 +2100,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 
                 // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
                 // and when dereplicating each contributes (numUniqueSequences used to count the multiplicity of the sequence)
-                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(ac[curSeed.id].seq, ac[curSeed.id].seq + ac[curSeed.id].len)).second;
+                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(curSeed.member->seq, curSeed.member->seq + curSeed.member->len)).second;
                 curOtu->numUniqueSequences += unique;
 
                 lastGen = curSeed.gen;

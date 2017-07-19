@@ -135,11 +135,11 @@ struct Amplicon {
         seq = other.seq;
         len = other.len;
         abundance = other.abundance;
-
+#if QGRAM_FILTER
         for (numSeqs_t i = 0; i < QGRAMVECTORBYTES; i++) {
             qGramVector[i] = other.qGramVector[i];
         }
-
+#endif
         return *this;
 
     }

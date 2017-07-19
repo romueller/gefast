@@ -108,20 +108,23 @@ struct SwarmConfig {
  */
 struct OtuEntry {
 
-    numSeqs_t id;
-    numSeqs_t parentId;
+    const Amplicon* member;
+    const Amplicon* parent;
     lenSeqs_t parentDist;
     lenSeqs_t gen;
     lenSeqs_t rad;
 
     OtuEntry() {
-        id = parentId = parentDist = gen = rad = 0;
+
+        member = parent = 0;
+        parentDist = gen = rad = 0;
+
     }
 
-    OtuEntry(numSeqs_t i, numSeqs_t pi, lenSeqs_t pd, lenSeqs_t g, lenSeqs_t r) {
+    OtuEntry(const Amplicon* m, const Amplicon* p, lenSeqs_t pd, lenSeqs_t g, lenSeqs_t r) {
 
-        id = i;
-        parentId = pi;
+        member = m;
+        parent = p;
         parentDist = pd;
         gen = g;
         rad = r;
@@ -146,34 +149,84 @@ struct OtuEntry {
  */
 struct Otu {
 
-//    numSeqs_t id;
     numSeqs_t numUniqueSequences;
     numSeqs_t mass;
-    numSeqs_t seedId;
-    numSeqs_t seedAbundance;
-    numSeqs_t numSingletons;
-    lenSeqs_t maxGen;
-    lenSeqs_t maxRad;
     std::vector<OtuEntry> members; // always entry for seed at index 0 (with itself as its parent)
-    bool attached; // only for fastidious
 
-    numSeqs_t poolId;
+    Otu() {
 
-    Otu(/*numSeqs_t i, */numSeqs_t sid, numSeqs_t scn) {
-
-//        id = i;
         numUniqueSequences = 0;
         mass = 0;
-        seedId = sid;
-        seedAbundance = scn;
-        numSingletons = 0;
-        maxGen = 0;
-        maxRad = 0;
         members = std::vector<OtuEntry>(0);
-        poolId = 0;
-        attached = false;
 
     }
+
+    const Amplicon* seed() const {
+        return members[0].member;
+    }
+
+    numSeqs_t seedAbundance() const {
+        return members[0].member->abundance;
+    }
+
+    void attach() {
+        mass = 0;
+    }
+
+    bool attached() const {
+        return mass == 0;
+    }
+
+    numSeqs_t numSingletons() const {
+
+        numSeqs_t cnt = 0;
+        for (auto iter = members.begin(); iter != members.end(); iter++) {
+            cnt += (iter->member->abundance == 1);
+        }
+
+        return cnt;
+
+    }
+
+    std::pair<lenSeqs_t, lenSeqs_t> maxGenRad() {
+
+        lenSeqs_t mg = 0;
+        lenSeqs_t mr = 0;
+//        for (auto iter = members.begin(); iter != members.end(); iter++) {
+        for (auto iter = members.begin() + 1; iter != members.end() && iter->gen != 0; iter++) { // do not consider members added by fastidious clustering
+
+            mg = std::max(mg, iter->gen);
+            mr = std::max(mr, iter->rad);
+
+        }
+
+        return std::make_pair(mg, mr);
+
+    };
+
+    lenSeqs_t maxGen() {
+
+        lenSeqs_t max = 0;
+//        for (auto iter = members.begin(); iter != members.end(); iter++) {
+        for (auto iter = members.begin() + 1; iter != members.end() && iter->gen != 0; iter++) { // do not consider members added by fastidious clustering
+            max = std::max(max, iter->gen);
+        }
+
+        return max;
+
+    };
+
+    lenSeqs_t maxRad() {
+
+        lenSeqs_t max = 0;
+//        for (auto iter = members.begin(); iter != members.end(); iter++) {
+        for (auto iter = members.begin() + 1; iter != members.end() && iter->gen != 0; iter++) { // do not consider members added by fastidious clustering
+            max = std::max(max, iter->rad);
+        }
+
+        return max;
+
+    };
 
 };
 
@@ -192,10 +245,10 @@ typedef SimpleBinaryRelation<StringIteratorPair, std::pair<Otu*, OtuEntry*>, has
 struct GraftCandidate {
 
     Otu* parentOtu;
-    OtuEntry* parentMember;
+    const Amplicon* parentMember;
 
     Otu* childOtu;
-    OtuEntry* childMember;
+    const Amplicon* childMember;
 
     GraftCandidate() {
 
@@ -204,7 +257,7 @@ struct GraftCandidate {
 
     }
 
-    GraftCandidate(Otu* po, OtuEntry* pm, Otu* co, OtuEntry* cm) {
+    GraftCandidate(Otu* po, const Amplicon* pm, Otu* co, const Amplicon* cm) {
 
         parentOtu = po;
         parentMember = pm;
@@ -225,23 +278,20 @@ struct GraftCandidate {
  */
 struct CandidateFastidious {
 
-    numSeqs_t parent;
     Otu* parentOtu;
-    OtuEntry* parentMember;
+    const Amplicon* parentMember;
 
     std::vector<numSeqs_t> children;
 
     CandidateFastidious() {
 
-        parent = 0;
-        parentOtu =  0;
+        parentOtu = 0;
         parentMember = 0;
 
     }
 
-    CandidateFastidious(numSeqs_t p, Otu* po, OtuEntry* pm) {
+    CandidateFastidious(Otu* po, const Amplicon* pm) {
 
-        parent = p;
         parentOtu = po;
         parentMember = pm;
 
@@ -268,48 +318,26 @@ struct CompareIndicesAbund {
 
 };
 
-// Sort OTU members according to the respective abundance (descending) of the amplicons in the referenced AmpliconCollection
+// Sort OTU members according to the respective abundance (descending) of the amplicons
 // Use the "rank" of the amplicons as the tie-breaker
 struct CompareOtuEntriesAbund {
-
-    const AmpliconCollection& ac;
-
-    CompareOtuEntriesAbund(const AmpliconCollection& coll) : ac(coll) {
-        // nothing more to do
-    }
-
     bool operator()(const OtuEntry& a, const OtuEntry& b) {
-        return (ac[a.id].abundance > ac[b.id].abundance) || ((ac[a.id].abundance == ac[b.id].abundance) && (ac[a.id].seq < ac[b.id].seq));
+        return (a.member->abundance > b.member->abundance) || ((a.member->abundance == b.member->abundance) && (a.member->seq < b.member->seq));
     }
-
 };
 
 // Sort OTUs by their mass (descending)
 // Use the rank of the seeds as the tie-breaker
 struct CompareOtusMass {
-
-    const AmpliconPools& pools;
-
-    CompareOtusMass(const AmpliconPools& ap) : pools(ap) {
-        // nothing more to do
-    }
-
     bool operator()(const Otu* a, const Otu* b) {
-        return (a->mass > b->mass) || ((a->mass == b->mass) && ((*pools.get(a->poolId))[a->seedId].seq < (*pools.get(b->poolId))[b->seedId].seq));
+        return (a->mass > b->mass) || ((a->mass == b->mass) && (a->seed()->seq < b->seed()->seq));
     }
 };
 
 // Sort OTUs by the abundance of their seeds (descending)
 struct CompareOtusSeedAbund {
-
-    const AmpliconPools& pools;
-
-    CompareOtusSeedAbund(const AmpliconPools& ap) : pools(ap) {
-        // nothing more to do
-    }
-
     bool operator()(const Otu* a, const Otu* b) {
-        return (a->seedAbundance > b->seedAbundance) || ((a->seedAbundance == b->seedAbundance) && ((*pools.get(a->poolId))[a->seedId].seq < (*pools.get(b->poolId))[b->seedId].seq));
+        return (a->seedAbundance() > b->seedAbundance()) || ((a->seedAbundance() == b->seedAbundance()) && (a->seed()->seq < b->seed()->seq));
     }
 };
 
@@ -317,25 +345,12 @@ struct CompareOtusSeedAbund {
 // Use the rank of the amplicons as the tie-breaker for the abundance comparison
 struct CompareGraftCandidatesAbund {
 
-    const AmpliconPools& pools;
-
-    CompareGraftCandidatesAbund(const AmpliconPools& p) : pools(p) {
-        // nothing more to do
-    }
-
-    inline bool compareMember(const AmpliconCollection& poolA, numSeqs_t memberIdA, const AmpliconCollection& poolB, numSeqs_t memberIdB) {
-        return (poolA[memberIdA].abundance > poolB[memberIdB].abundance) || ((poolA[memberIdA].abundance == poolB[memberIdB].abundance) && (poolA[memberIdA].seq < poolB[memberIdB].seq));
+    inline bool compareMember(const Amplicon& amplA, const Amplicon& amplB) {
+        return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (amplA.seq < amplB.seq));
     }
 
     bool operator()(const GraftCandidate& a, const GraftCandidate& b) {
-
-        AmpliconCollection& parentPoolA = *pools.get(a.parentOtu->poolId);
-        AmpliconCollection& parentPoolB = *pools.get(b.parentOtu->poolId);
-        AmpliconCollection& childPoolA = *pools.get(a.childOtu->poolId);
-        AmpliconCollection& childPoolB = *pools.get(b.childOtu->poolId);
-
-        return compareMember(parentPoolA, a.parentMember->id, parentPoolB, b.parentMember->id) || (parentPoolA[a.parentMember->id].seq == parentPoolB[b.parentMember->id].seq && compareMember(childPoolA, a.childMember->id, childPoolB, b.childMember->id));
-
+        return compareMember(*a.parentMember, *b.parentMember) || (a.parentMember->seq == b.parentMember->seq && compareMember(*a.childMember, *b.childMember));
     }
 
 };

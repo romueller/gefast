@@ -271,7 +271,17 @@ int run(int argc, const char* argv[]) {
 
 
 int main(int argc, const char* argv[]) {
+    std::cout<< sizeof(GeFaST::numSeqs_t)<<std::endl;
+    std::cout<< sizeof(GeFaST::lenSeqs_t)<<std::endl;
 
+    GeFaST::numSeqs_t t = 0;
+    std::cout<< (t-1)<<std::endl;
+    unsigned int t1 = 0;
+    std::cout<< (t1-1)<<std::endl;
+    unsigned long t2 = 0;
+    std::cout<< (t2-1)<<std::endl;
+    unsigned long long t3 = 0;
+    std::cout<< (t3-1)<<std::endl;
     GeFaST::run(argc, argv);
 
 }

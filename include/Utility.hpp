@@ -55,6 +55,7 @@ enum ConfigParameters {
     NUM_EXTRA_SEGMENTS,                 // parameter of the pigeonhole principle (segment filter)
     NUM_THREADS_PER_WORKER,             // number of parallel threads employed by each work
     NUM_WORKERS,                        // number of parallel workers
+    PREPROCESSING_ONLY,                 // flag indicating whether only the preprocessing step should be executed
     SEGMENT_FILTER,                     // mode of the segment filter (forward, backward, forward-backward, backward-forward)
     SEPARATOR_ABUNDANCE,                // seperator symbol (string) between ID and abundance in a FASTA header line
     SWARM_BOUNDARY,                     // minimum mass of a heavy OTU, used only during fastidious swarming
@@ -190,13 +191,14 @@ private:
                         {"FILTER_LENGTH",                     FILTER_LENGTH},
                         {"FILTER_REGEX",                      FILTER_REGEX},
                         {"INFO_FOLDER",                       INFO_FOLDER},
+                        {"MATCHES_OUTPUT_FILE",               MATCHES_OUTPUT_FILE},
                         {"MAX_LENGTH",                        MAX_LENGTH},
                         {"MIN_LENGTH",                        MIN_LENGTH},
                         {"NAME",                              NAME},
                         {"NUM_EXTRA_SEGMENTS",                NUM_EXTRA_SEGMENTS},
                         {"NUM_THREADS_PER_WORKER",            NUM_THREADS_PER_WORKER},
                         {"NUM_WORKERS",                       NUM_WORKERS},
-                        {"MATCHES_OUTPUT_FILE",               MATCHES_OUTPUT_FILE},
+                        {"PREPROCESSING_ONLY",                PREPROCESSING_ONLY},
                         {"SEGMENT_FILTER",                    SEGMENT_FILTER},
                         {"SEPARATOR_ABUNDANCE",               SEPARATOR_ABUNDANCE},
                         {"SWARM_BOUNDARY",                    SWARM_BOUNDARY},

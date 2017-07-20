@@ -108,6 +108,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     parameters["--info-folder"] = 1005;
     parameters["--sep-abundance"] = 1006;
     parameters["--use-score"] = 1007;
+    parameters["--preprocessing-only"] = 1008;
 
     parameters["--swarm-fastidious-checking-mode"] = 1101;
     parameters["--swarm-num-explorers"] = 1102;
@@ -134,6 +135,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     config.set(NUM_EXTRA_SEGMENTS, "1");
     config.set(NUM_THREADS_PER_WORKER, "1");
     config.set(NUM_WORKERS, "1");
+    config.set(PREPROCESSING_ONLY, "0");
     config.set(SEGMENT_FILTER, "0"); //TODO set "best" version of segment filter as default
     config.set(SEPARATOR_ABUNDANCE, "_");
     config.set(THRESHOLD, "1");
@@ -200,6 +202,10 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
             case 1007:
                 config.set(USE_SCORE, "1");
+                continue;
+
+            case 1008:
+                config.set(PREPROCESSING_ONLY, "1");
                 continue;
 
             default:

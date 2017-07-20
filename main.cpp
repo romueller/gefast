@@ -162,6 +162,16 @@ int run(int argc, const char* argv[]) {
 
     std::cout << "DONE" << std::endl;
 
+    if (c.get(PREPROCESSING_ONLY) == "1") {
+
+        std::cout << "Cleaning up..." << std::flush;
+        delete pools;
+        std::cout << "DONE" << std::endl;
+
+        return 0;
+
+    }
+
 #if SIMD_VERIFICATION
     lenSeqs_t maxLen = 0;
     AmpliconCollection* pool = pools->get(pools->numPools() - 1);
@@ -203,6 +213,19 @@ int run(int argc, const char* argv[]) {
 
         ac = pools->get(p);
         std::sort(ac->begin(), ac->end(), AmpliconCompareLen());
+
+    }
+
+    if (c.get(PREPROCESSING_ONLY) == "1") {
+
+        std::cout << "Cleaning up..." << std::flush;
+        for (auto iter = allMatches.begin(); iter != allMatches.end(); iter++) {
+            delete *iter;
+        }
+        delete pools;
+        std::cout << "DONE" << std::endl;
+
+        return 0;
 
     }
 

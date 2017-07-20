@@ -1,3 +1,4 @@
 # no IDE files
 .idea/
 cmake-build-debug/
+cmake-build-release/

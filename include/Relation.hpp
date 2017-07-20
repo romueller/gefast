@@ -31,6 +31,7 @@
 #include <unordered_set>
 
 #include "Base.hpp"
+#include "RelationTest.hpp"
 
 
 namespace GeFaST {

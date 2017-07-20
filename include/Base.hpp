@@ -32,6 +32,7 @@
 
 #define QGRAM_FILTER 1
 #define SIMD_VERIFICATION 0
+#define SUCCINCT 1
 
 #if QGRAM_FILTER
 #define QGRAMLENGTH 5

@@ -41,7 +41,7 @@ struct CompareAbsoluteValues {
 } cmpAbsVals;
 
 
-RankedLabels::RankedLabels() {
+RankedAscendingLabels::RankedAscendingLabels() {
 
     labels_ = 0;
     size_ = 0;
@@ -50,7 +50,7 @@ RankedLabels::RankedLabels() {
 }
 
 
-RankedLabels::RankedLabels(const numSeqs_t capacity) {
+RankedAscendingLabels::RankedAscendingLabels(const numSeqs_t capacity) {
 
     labels_ = new long long[capacity];
     size_ = 0;
@@ -58,7 +58,25 @@ RankedLabels::RankedLabels(const numSeqs_t capacity) {
 
 }
 
-RankedLabels& RankedLabels::operator=(const RankedLabels& other) {
+
+RankedAscendingLabels::RankedAscendingLabels(std::vector<std::pair<numSeqs_t, numSeqs_t>>& pairs) {
+
+    capa_ = pairs.size();
+    size_ = pairs.size();
+
+    std::sort(pairs.begin(), pairs.end(),[](const std::pair<numSeqs_t, numSeqs_t>& lhs, const std::pair<numSeqs_t, numSeqs_t>& rhs) {return lhs.second < rhs.second || (lhs.second == rhs.second && lhs.first < rhs.second);});
+
+    labels_ = new long long[pairs.size()];
+    for (numSeqs_t i = 0; i < size_; i++) {
+
+        labels_[i] = pairs[i].second + 1;
+        pairs[i].second = i;
+
+    }
+
+}
+
+RankedAscendingLabels& RankedAscendingLabels::operator=(const RankedAscendingLabels& other) {
 
     // check for self-assignment
     if (&other == this) {
@@ -79,11 +97,11 @@ RankedLabels& RankedLabels::operator=(const RankedLabels& other) {
 
 }
 
-RankedLabels::~RankedLabels() {
+RankedAscendingLabels::~RankedAscendingLabels() {
     delete[] labels_;
 }
 
-numSeqs_t RankedLabels::add(const numSeqs_t lab) {
+numSeqs_t RankedAscendingLabels::add(const numSeqs_t lab) {
 
     labels_[size_] = lab + 1;
 
@@ -91,11 +109,11 @@ numSeqs_t RankedLabels::add(const numSeqs_t lab) {
 
 }
 
-numSeqs_t RankedLabels::unrank(const numSeqs_t r) {
+numSeqs_t RankedAscendingLabels::unrank(const numSeqs_t r) {
     return llabs(labels_[r]) - 1;
 }
 
-bool RankedLabels::contains(const numSeqs_t lab) {
+bool RankedAscendingLabels::contains(const numSeqs_t lab) {
 
     auto iter = std::lower_bound(labels_, labels_ + size_, lab + 1, cmpAbsVals);
 
@@ -103,11 +121,11 @@ bool RankedLabels::contains(const numSeqs_t lab) {
 
 }
 
-bool RankedLabels::containsRank(const numSeqs_t r) {
+bool RankedAscendingLabels::containsRank(const numSeqs_t r) {
     return (r < size_) && (labels_[r] > 0);
 }
 
-void RankedLabels::remove(const numSeqs_t lab) {
+void RankedAscendingLabels::remove(const numSeqs_t lab) {
 
     auto iter = std::lower_bound(labels_, labels_ + size_, lab + 1, cmpAbsVals);
 
@@ -117,7 +135,7 @@ void RankedLabels::remove(const numSeqs_t lab) {
 
 }
 
-void RankedLabels::swap(RankedLabels& other) {
+void RankedAscendingLabels::swap(RankedAscendingLabels& other) {
 
     std::swap(labels_, other.labels_);
     std::swap(size_, other.size_);
@@ -125,7 +143,7 @@ void RankedLabels::swap(RankedLabels& other) {
 
 }
 
-numSeqs_t RankedLabels::size() {
+numSeqs_t RankedAscendingLabels::size() {
     return size_;
 }
 

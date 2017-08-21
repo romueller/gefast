@@ -32,7 +32,8 @@
 
 #define QGRAM_FILTER 1
 #define SIMD_VERIFICATION 0
-#define SUCCINCT 1
+#define SUCCINCT 0
+#define SUCCINCT_FASTIDIOUS 0
 
 #if QGRAM_FILTER
 #define QGRAMLENGTH 5
@@ -337,11 +338,7 @@ public:
 
         auto iter = indices_.find(len);
 
-        if (iter != indices_.end()) {
-            return iter->second;
-        } else {
-            return emptyRow_;
-        }
+        return (iter != indices_.end()) ? iter->second : emptyRow_;
 
     }
 
@@ -353,11 +350,7 @@ public:
 
         auto iter = indices_.find(len);
 
-        if (iter != indices_.end()) {
-            return (iter->second)[i];
-        } else {
-            return empty_;
-        }
+        return (iter != indices_.end()) ? (iter->second)[i] : empty_;
 
     }
 

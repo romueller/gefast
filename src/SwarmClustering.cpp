@@ -135,6 +135,7 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
 
 void SwarmClustering::fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>& indices, std::unordered_map<lenSeqs_t, SegmentFilter::Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
 
+    auto begin = ac.begin();
     for (numSeqs_t m = 0; m < otu.numMembers; m++) {
 
         auto ampl = otu.members[m].member;
@@ -148,12 +149,13 @@ void SwarmClustering::fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>
 
         }
 
+        auto& row = indices.getIndicesRow(ampl->len);
         for (lenSeqs_t i = 0; i < sc.fastidiousThreshold + sc.extraSegs; i++) {
-            indices.getIndex(ampl->len, i).add(StringIteratorPair(ampl->seq + segments[i].first, ampl->seq + segments[i].first + segments[i].second), ampl);
+            row[i].add(StringIteratorPair(ampl->seq + segments[i].first, ampl->seq + segments[i].first + segments[i].second), ampl - begin);
         }
 
-        graftCands[ampl - ac.begin()].childOtu = &otu;
-        graftCands[ampl - ac.begin()].childMember = ampl;
+        graftCands[ampl - begin].childOtu = &otu;
+        graftCands[ampl - begin].childMember = ampl;
 
     }
 
@@ -257,7 +259,7 @@ void SwarmClustering::verifyGotohFastidious(const AmpliconPools& pools, const Am
 void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
-    std::vector<const Amplicon*> candMembers;
+    std::vector<numSeqs_t> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     lenSeqs_t seqLen;
 
@@ -307,7 +309,7 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
                             candMembers = inv.getLabelsOf(StringIteratorPair(ampl->seq + substrPos, ampl->seq + substrPos + subs.len));
 
                             for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
-                                candCnts[*candIter - acIndices.begin()]++;
+                                candCnts[*candIter]++;
                             }
 
                         }
@@ -346,7 +348,7 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
-    std::vector<const Amplicon*> candMembers;
+    std::vector<numSeqs_t> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     lenSeqs_t seqLen;
 
@@ -400,7 +402,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
                             candMembers = inv.getLabelsOf(StringIteratorPair(ampl->seq + substrPos, ampl->seq + substrPos + subs.len));
 
                             for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
-                                candCnts[*candIter - acIndices.begin()]++;
+                                candCnts[*candIter]++;
                             }
 
                         }
@@ -411,7 +413,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
                     for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
 
 //                        if ((candIter->second >= sc.extraSegs)
-//                                &&((graftCands[candIter->first - acIndices.begin()].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember))
+//                                &&((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember))
 //                                && ((useScore ?
 //                                        Verification::computeGotohLengthAwareEarlyRow8(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
 //                                      : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold)) {
@@ -466,7 +468,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
-    std::vector<const Amplicon*> candMembers;
+    std::vector<numSeqs_t> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     lenSeqs_t seqLen;
 
@@ -519,7 +521,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
                             candMembers = inv.getLabelsOf(StringIteratorPair(ampl->seq + substrPos, ampl->seq + substrPos + subs.len));
 
                             for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
-                                candCnts[*candIter - acIndices.begin()]++;
+                                candCnts[*candIter]++;
                             }
 
                         }

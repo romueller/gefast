@@ -44,7 +44,7 @@ namespace SegmentFilter {
     class ChildrenFinder {
 
     public:
-        ChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+        ChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
         std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id);
 
@@ -56,7 +56,7 @@ namespace SegmentFilter {
 
     private:
         const AmpliconCollection& ac_;
-        SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices_;
+        SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices_;
         std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive_;
         const SwarmClustering::SwarmConfig& sc_;
 
@@ -75,7 +75,7 @@ namespace SegmentFilter {
     class ParallelChildrenFinder {
 
     public:
-        ParallelChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc);
+        ParallelChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc);
 
         ~ParallelChildrenFinder();
 
@@ -95,7 +95,7 @@ namespace SegmentFilter {
 #endif
 
         const AmpliconCollection& ac_;
-        SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices_;
+        SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices_;
         std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive_;
         const SwarmClustering::SwarmConfig& sc_;
 
@@ -115,15 +115,15 @@ namespace SegmentFilter {
      * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a one-way filter.
      * Employs forward resp. backward filtering depending on the relative lengths of the amplicons.
      */
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-    void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+    void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
 
     /**
      * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a two-way filter.
      * Employs forward-backward resp. backward-forward filtering depending on the relative lengths of the amplicons.
      */
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-    void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+    void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
 
     /**
      * Determine OTUs (swarms) like swarm by using a segment filter.

@@ -191,6 +191,7 @@ unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, s
                 }
 
                 seq.clear();
+                dl = parseDescriptionLine(line, sep);
 
             }
 

@@ -15,6 +15,8 @@
 #include "StaticRowTree.hpp"
 #include "StaticHybridRowTree.hpp"
 #include "StaticMiniRowTree.hpp"
+#include "StaticMiniK2Tree.hpp"
+#include "StaticUnevenRectangularOrMiniTree.hpp"
 
 namespace GeFaST {
 
@@ -30,17 +32,35 @@ struct RelationPrecursor {//TODO mapping: map or unordered_map?
 };
 
 
-// maps arbitary ascending sequence of n unique (positive) integers onto [1:n]
-class RankedLabels {
+    struct SuccinctConfig {
+
+        unsigned long succK, succKR, succKC, succUK, succUH, succLK, succMB;
+
+        SuccinctConfig(unsigned long k, unsigned long kr, unsigned long kc, unsigned long uk, unsigned long uh, unsigned long lk, unsigned long mb) {
+            succK = k;
+            succKR = kr;
+            succKC = kc;
+            succUK = uk;
+            succUH = uh;
+            succLK = lk;
+            succMB = mb;
+        }
+
+    };
+
+// maps arbitary ascending sequence of n unique (positive) integers onto [0:n-1]
+class RankedAscendingLabels {
 
 public:
-    RankedLabels();
+    RankedAscendingLabels();
 
-    RankedLabels(const numSeqs_t capacity);
+    RankedAscendingLabels(const numSeqs_t capacity);
 
-    RankedLabels& operator=(const RankedLabels& other);
+    RankedAscendingLabels(std::vector<std::pair<numSeqs_t, numSeqs_t>>& pairs);
 
-    ~RankedLabels();
+    RankedAscendingLabels& operator=(const RankedAscendingLabels& other);
+
+    ~RankedAscendingLabels();
 
     numSeqs_t add(const numSeqs_t lab);
 
@@ -52,7 +72,7 @@ public:
 
     void remove(const numSeqs_t lab);
 
-    void swap(RankedLabels& other);
+    void swap(RankedAscendingLabels& other);
 
     numSeqs_t size();
 
@@ -78,8 +98,6 @@ public:
         }
 
         Row(lenSeqs_t w, numSeqs_t sharedCapacity) : shared(S(sharedCapacity)) {
-
-//            shared = S(1000000);
             indices = std::vector<T>(w);
         }
 
@@ -272,6 +290,7 @@ private:
 
 };
 
+template<typename S>
 class K2TreeBinaryRelation {
 
     typedef StringIteratorPair O;
@@ -282,12 +301,13 @@ public:
         // nothing to do
     }
 
-    K2TreeBinaryRelation(RelationPrecursor& ir, RankedLabels& labels) {
+    K2TreeBinaryRelation(RelationPrecursor& ir, S& labels, SuccinctConfig& sc) {
 
-//        binRel_ = BasicK2Tree<bool>(ir.pairs, 2);
-//        binRel_ = HybridK2Tree<bool>(ir.pairs, 7, 2, 3);
-//        binRel_ = KrKcTree<bool>(ir.pairs, 3, 7);
-        binRel_ = UnevenKrKcTree<bool>(ir.pairs, 3, 10);
+//        binRel_ = BasicK2Tree<bool>(ir.pairs, sc.succK);
+//        binRel_ = HybridK2Tree<bool>(ir.pairs, sc.succUK, sc.succUH, sc.succLK);
+//        binRel_ = KrKcTree<bool>(ir.pairs, sc.succKR, sc.succKC);
+        binRel_ = UnevenKrKcTree<bool>(ir.pairs, sc.succKR, sc.succKC);
+//        binRel_ = UnevenKrKcOrMiniTree<bool>(ir.pairs, sc.succKR, sc.succKC, sc.succMB);
         segIdMap_.swap(ir.mapping);
         labels_ = &labels;
 
@@ -368,11 +388,13 @@ private:
 //    HybridK2Tree<bool> binRel_;
 //    KrKcTree<bool> binRel_;
     UnevenKrKcTree<bool> binRel_;
+//    UnevenKrKcOrMiniTree<bool> binRel_;
     std::map<StringIteratorPair, numSeqs_t, lessStringIteratorPair> segIdMap_;
-    RankedLabels* labels_;
+    S* labels_;
 
 };
 
+template<typename S>
 class RowTreeBinaryRelation {
 
     typedef StringIteratorPair O;
@@ -383,7 +405,7 @@ public:
         // nothing to do
     }
 
-    RowTreeBinaryRelation(RelationPrecursor& ir, RankedLabels& labels) {
+    RowTreeBinaryRelation(RelationPrecursor& ir, S& labels, const SuccinctConfig& sc) {
 
         // TODO optimise ( = no full copy), e.g. sorting + equal_range  + sub-copy OR ctor from iterators
 #if 0
@@ -395,8 +417,8 @@ public:
 
         for (auto i = 0; i < rows.size(); i++) {
 
-            binRel_.emplace_back(rows[i], 2);
-//            binRel_.emplace_back(rows[i], 3, 1, 2);
+            binRel_.emplace_back(rows[i], sc.succK);
+//            binRel_.emplace_back(rows[i], sc.succUK, sc.succUH, sc.succLK);
             RelationList().swap(rows[i]);
 
         }
@@ -410,8 +432,8 @@ public:
                                         [](numSeqs_t val, const std::pair<numSeqs_t, numSeqs_t>& pair) {
                                             return val < pair.first;
                                         });
-            binRel_.emplace_back(begin, end, 2);
-//            binRel_.emplace_back(begin, end, 3, 1, 2);
+            binRel_.emplace_back(begin, end, sc.succK);
+//            binRel_.emplace_back(begin, end, sc.succUK, sc.succUH, sc.succLK);
             begin = end;
 
         }
@@ -510,10 +532,11 @@ private:
     std::vector<BasicRowTree<bool>> binRel_;
 //    std::vector<HybridRowTree<bool>> binRel_;
     std::map<StringIteratorPair, numSeqs_t, lessStringIteratorPair> segIdMap_;
-    RankedLabels* labels_;
+    S* labels_;
 
 };
 
+template<typename S>
 class MiniRowTreeBinaryRelation {
 
     typedef StringIteratorPair O;
@@ -524,7 +547,7 @@ public:
         // nothing to do
     }
 
-    MiniRowTreeBinaryRelation(RelationPrecursor& ir, RankedLabels& labels) {
+    MiniRowTreeBinaryRelation(RelationPrecursor& ir, S& labels, const SuccinctConfig& sc) {
 
         // TODO optimise ( = no full copy), e.g. sorting + equal_range  + sub-copy OR ctor from iterators
 #if 0
@@ -556,9 +579,9 @@ public:
                                             return val < pair.first;
                                         });
 
-            if (end - begin > 5) {
-//                binRel_.push_back(new BasicRowTree<bool>(begin, end, 5));
-                binRel_.push_back(new HybridRowTree<bool>(begin, end, 5, 2, 3));
+            if (end - begin > sc.succMB) {
+//                binRel_.push_back(new BasicRowTree<bool>(begin, end, sc.succK));
+                binRel_.push_back(new HybridRowTree<bool>(begin, end, sc.succUK, sc.succUH, sc.succLK));
             } else {
                 binRel_.push_back(new MiniRowTree<bool>(begin, end));
             }
@@ -671,13 +694,123 @@ public:
 private:
     std::vector<RowTree<bool>*> binRel_;
     std::map<StringIteratorPair, numSeqs_t, lessStringIteratorPair> segIdMap_;
-    RankedLabels* labels_;
+    S* labels_;
 
 };
 
-typedef K2TreeBinaryRelation SuccinctInvertedIndex; // use with full index
-//typedef RowTreeBinaryRelation SuccinctInvertedIndex; // use with full index
-//typedef MiniRowTreeBinaryRelation SuccinctInvertedIndex; // use with full index
+template<typename S>
+class MiniK2TreeBinaryRelation {
+
+    typedef StringIteratorPair O;
+    typedef numSeqs_t L;
+
+public:
+    MiniK2TreeBinaryRelation() {
+
+        binRel_ = 0;
+        labels_ = 0;
+
+    }
+
+    MiniK2TreeBinaryRelation(RelationPrecursor& ir, S& labels, const SuccinctConfig& sc) {
+
+
+        if (ir.pairs.size() > sc.succMB) {
+//            binRel_ = new BasicK2Tree<bool>(ir.pairs, sc.succK);
+//            binRel_ = new HybridK2Tree<bool>(ir.pairs, sc.succUK, sc.succUH, sc.succLK);
+//            binRel_ = new KrKcTree<bool>(ir.pairs, sc.succKR, sc.succKC);
+            binRel_ = new UnevenKrKcTree<bool>(ir.pairs, sc.succKR, sc.succKC);
+        } else{
+            binRel_ = new MiniK2Tree<bool>(ir.pairs);
+        }
+        segIdMap_.swap(ir.mapping);
+        labels_ = &labels;
+
+    }
+
+    MiniK2TreeBinaryRelation& operator=(const MiniK2TreeBinaryRelation& other) {
+
+        // check for self-assignment
+        if (&other == this) {
+            return *this;
+        }
+
+        delete binRel_;
+
+        binRel_ = (other.binRel_ != 0) ? other.binRel_->clone() : 0;
+        segIdMap_ = other.segIdMap_;
+        labels_ = other.labels_;
+
+        return *this;
+
+    }
+
+    ~MiniK2TreeBinaryRelation() {
+        delete binRel_;
+    }
+
+    bool areRelated(const O& obj, const L& lab) {
+        return containsLabel(lab) && containsObject(obj) && binRel_->areRelated(segIdMap_[obj], lab);
+    }
+
+    bool containsLabel(const L& lab) {
+        return (labels_ != 0) && labels_->contains(lab);
+    }
+
+    bool containsObject(const O& obj) {
+        return segIdMap_.find(obj) != segIdMap_.end();
+    }
+
+    std::vector<L> getLabelsOf(const O& obj) {
+
+        std::vector<L> res;
+        if (containsObject(obj) && labels_ != 0) {
+
+            auto tmp = binRel_->getSuccessors(segIdMap_[obj]);
+            res.reserve(tmp.size());
+
+            for (auto& l : tmp) {
+                if (labels_->containsRank(l)) {
+                    res.push_back(labels_->unrank(l));
+                }
+            }
+
+        }
+
+        return res;
+
+    }
+
+    unsigned long countPairs() {
+        return binRel_->countLinks();
+    }
+
+    unsigned long getNumRows() {
+        return binRel_->getNumRows();
+    }
+
+    unsigned long getNumCols() {
+        return binRel_->getNumCols();
+    }
+
+    void removeLabel(const L& lab) {
+        if (labels_ != 0) {
+            labels_->remove(lab);
+        }
+    }
+
+
+private:
+    K2Tree<bool>* binRel_;
+    std::map<StringIteratorPair, numSeqs_t, lessStringIteratorPair> segIdMap_;
+    S* labels_;
+
+};
+
+typedef K2TreeBinaryRelation<RankedAscendingLabels> SuccinctInvertedIndex; // use with full index
+//typedef RowTreeBinaryRelation<RankedAscendingLabels> SuccinctInvertedIndex; // use with full index
+//typedef MiniRowTreeBinaryRelation<RankedAscendingLabels> SuccinctInvertedIndex; // use with full index
+//typedef MiniK2TreeBinaryRelation<RankedAscendingLabels> SuccinctInvertedIndex; // use with full index
 
 
 }

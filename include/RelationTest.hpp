@@ -290,6 +290,93 @@ private:
 
 };
 
+template<typename O, typename S>
+class AddingTree : public KrKcTree<bool> {
+
+public:
+    using KrKcTree<bool>::KrKcTree; // adds ctors
+
+    void addSuccessorCountsOf(const O& p, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, S& labels) {
+
+        if (L_.empty()) return;
+
+        std::queue<SubrowInfo> queue, nextLevelQueue;
+        size_type lenT = T_.size();
+
+        if (lenT == 0) {
+
+            size_type offset = p * numCols_;
+            for (size_type i = 0; i < numCols_; i++) {
+                if (L_[offset + i] && labels.containsRank(i)) {
+                    candCnts[labels.unrank(i)]++;
+                }
+            }
+
+        } else {
+
+            // successorsPosInit
+            size_type nr = numRows_/ kr_;
+            size_type nc = numCols_/ kc_;
+            size_type relP = p;
+            for (size_type j = 0, dq = 0, z = kc_ * (relP / nr); j < kc_; j++, dq += nc, z++) {
+                queue.push(SubrowInfo(dq, z));
+            }
+
+            // successorsPos
+            relP %= nr;
+            nr /= kr_;
+            nc /= kc_;
+            for (; nr > 1; relP %= nr, nr /= kr_, nc /= kc_) {
+
+                while (!queue.empty()) {
+
+                    auto& cur = queue.front();
+
+                    if (T_[cur.z]) {
+
+                        auto y = R_.rank(cur.z + 1) * kr_ * kc_ + kc_ * (relP / nr);
+
+                        for (size_type j = 0, newDq = cur.dq; j < kc_; j++, newDq += nc, y++) {
+                            nextLevelQueue.push(SubrowInfo(newDq, y));
+                        }
+
+                    }
+
+                    queue.pop();
+
+                }
+
+                queue.swap(nextLevelQueue);
+
+            }
+
+
+            while (!queue.empty()) {
+
+                auto& cur = queue.front();
+
+                if (T_[cur.z]) {
+
+                    auto y = R_.rank(cur.z + 1) * kr_ * kc_ + kc_ * (relP / nr) - lenT;
+
+                    for (size_type j = 0, newDq = cur.dq; j < kc_; j++, newDq += nc, y++) {
+                        if (L_[y] && labels.containsRank(newDq)) {
+                            candCnts[labels.unrank(newDq)]++;
+                        }
+                    }
+
+                }
+
+                queue.pop();
+
+            }
+
+        }
+
+    }
+
+};
+
 template<typename S>
 class K2TreeBinaryRelation {
 
@@ -301,12 +388,13 @@ public:
         // nothing to do
     }
 
-    K2TreeBinaryRelation(RelationPrecursor& ir, S& labels, SuccinctConfig& sc) {
+    K2TreeBinaryRelation(RelationPrecursor& ir, S& labels, const SuccinctConfig& sc) {
 
 //        binRel_ = BasicK2Tree<bool>(ir.pairs, sc.succK);
 //        binRel_ = HybridK2Tree<bool>(ir.pairs, sc.succUK, sc.succUH, sc.succLK);
-//        binRel_ = KrKcTree<bool>(ir.pairs, sc.succKR, sc.succKC);
-        binRel_ = UnevenKrKcTree<bool>(ir.pairs, sc.succKR, sc.succKC);
+        binRel_ = KrKcTree<bool>(ir.pairs, sc.succKR, sc.succKC);
+//        binRel_ = UnevenKrKcTree<bool>(ir.pairs, sc.succKR, sc.succKC);
+//        binRel_ = AddingTree<numSeqs_t, S>(ir.pairs, sc.succKR, sc.succKC);
 //        binRel_ = UnevenKrKcOrMiniTree<bool>(ir.pairs, sc.succKR, sc.succKC, sc.succMB);
         segIdMap_.swap(ir.mapping);
         labels_ = &labels;
@@ -364,6 +452,21 @@ public:
 
     }
 
+    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+
+        if (containsObject(obj) && labels_ != 0) {
+
+            for (auto& l : binRel_.getSuccessors(segIdMap_[obj])) {
+                if (labels_->containsRank(l)) {
+                    candCnts[labels_->unrank(l)]++;
+                }
+            }
+//            binRel_.addSuccessorCountsOf(segIdMap_[obj], candCnts, *labels_);
+
+        }
+
+    }
+
     unsigned long countPairs() {
         return binRel_.countLinks();
     }
@@ -386,8 +489,9 @@ public:
 private:
 //    BasicK2Tree<bool> binRel_;
 //    HybridK2Tree<bool> binRel_;
-//    KrKcTree<bool> binRel_;
-    UnevenKrKcTree<bool> binRel_;
+    KrKcTree<bool> binRel_;
+//    UnevenKrKcTree<bool> binRel_;
+//    AddingTree<numSeqs_t, S> binRel_;
 //    UnevenKrKcOrMiniTree<bool> binRel_;
     std::map<StringIteratorPair, numSeqs_t, lessStringIteratorPair> segIdMap_;
     S* labels_;
@@ -492,6 +596,20 @@ public:
         }
 
         return res;
+
+    }
+
+    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+
+        if (containsObject(obj) && labels_ != 0) {
+
+            for (auto& l : binRel_[segIdMap_[obj]].getAllPositions()) {
+                if (labels_->containsRank(l)) {
+                    candCnts[labels_->unrank(l)]++;
+                }
+            }
+
+        }
 
     }
 
@@ -658,6 +776,20 @@ public:
 
     }
 
+    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+
+        if (containsObject(obj) && labels_ != 0) {
+
+            for (auto& l : binRel_[segIdMap_[obj]]->getAllPositions()) {
+                if (labels_->containsRank(l)) {
+                    candCnts[labels_->unrank(l)]++;
+                }
+            }
+
+        }
+
+    }
+
     unsigned long countPairs() {
 
         unsigned long sum = 0;
@@ -778,6 +910,20 @@ public:
         }
 
         return res;
+
+    }
+
+    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+
+        if (containsObject(obj) && labels_ != 0) {
+
+            for (auto& l : binRel_->getSuccessors(segIdMap_[obj])) {
+                if (labels_->containsRank(l)) {
+                    candCnts[labels_->unrank(l)]++;
+                }
+            }
+
+        }
 
     }
 

@@ -41,11 +41,10 @@ SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, Shar
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id) {
 
     std::vector<numSeqs_t> cands;
-
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -55,15 +54,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -92,11 +87,10 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
     children.clear();
 
     std::vector<numSeqs_t> cands;
-
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -106,15 +100,11 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -141,11 +131,10 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id) {
 
     std::vector<numSeqs_t> cands;
-
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -163,15 +152,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -217,11 +202,10 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     children.clear();
 
     std::vector<numSeqs_t> cands;
-
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -239,15 +223,11 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -295,10 +275,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -308,15 +288,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -354,10 +330,10 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -367,15 +343,11 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -410,10 +382,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -431,15 +403,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -494,10 +462,10 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -515,15 +483,11 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -582,10 +546,11 @@ SegmentFilter::ParallelChildrenFinder::~ParallelChildrenFinder() {
 
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id) {
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -595,15 +560,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -628,10 +589,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
 void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children) {
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -641,15 +603,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -675,10 +633,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id) {
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -696,15 +655,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -747,10 +702,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
 void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children) {
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -768,15 +724,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -928,10 +880,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     Candidate cand;
     numSeqs_t numCands = 0;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -941,15 +893,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1006,10 +954,10 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
     Candidate cand;
     numSeqs_t numCands = 0;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -1019,15 +967,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1086,10 +1030,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     Candidate cand;
     numSeqs_t numCands = 0;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -1107,15 +1051,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1189,10 +1129,10 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     Candidate cand;
     numSeqs_t numCands = 0;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -1210,15 +1150,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1284,10 +1220,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 #if SIMD_VERIFICATION
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
@@ -1297,15 +1234,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1331,10 +1264,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
@@ -1344,15 +1278,11 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1378,10 +1308,12 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
+
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
@@ -1397,15 +1329,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1448,10 +1376,12 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
+
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
@@ -1467,15 +1397,11 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1522,10 +1448,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
@@ -1535,15 +1461,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1578,10 +1500,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
@@ -1591,15 +1513,11 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1634,10 +1552,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
+
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
@@ -1653,15 +1572,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1713,10 +1628,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
+
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
@@ -1732,15 +1648,11 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -1853,7 +1765,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 
                 for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-                    succRow.indices[i] = SuccinctInvertedIndex(tmpRow.indices[i], succRow.shared);
+                    succRow.indices[i] = SuccinctInvertedIndex(tmpRow.indices[i], succRow.shared, SuccinctConfig(0,2,5,0,0,0,0));
                     tmpRow.indices[i].clear();
 
                 }
@@ -2030,7 +1942,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 
                 for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-                    succRow.indices[i] = SuccinctInvertedIndex(tmpRow.indices[i], succRow.shared);
+                    succRow.indices[i] = SuccinctInvertedIndex(tmpRow.indices[i], succRow.shared, SuccinctConfig(0,2,5,0,0,0,0));
                     tmpRow.indices[i].clear();
 
                 }
@@ -2170,11 +2082,10 @@ SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, Roll
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id) {
 
     std::vector<numSeqs_t> cands;
-
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -2184,15 +2095,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2221,11 +2128,10 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
     children.clear();
 
     std::vector<numSeqs_t> cands;
-
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -2235,15 +2141,11 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2270,11 +2172,10 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id) {
 
     std::vector<numSeqs_t> cands;
-
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -2292,15 +2193,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2346,11 +2243,10 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     children.clear();
 
     std::vector<numSeqs_t> cands;
-
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -2368,15 +2264,11 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2424,10 +2316,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -2437,15 +2329,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2483,10 +2371,10 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -2496,15 +2384,11 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2539,10 +2423,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -2560,15 +2444,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2623,10 +2503,10 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -2644,15 +2524,11 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2711,10 +2587,11 @@ SegmentFilter::ParallelChildrenFinder::~ParallelChildrenFinder() {
 
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id) {
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -2724,15 +2601,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2757,10 +2630,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
 void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children) {
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -2770,15 +2644,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2804,10 +2674,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id) {
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -2825,15 +2696,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -2876,10 +2743,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
 void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children) {
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -2897,15 +2765,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3057,10 +2921,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     Candidate cand;
     numSeqs_t numCands = 0;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -3070,15 +2934,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3135,10 +2995,10 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
     Candidate cand;
     numSeqs_t numCands = 0;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
 
@@ -3148,15 +3008,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3215,10 +3071,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     Candidate cand;
     numSeqs_t numCands = 0;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -3236,15 +3092,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3318,10 +3170,10 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     Candidate cand;
     numSeqs_t numCands = 0;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac_[id];
+    StringIteratorPair sip;
 
     SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
@@ -3339,15 +3191,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
             const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3413,10 +3261,11 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 #if SIMD_VERIFICATION
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
@@ -3426,15 +3275,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3460,10 +3305,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
@@ -3473,15 +3319,11 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3507,10 +3349,12 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
+
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
@@ -3526,15 +3370,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3577,10 +3417,12 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::vector<numSeqs_t> cands, candIntIds;
+    std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
+
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
@@ -3596,15 +3438,11 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3651,10 +3489,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
@@ -3664,15 +3502,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3707,10 +3541,10 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
 
@@ -3720,15 +3554,11 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3763,10 +3593,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
 
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
+
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
@@ -3782,15 +3613,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }
@@ -3842,10 +3669,11 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
-    std::vector<numSeqs_t> candIntIds;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
 
     auto& amplicon = ac[id];
+    StringIteratorPair sip;
+
     SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
     SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
@@ -3861,15 +3689,11 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
             const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
+            sip.first = amplicon.seq + subs.first;
+            sip.second = sip.first + subs.len;
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                candIntIds = inv.getLabelsOf(StringIteratorPair(amplicon.seq + substrPos, amplicon.seq + substrPos + subs.len));
-
-                for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                    candCnts[*candIter]++;
-                }
-
+            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                inv.addLabelCountsOf(sip, candCnts);
             }
 
         }

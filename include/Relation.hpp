@@ -99,6 +99,20 @@ public:
 
     }
 
+    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+
+        auto keyIter = binRel_.find(obj);
+
+        if (keyIter != binRel_.end()) {
+
+            for (auto& e : keyIter->second) {
+                candCnts[e]++;
+            }
+
+        }
+
+    }
+
     std::vector<O> getObjectsOf(const L& lab) {
 
         std::vector<O> objects;
@@ -478,6 +492,20 @@ public:
         }
 
         return res;
+
+    }
+
+    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+
+        auto keyIter = binRel_.find(obj);
+
+        if (keyIter != binRel_.end()) {
+
+            for (auto& e : keyIter->second) {
+                candCnts[e.value]++;
+            }
+
+        }
 
     }
 

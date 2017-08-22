@@ -259,9 +259,9 @@ void SwarmClustering::verifyGotohFastidious(const AmpliconPools& pools, const Am
 void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
-    std::vector<numSeqs_t> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     lenSeqs_t seqLen;
+    StringIteratorPair sip;
 
     std::vector<CandidateFastidious> localCands;
 
@@ -303,15 +303,11 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 
                         SegmentFilter::Substrings& subs = substrs[len][i];
                         InvertedIndexFastidious& inv = indices.getIndex(len, i);
+                        sip.first = ampl->seq + subs.first;
+                        sip.second = sip.first + subs.len;
 
-                        for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                            candMembers = inv.getLabelsOf(StringIteratorPair(ampl->seq + substrPos, ampl->seq + substrPos + subs.len));
-
-                            for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
-                                candCnts[*candIter]++;
-                            }
-
+                        for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                            inv.addLabelCountsOf(sip, candCnts);
                         }
 
                     }
@@ -468,9 +464,9 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
-    std::vector<numSeqs_t> candMembers;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     lenSeqs_t seqLen;
+    StringIteratorPair sip;
 
     lenSeqs_t M[sc.useScore ? 1 : width];
     val_t D[sc.useScore? width : 1];
@@ -515,15 +511,11 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 
                         SegmentFilter::Substrings& subs = substrs[len][i];
                         InvertedIndexFastidious& inv = indices.getIndex(len, i);
+                        sip.first = ampl->seq + subs.first;
+                        sip.second = sip.first + subs.len;
 
-                        for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                            candMembers = inv.getLabelsOf(StringIteratorPair(ampl->seq + substrPos, ampl->seq + substrPos + subs.len));
-
-                            for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
-                                candCnts[*candIter]++;
-                            }
-
+                        for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                            inv.addLabelCountsOf(sip, candCnts);
                         }
 
                     }

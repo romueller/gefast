@@ -164,9 +164,9 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
-    std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
+    StringIteratorPair sip;
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     std::vector<Candidate> candColl;
@@ -223,15 +223,11 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 
                 Substrings& subs = substrs[seqLen - len][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
+                sip.first = ac[curIntId].seq + subs.first;
+                sip.second = sip.first + subs.len;
 
-                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq + substrPos, ac[curIntId].seq + substrPos +  subs.len));
-
-                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                        candCnts[*candIter]++;
-                    }
-
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                    inv.addLabelCountsOf(sip, candCnts);
                 }
 
             }
@@ -264,9 +260,9 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
-    std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
+    StringIteratorPair sip;
 
     lenSeqs_t M[useScore ? 1 : ac.back().len + 1];
     val_t D[useScore? ac.back().len + 1 : 1];
@@ -329,15 +325,11 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
                 Substrings& subs = substrs[seqLen - len][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
+                sip.first = ac[curIntId].seq + subs.first;
+                sip.second = sip.first + subs.len;
 
-                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq + substrPos, ac[curIntId].seq + substrPos + subs.len));
-
-                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                        candCnts[*candIter]++;
-                    }
-
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                    inv.addLabelCountsOf(sip, candCnts);
                 }
 
             }
@@ -376,9 +368,9 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
-    std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
+    StringIteratorPair sip;
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     std::vector<Candidate> candColl;
@@ -438,15 +430,11 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 
                 Substrings& subs = substrs[len - seqLen][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
+                sip.first = ac[curIntId].seq + subs.first;
+                sip.second = sip.first + subs.len;
 
-                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq + substrPos, ac[curIntId].seq + substrPos + subs.len));
-
-                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                        candCnts[*candIter]++;
-                    }
-
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                    inv.addLabelCountsOf(sip, candCnts);
                 }
 
             }
@@ -479,9 +467,9 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
-    std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
+    StringIteratorPair sip;
 
     lenSeqs_t M[useScore ? 1 : ac.back().len + 1];
     val_t D[useScore? ac.back().len + 1 : 1];
@@ -547,15 +535,11 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
                 Substrings& subs = substrs[len - seqLen][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
+                sip.first = ac[curIntId].seq + subs.first;
+                sip.second = sip.first + subs.len;
 
-                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq + substrPos, ac[curIntId].seq + substrPos + subs.len));
-
-                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                        candCnts[*candIter]++;
-                    }
-
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                    inv.addLabelCountsOf(sip, candCnts);
                 }
 
             }
@@ -593,10 +577,10 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
-    std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
     std::vector<std::string> segmentStrs(t + k);
+    StringIteratorPair sip;
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     std::vector<Candidate> candColl;
@@ -657,15 +641,11 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 
                 Substrings& subs = substrs[seqLen - len][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
+                sip.first = ac[curIntId].seq + subs.first;
+                sip.second = sip.first + subs.len;
 
-                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq + substrPos, ac[curIntId].seq + substrPos + subs.len));
-
-                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                        candCnts[*candIter]++;
-                    }
-
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                    inv.addLabelCountsOf(sip, candCnts);
                 }
 
             }
@@ -725,10 +705,10 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
-    std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
     std::vector<std::string> segmentStrs(t + k);
+    StringIteratorPair sip;
 
     lenSeqs_t M[useScore ? 1 : ac.back().len + 1];
     val_t D[useScore? ac.back().len + 1 : 1];
@@ -795,15 +775,11 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
                 Substrings& subs = substrs[seqLen - len][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
+                sip.first = ac[curIntId].seq + subs.first;
+                sip.second = sip.first + subs.len;
 
-                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq + substrPos, ac[curIntId].seq + substrPos + subs.len));
-
-                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                        candCnts[*candIter]++;
-                    }
-
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                    inv.addLabelCountsOf(sip, candCnts);
                 }
 
             }
@@ -869,10 +845,10 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
-    std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
     std::vector<std::string> segmentStrs(t + k);
+    StringIteratorPair sip;
 
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
     std::vector<Candidate> candColl;
@@ -936,15 +912,11 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 
                 Substrings& subs = substrs[len - seqLen][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
+                sip.first = ac[curIntId].seq + subs.first;
+                sip.second = sip.first + subs.len;
 
-                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq + substrPos, ac[curIntId].seq + substrPos + subs.len));
-
-                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                        candCnts[*candIter]++;
-                    }
-
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                    inv.addLabelCountsOf(sip, candCnts);
                 }
 
             }
@@ -1004,10 +976,10 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
-    std::vector<numSeqs_t> candIntIds;
     Substrings substrs[t + 1][t + k];
     Segments segments(t + k);
     std::vector<std::string> segmentStrs(t + k);
+    StringIteratorPair sip;
 
     lenSeqs_t M[useScore ? 1 : ac.back().len + 1];
     val_t D[useScore? ac.back().len + 1 : 1];
@@ -1077,15 +1049,11 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 
                 Substrings& subs = substrs[len - seqLen][i];
                 InvertedIndex& inv = indices.getIndex(len, i);
+                sip.first = ac[curIntId].seq + subs.first;
+                sip.second = sip.first + subs.len;
 
-                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                    candIntIds = inv.getLabelsOf(StringIteratorPair(ac[curIntId].seq + substrPos, ac[curIntId].seq + substrPos + subs.len));
-
-                    for (auto candIter = candIntIds.begin(); candIter != candIntIds.end(); candIter++) {
-                        candCnts[*candIter]++;
-                    }
-
+                for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
+                    inv.addLabelCountsOf(sip, candCnts);
                 }
 
             }

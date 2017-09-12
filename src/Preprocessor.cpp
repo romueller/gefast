@@ -22,6 +22,7 @@
  */
 
 #include <fstream>
+#include <limits>
 
 #include "../include/Preprocessor.hpp"
 
@@ -117,7 +118,8 @@ unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, s
     }
 
     // set up filters (depending on configuration)
-    lenSeqs_t minLength, maxLength;
+    lenSeqs_t minLength = 0;
+    lenSeqs_t maxLength = std::numeric_limits<lenSeqs_t>::max();
     std::string alphabet;
     unsigned long long totalLength = 0;
 
@@ -217,9 +219,9 @@ unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, s
 
 }
 
-//TODO adapt description
-// adds contents of specified file (if readable) to the given LengthGroups object, returns pointer to this object
-// "normalises" to lower-case letters
+// adds contents of specified file (if readable) to the given AmpliconPools object
+// amplicons are assigned to the respective pools established by prior calls of analyseInput()
+// "normalises" to lower-case letters, filters according to configuration
 void Preprocessor::appendInput(const Config<std::string>& conf, AmpliconPools& pools, std::map<lenSeqs_t, numSeqs_t>& poolMap, const std::string fileName, const std::string sep) {
 
     std::ifstream iStream(fileName);
@@ -231,7 +233,8 @@ void Preprocessor::appendInput(const Config<std::string>& conf, AmpliconPools& p
     }
 
     // set up filters (depending on configuration)
-    lenSeqs_t minLength, maxLength;
+    lenSeqs_t minLength = 0;
+    lenSeqs_t maxLength = std::numeric_limits<lenSeqs_t>::max();
     std::string alphabet;
 
     int flagLength = std::stoi(conf.get(FILTER_LENGTH));

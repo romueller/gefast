@@ -27,7 +27,7 @@
 
 namespace GeFaST {
 #if SUCCINCT
-SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
 
     M_ = M;
     D_ = D;
@@ -52,7 +52,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -98,7 +98,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -136,8 +136,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -150,7 +150,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -207,8 +207,8 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -221,7 +221,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -286,7 +286,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -341,7 +341,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -387,8 +387,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -401,7 +401,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -467,8 +467,8 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -481,7 +481,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -536,7 +536,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 #endif
 
 #if SIMD_VERIFICATION
-SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
     // nothing else to do
 }
 
@@ -558,7 +558,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -601,7 +601,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -639,8 +639,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -653,7 +653,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -708,8 +708,8 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -722,7 +722,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -771,7 +771,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
 #else
 
-SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
 
     cbs_ = RotatingBuffers<Candidate>(sc.numThreadsPerCheck - 1);
 
@@ -891,7 +891,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -965,7 +965,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1035,8 +1035,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -1049,7 +1049,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1134,8 +1134,8 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -1148,7 +1148,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1218,7 +1218,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 #endif
 
 #if SIMD_VERIFICATION
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -1232,7 +1232,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1262,7 +1262,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 }
 
-void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -1276,7 +1276,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1306,7 +1306,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
 }
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -1314,8 +1314,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
     auto& amplicon = ac[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
+    Segments segments(sc.threshold + sc.extraSegs);
+    selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
@@ -1327,7 +1327,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1374,7 +1374,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 }
 
-void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -1382,8 +1382,8 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
     auto& amplicon = ac[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
+    Segments segments(sc.threshold + sc.extraSegs);
+    selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
@@ -1395,7 +1395,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1444,7 +1444,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
 #else
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
@@ -1459,7 +1459,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1497,7 +1497,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 }
 
-void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -1511,7 +1511,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1547,7 +1547,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
 }
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
@@ -1557,8 +1557,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
     auto& amplicon = ac[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
+    Segments segments(sc.threshold + sc.extraSegs);
+    selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
@@ -1570,7 +1570,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1625,7 +1625,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 }
 
-void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -1633,8 +1633,8 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
     auto& amplicon = ac[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
+    Segments segments(sc.threshold + sc.extraSegs);
+    selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
@@ -1646,7 +1646,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             SuccinctInvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -1704,7 +1704,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc) {
 
     SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex> indices(sc.threshold + 1, sc.threshold + sc.extraSegs, true, false);
-    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
+    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
 
     { // fill indices and substrsArchive
 
@@ -1728,15 +1728,15 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
                 segmentsArchive[seqLen] = segments;
 
                 // substrings information
-                std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>& substrs = substrsArchive[seqLen];
+                std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrsArchive[seqLen];
                 for (lenSeqs_t partnerLen = (seqLen > sc.threshold) * (seqLen - sc.threshold); partnerLen <= seqLen + sc.threshold; partnerLen++) {
 
-                    std::vector<SegmentFilter::Substrings>& vec = substrs[partnerLen];
+                    std::vector<Substrings>& vec = substrs[partnerLen];
                     for (lenSeqs_t segmentIndex = 0; segmentIndex < sc.threshold + sc.extraSegs; segmentIndex++) {
                         if (partnerLen <= seqLen) {
-                            vec.push_back(SegmentFilter::selectSubstrs(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
+                            vec.push_back(selectSubstrs(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
                         } else {
-                            vec.push_back(SegmentFilter::selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
+                            vec.push_back(selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
                         }
                     }
 
@@ -1881,7 +1881,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc) {
 
     SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex> indices(sc.threshold + 1, sc.threshold + sc.extraSegs, true, false);
-    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
+    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
 
     { // fill indices and substrsArchive
 
@@ -1905,15 +1905,15 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
                 segmentsArchive[seqLen] = segments;
 
                 // substrings information
-                std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>& substrs = substrsArchive[seqLen];
+                std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrsArchive[seqLen];
                 for (lenSeqs_t partnerLen = (seqLen > sc.threshold) * (seqLen - sc.threshold); partnerLen <= seqLen + sc.threshold; partnerLen++) {
 
-                    std::vector<SegmentFilter::Substrings>& vec = substrs[partnerLen];
+                    std::vector<Substrings>& vec = substrs[partnerLen];
                     for (lenSeqs_t segmentIndex = 0; segmentIndex < sc.threshold + sc.extraSegs; segmentIndex++) {
                         if (partnerLen <= seqLen) {
-                            vec.push_back(SegmentFilter::selectSubstrs(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
+                            vec.push_back(selectSubstrs(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
                         } else {
-                            vec.push_back(SegmentFilter::selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
+                            vec.push_back(selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
                         }
                     }
 
@@ -2068,7 +2068,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
 #else //SUCCINCT
 
 
-SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
 
     M_ = M;
     D_ = D;
@@ -2093,7 +2093,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2139,7 +2139,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2177,8 +2177,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -2191,7 +2191,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2248,8 +2248,8 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -2262,7 +2262,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2327,7 +2327,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2382,7 +2382,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2428,8 +2428,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -2442,7 +2442,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getC
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2508,8 +2508,8 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -2522,7 +2522,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2577,7 +2577,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 #endif
 
 #if SIMD_VERIFICATION
-SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
     // nothing else to do
 }
 
@@ -2599,7 +2599,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2642,7 +2642,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2680,8 +2680,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -2694,7 +2694,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2749,8 +2749,8 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -2763,7 +2763,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -2812,7 +2812,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
 #else
 
-SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
+SegmentFilter::ParallelChildrenFinder::ParallelChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc) : ac_(ac), indices_(indices), substrsArchive_(substrsArchive), sc_(sc) {
 
     cbs_ = RotatingBuffers<Candidate>(sc.numThreadsPerCheck - 1);
 
@@ -2932,7 +2932,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3006,7 +3006,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3076,8 +3076,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -3090,7 +3090,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3175,8 +3175,8 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     auto& amplicon = ac_[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc_.threshold + sc_.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
+    Segments segments(sc_.threshold + sc_.extraSegs);
+    selectSegments(segments, amplicon.len, sc_.threshold, sc_.extraSegs);
 
     std::vector<std::string> segmentStrs(sc_.threshold + sc_.extraSegs);
     for (auto i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
@@ -3189,7 +3189,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 
         for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive_[amplicon.len][childLen][i];
             InvertedIndex& inv = indices_.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3259,7 +3259,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 #endif
 
 #if SIMD_VERIFICATION
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -3273,7 +3273,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3303,7 +3303,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 }
 
-void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -3317,7 +3317,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3347,7 +3347,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
 }
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -3355,8 +3355,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
     auto& amplicon = ac[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
+    Segments segments(sc.threshold + sc.extraSegs);
+    selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
@@ -3368,7 +3368,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3415,7 +3415,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 }
 
-void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<numSeqs_t> cands;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -3423,8 +3423,8 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
     auto& amplicon = ac[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
+    Segments segments(sc.threshold + sc.extraSegs);
+    selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
@@ -3436,7 +3436,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3485,7 +3485,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
 #else
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
@@ -3500,7 +3500,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3538,7 +3538,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 }
 
-void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -3552,7 +3552,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3588,7 +3588,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 
 }
 
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
     lenSeqs_t dist;
@@ -3598,8 +3598,8 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
     auto& amplicon = ac[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
+    Segments segments(sc.threshold + sc.extraSegs);
+    selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
@@ -3611,7 +3611,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3666,7 +3666,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 }
 
-void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
+void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     lenSeqs_t dist;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -3674,8 +3674,8 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
     auto& amplicon = ac[id];
     StringIteratorPair sip;
 
-    SegmentFilter::Segments segments(sc.threshold + sc.extraSegs);
-    SegmentFilter::selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
+    Segments segments(sc.threshold + sc.extraSegs);
+    selectSegments(segments, amplicon.len, sc.threshold, sc.extraSegs);
     std::vector<std::string> segmentStrs(sc.threshold + sc.extraSegs);
     for (auto i = 0; i < sc.threshold + sc.extraSegs; i++) {
         segmentStrs[i] = std::string(amplicon.seq + segments[i].first, amplicon.seq + segments[i].first + segments[i].second);
@@ -3687,7 +3687,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-            const SegmentFilter::Substrings& subs = substrsArchive[amplicon.len][childLen][i];
+            const Substrings& subs = substrsArchive[amplicon.len][childLen][i];
             InvertedIndex& inv = indices.getIndex(childLen, i);
             sip.first = amplicon.seq + subs.first;
             sip.second = sip.first + subs.len;
@@ -3745,7 +3745,7 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc) {
 
     RollingIndices<InvertedIndex> indices(sc.threshold + 1, sc.threshold + sc.extraSegs, true, false);
-    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
+    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
 
     { // fill indices and substrsArchive
 
@@ -3768,15 +3768,15 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
                 segmentsArchive[seqLen] = segments;
 
                 // substrings information
-                std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>& substrs = substrsArchive[seqLen];
+                std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrsArchive[seqLen];
                 for (lenSeqs_t partnerLen = (seqLen > sc.threshold) * (seqLen - sc.threshold); partnerLen <= seqLen + sc.threshold; partnerLen++) {
 
-                    std::vector<SegmentFilter::Substrings>& vec = substrs[partnerLen];
+                    std::vector<Substrings>& vec = substrs[partnerLen];
                     for (lenSeqs_t segmentIndex = 0; segmentIndex < sc.threshold + sc.extraSegs; segmentIndex++) {
                         if (partnerLen <= seqLen) {
-                            vec.push_back(SegmentFilter::selectSubstrs(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
+                            vec.push_back(selectSubstrs(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
                         } else {
-                            vec.push_back(SegmentFilter::selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
+                            vec.push_back(selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
                         }
                     }
 
@@ -3907,7 +3907,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
 void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc) {
 
     RollingIndices<InvertedIndex> indices(sc.threshold + 1, sc.threshold + sc.extraSegs, true, false);
-    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>> substrsArchive;
+    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
 
     { // fill indices and substrsArchive
 
@@ -3930,15 +3930,15 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
                 segmentsArchive[seqLen] = segments;
 
                 // substrings information
-                std::unordered_map<lenSeqs_t, std::vector<SegmentFilter::Substrings>>& substrs = substrsArchive[seqLen];
+                std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrsArchive[seqLen];
                 for (lenSeqs_t partnerLen = (seqLen > sc.threshold) * (seqLen - sc.threshold); partnerLen <= seqLen + sc.threshold; partnerLen++) {
 
-                    std::vector<SegmentFilter::Substrings>& vec = substrs[partnerLen];
+                    std::vector<Substrings>& vec = substrs[partnerLen];
                     for (lenSeqs_t segmentIndex = 0; segmentIndex < sc.threshold + sc.extraSegs; segmentIndex++) {
                         if (partnerLen <= seqLen) {
-                            vec.push_back(SegmentFilter::selectSubstrs(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
+                            vec.push_back(selectSubstrs(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
                         } else {
-                            vec.push_back(SegmentFilter::selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
+                            vec.push_back(selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.threshold, sc.extraSegs));
                         }
                     }
 

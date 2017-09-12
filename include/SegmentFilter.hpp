@@ -32,44 +32,6 @@
 namespace GeFaST {
 namespace SegmentFilter {
 
-    // describes a set of substrings chosen for comparison with a segment
-    struct Substrings {
-
-        lenSeqs_t first; // start position of first substring to be checked
-        lenSeqs_t last; // start position of last substring to be checked
-        lenSeqs_t len; // common length of all substrings to be checked
-
-        Substrings() {
-
-            first = 0;
-            last = 0;
-            len = 0;
-
-        }
-
-        Substrings(lenSeqs_t fp, lenSeqs_t lp, lenSeqs_t l) {
-
-            first = fp;
-            last = lp;
-            len = l;
-
-        }
-
-    };
-
-    // describes a set of segments to be indexed
-    typedef std::vector<std::pair<lenSeqs_t, lenSeqs_t>> Segments;
-
-
-    // select 'substrings' (MMASS) for segment filter
-    Substrings selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex, const lenSeqs_t t, const lenSeqs_t k);
-    Substrings selectSubstrsBackward(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex, const lenSeqs_t t, const lenSeqs_t k);
-
-    // select 'segments' (to be stored in a parameter) for indexing step
-    void selectSegments(Segments& segments, const lenSeqs_t seqLen, const lenSeqs_t t, const lenSeqs_t k);
-
-
-
     /*
      * Concerning all four filter variants:
      * Currently, a segment contributes with each matched substring (instead of at most one), which can make an indexed sequence a candidate even though not enough different segments are matched.

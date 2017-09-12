@@ -440,7 +440,7 @@ void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu
  * Index the amplicons of the given (light) OTU and prepares the child information of grafting candidate entries.
  * Potentially reuses already computed information on segment positions through segmentsArchive.
  */
-void fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>& indices, std::unordered_map<lenSeqs_t, SegmentFilter::Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
+void fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>& indices, std::unordered_map<lenSeqs_t, Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
 
 /**
  * Verify the potentially similar amplicons arriving at a candidate buffer and,

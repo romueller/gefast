@@ -74,7 +74,7 @@ int run(int argc, const char* argv[]) {
         return 1;
 
     }
-    if (!c.peek(MATCHES_OUTPUT_FILE) && !c.peek(SWARM_OUTPUT_INTERNAL) && !c.peek(SWARM_OUTPUT_OTUS) && !c.peek(SWARM_OUTPUT_STATISTICS) && !c.peek(SWARM_OUTPUT_SEEDS) && !c.peek(SWARM_OUTPUT_UCLUST)) {
+    if (!((c.get(PREPROCESSING_ONLY) == "1") || c.peek(MATCHES_OUTPUT_FILE) || c.peek(SWARM_OUTPUT_INTERNAL) || c.peek(SWARM_OUTPUT_OTUS) || c.peek(SWARM_OUTPUT_STATISTICS) || c.peek(SWARM_OUTPUT_SEEDS) || c.peek(SWARM_OUTPUT_UCLUST))) {
 
         std::cerr << "ERROR: No output file specified." << std::endl;
         return 1;

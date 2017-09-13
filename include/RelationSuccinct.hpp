@@ -1,5 +1,5 @@
-#ifndef GEFAST_RELATIONTEST_HPP
-#define GEFAST_RELATIONTEST_HPP
+#ifndef GEFAST_RELATIONSUCCINCT_HPP
+#define GEFAST_RELATIONSUCCINCT_HPP
 
 #include <algorithm>
 #include <cmath>
@@ -31,22 +31,21 @@ struct RelationPrecursor {//TODO mapping: map or unordered_map?
 
 };
 
+struct SuccinctConfig {
 
-    struct SuccinctConfig {
+    unsigned long succK, succKR, succKC, succUK, succUH, succLK, succMB;
 
-        unsigned long succK, succKR, succKC, succUK, succUH, succLK, succMB;
+    SuccinctConfig(unsigned long k, unsigned long kr, unsigned long kc, unsigned long uk, unsigned long uh, unsigned long lk, unsigned long mb) {
+        succK = k;
+        succKR = kr;
+        succKC = kc;
+        succUK = uk;
+        succUH = uh;
+        succLK = lk;
+        succMB = mb;
+    }
 
-        SuccinctConfig(unsigned long k, unsigned long kr, unsigned long kc, unsigned long uk, unsigned long uh, unsigned long lk, unsigned long mb) {
-            succK = k;
-            succKR = kr;
-            succKC = kc;
-            succUK = uk;
-            succUH = uh;
-            succLK = lk;
-            succMB = mb;
-        }
-
-    };
+};
 
 // maps arbitary ascending sequence of n unique (positive) integers onto [0:n-1]
 class RankedAscendingLabels {
@@ -210,85 +209,6 @@ private:
 
 };
 
-
-template<typename O, typename L, typename H = std::hash<O>, typename P = std::equal_to<O>>
-class LazySimpleBinaryRelation {
-
-public:
-    LazySimpleBinaryRelation() {
-        // nothing to do
-    }
-
-    ~LazySimpleBinaryRelation() {
-        // nothing to do
-    }
-
-    bool areRelated(const O &obj, const L &lab) {
-
-        auto keyIter = binRel_.find(obj);
-        bool val = (keyIter != binRel_.end()) && containsLabel(lab);
-
-        if (val) {
-
-            auto &labels = keyIter->second;
-            val = (std::find(labels.begin(), labels.end(), lab) != labels.end());
-
-        }
-
-        return val;
-
-    }
-
-    bool containsLabel(const L &lab) {
-        return labels_.find(lab) != labels_.end();
-    }
-
-    bool containsObject(const O &obj) {
-        return binRel_.find(obj) != binRel_.end();
-    }
-
-    std::vector<L> getLabelsOf(const O &obj) {
-
-        std::vector<L> labels;
-
-        if (containsObject(obj)) {
-
-            auto &tmp = binRel_[obj];
-            labels.reserve(tmp.size());
-
-            for (auto &l : tmp) {
-                if (labels_.find(l) != labels_.end()) {
-                    labels.push_back(l);
-                }
-            }
-
-        }
-
-        return labels;
-
-    }
-
-    void add(const O &obj, const L &lab) {
-
-        labels_.insert(lab);
-
-        auto &row = binRel_[obj];
-        if (std::find(row.begin(), row.end(), lab) == row.end()) {
-            row.push_back(lab);
-        }
-
-    }
-
-    void removeLabel(const L &lab) {
-        labels_.erase(lab);
-    }
-
-
-private:
-    std::unordered_map<O, std::vector<L>, H, P> binRel_;
-    std::set<L> labels_;
-
-};
 
 template<typename O, typename S>
 class AddingTree : public KrKcTree<bool> {
@@ -953,12 +873,6 @@ private:
 
 };
 
-typedef K2TreeBinaryRelation<RankedAscendingLabels> SuccinctInvertedIndex; // use with full index
-//typedef RowTreeBinaryRelation<RankedAscendingLabels> SuccinctInvertedIndex; // use with full index
-//typedef MiniRowTreeBinaryRelation<RankedAscendingLabels> SuccinctInvertedIndex; // use with full index
-//typedef MiniK2TreeBinaryRelation<RankedAscendingLabels> SuccinctInvertedIndex; // use with full index
-
-
 }
 
-#endif //GEFAST_RELATIONTEST_HPP
+#endif //GEFAST_RELATIONSUCCINCT_HPP

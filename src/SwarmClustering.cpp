@@ -133,7 +133,7 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
 }
 
 
-void SwarmClustering::fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>& indices, std::unordered_map<lenSeqs_t, Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
+void SwarmClustering::fastidiousIndexOtu(PrecursorIndices& indices, std::unordered_map<lenSeqs_t, Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
 
     auto begin = ac.begin();
     for (numSeqs_t m = 0; m < otu.numMembers; m++) {
@@ -256,7 +256,7 @@ void SwarmClustering::verifyGotohFastidious(const AmpliconPools& pools, const Am
 
 }
 
-void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
+void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -341,7 +341,7 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 }
 
 #if SIMD_VERIFICATION
-void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
+void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
     std::vector<numSeqs_t> candMembers;
@@ -461,7 +461,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 
 #else
 
-void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
+void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
     std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
@@ -574,7 +574,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 }
 #endif
 
-void SwarmClustering::checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
+void SwarmClustering::checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
 #if SIMD_VERIFICATION
 
@@ -629,12 +629,55 @@ void SwarmClustering::checkAndVerify(const AmpliconPools& pools, const std::vect
 void SwarmClustering::determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, std::vector<GraftCandidate>& allGraftCands, const numSeqs_t p, std::mutex& allGraftCandsMtx, const SwarmConfig& sc) {
 
     AmpliconCollection* ac = pools.get(p);
-    RollingIndices<InvertedIndexFastidious> indices = RollingIndices<InvertedIndexFastidious>(2 * sc.fastidiousThreshold + 1, sc.fastidiousThreshold + sc.extraSegs, true, false);
-    std::vector<GraftCandidate> graftCands = std::vector<GraftCandidate>(ac->size()); // initially, graft candidates for all amplicons of the pool are "empty"
+    IndicesFastidious indices(2 * sc.fastidiousThreshold + 1, sc.fastidiousThreshold + sc.extraSegs, true, false);
+    std::vector<GraftCandidate> graftCands(ac->size()); // initially, graft candidates for all amplicons of the pool are "empty"
 
     // a) Index amplicons of all light OTUs of the current pool
+#if SUCCINCT_FASTIDIOUS
     {
-        std::unordered_map<lenSeqs_t, Segments> segmentsArchive = std::unordered_map<lenSeqs_t, Segments>();
+        SuccinctConfig succinctConfig(0, 2, 5, 0, 0, 0, 5);
+        PrecursorIndices tmpIndices(2 * sc.fastidiousThreshold + 1, sc.fastidiousThreshold + sc.extraSegs, true, false);
+        std::unordered_map<lenSeqs_t, Segments> segmentsArchive;
+        for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
+
+            if ((*otuIter)->mass < sc.boundary) {
+                fastidiousIndexOtu(tmpIndices, segmentsArchive, *ac, *(*otuIter), graftCands, sc);
+            }
+
+        }
+
+        for (lenSeqs_t len = tmpIndices.minLength(); len <= tmpIndices.maxLength(); len++) {
+
+            if (tmpIndices.contains(len)) {
+
+                indices.roll(len, ac->numSeqsOfLen(len));
+                auto& succRow = indices.getIndicesRow(len);
+                auto& tmpRow = tmpIndices.getIndicesRow(len);
+                succRow.shared = RankedAscendingLabels(tmpRow[0].pairs);
+
+                for (lenSeqs_t i = 0; i < sc.fastidiousThreshold + sc.extraSegs; i++) {
+
+                    std::sort(tmpRow[i].pairs.begin(), tmpRow[i].pairs.end(),
+                              [](const std::pair<numSeqs_t, numSeqs_t>& lhs, const std::pair<numSeqs_t, numSeqs_t>& rhs) {
+                                  return lhs.second < rhs.second || (lhs.second == rhs.second && lhs.first < rhs.second);
+                              }
+                    );
+                    for (numSeqs_t j = 0; j < tmpRow[i].pairs.size(); j++) {
+                        tmpRow[i].pairs[j].second = j;
+                    }
+
+                    succRow.indices[i] = InvertedIndexFastidious(tmpRow[i], succRow.shared, succinctConfig);
+                    tmpRow[i].clear();
+
+                }
+
+            }
+
+        }
+    }
+#else
+    {
+        std::unordered_map<lenSeqs_t, Segments> segmentsArchive;
         for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
 
             if ((*otuIter)->mass < sc.boundary) {
@@ -643,6 +686,7 @@ void SwarmClustering::determineGrafts(const AmpliconPools& pools, const std::vec
 
         }
     }
+#endif
 
     // determine maximum sequence length to adjust data structures in subsequently called methods
     lenSeqs_t maxLen = 0;

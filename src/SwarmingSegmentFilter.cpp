@@ -1319,7 +1319,7 @@ void SegmentFilter::prepareIndices(const AmpliconCollection& ac, SwarmingIndices
 
             for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
 
-                succRow.indices[i] = SuccinctInvertedIndex(tmpRow.indices[i], succRow.shared, SuccinctConfig(0,2,5,0,0,0,0));
+                succRow.indices[i] = SwarmingInvertedIndex(tmpRow.indices[i], succRow.shared, SuccinctConfig(0,2,5,0,0,0,0));
                 tmpRow.indices[i].clear();
 
             }

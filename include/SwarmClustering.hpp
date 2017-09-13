@@ -304,7 +304,19 @@ struct Otu {
  * Inverted indices for applying the segment filter in the fastidious clustering phase
  * Maps sequence substrings onto OTU members.
  */
+#if SUCCINCT_FASTIDIOUS
+
+typedef K2TreeBinaryRelation<RankedAscendingLabels> InvertedIndexFastidious;
+typedef RollingIndices<RelationPrecursor> PrecursorIndices;
+typedef SharingRollingIndices<RankedAscendingLabels, InvertedIndexFastidious> IndicesFastidious;
+
+#else
+
 typedef SimpleBinaryRelation<StringIteratorPair, numSeqs_t, hashStringIteratorPair, equalStringIteratorPair> InvertedIndexFastidious;
+typedef RollingIndices<InvertedIndexFastidious> PrecursorIndices;
+typedef RollingIndices<InvertedIndexFastidious> IndicesFastidious;
+
+#endif
 //typedef SimpleBinaryRelation<StringIteratorPair, std::pair<Otu*, OtuEntry*>, hashStringIteratorPair, equalStringIteratorPair> InvertedIndexFastidious2;
 
 /**
@@ -440,7 +452,7 @@ void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu
  * Index the amplicons of the given (light) OTU and prepares the child information of grafting candidate entries.
  * Potentially reuses already computed information on segment positions through segmentsArchive.
  */
-void fastidiousIndexOtu(RollingIndices<InvertedIndexFastidious>& indices, std::unordered_map<lenSeqs_t, Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
+void fastidiousIndexOtu(PrecursorIndices& indices, std::unordered_map<lenSeqs_t, Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
 
 /**
  * Verify the potentially similar amplicons arriving at a candidate buffer and,
@@ -463,14 +475,14 @@ void verifyGotohFastidious(const AmpliconPools& pools, const AmpliconCollection&
  *
  * The method with the suffix 'Directly' verifies the candidates itself directly when they occur and does not hand them over to verifier threads through a buffer.
  */
-void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
-void fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc);
+void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
+void fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc);
 
 /**
  * Check for grafting candidates using a segment filter and multiple verifier threads.
  * Looks for grafting candidates for amplicons from 'acIndices' among the amplicons from 'acOtus'.
  */
-void checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, RollingIndices<InvertedIndexFastidious>& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& mtx, const SwarmConfig& sc);
+void checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& mtx, const SwarmConfig& sc);
 
 /**
  * Determine the grafting candidates of the amplicons from all pools.

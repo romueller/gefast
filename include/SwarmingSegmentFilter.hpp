@@ -39,7 +39,7 @@ namespace SegmentFilter {
 
 #if SUCCINCT
 
-#include "RelationTest.hpp"
+#include "RelationSuccinct.hpp"
 typedef K2TreeBinaryRelation<RankedAscendingLabels> SwarmingInvertedIndex;
 typedef SharingRollingIndices<RankedAscendingLabels, SwarmingInvertedIndex> SwarmingIndices;
 

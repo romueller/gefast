@@ -1,7 +1,6 @@
-#include "../include/RelationTest.hpp"
+#include "../include/RelationSuccinct.hpp"
 
 namespace GeFaST {
-
 
 void RelationPrecursor::add(const StringIteratorPair seg, const numSeqs_t id) {
 
@@ -29,9 +28,6 @@ void RelationPrecursor::clear() {
 }
 
 
-
-
-
 struct CompareAbsoluteValues {
 
     bool operator() (const long long lhs, const long long rhs) {
@@ -39,7 +35,6 @@ struct CompareAbsoluteValues {
     }
 
 } cmpAbsVals;
-
 
 RankedAscendingLabels::RankedAscendingLabels() {
 
@@ -49,7 +44,6 @@ RankedAscendingLabels::RankedAscendingLabels() {
 
 }
 
-
 RankedAscendingLabels::RankedAscendingLabels(const numSeqs_t capacity) {
 
     labels_ = new long long[capacity];
@@ -57,7 +51,6 @@ RankedAscendingLabels::RankedAscendingLabels(const numSeqs_t capacity) {
     capa_= capacity;
 
 }
-
 
 RankedAscendingLabels::RankedAscendingLabels(std::vector<std::pair<numSeqs_t, numSeqs_t>>& pairs) {
 

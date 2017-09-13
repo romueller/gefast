@@ -36,219 +36,152 @@
 
 namespace GeFaST {
 namespace SegmentFilter {
+
 #if SUCCINCT
-    /**
-     * Encapsulates the computation of children of given amplicons (see getChildren[TwoWay] methods below)
-     * in one thread.
-     */
-    class ChildrenFinder {
 
-    public:
-        ChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+#include "RelationTest.hpp"
+typedef K2TreeBinaryRelation<RankedAscendingLabels> SwarmingInvertedIndex;
+typedef SharingRollingIndices<RankedAscendingLabels, SwarmingInvertedIndex> SwarmingIndices;
 
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id);
+#else
 
-        void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
+typedef TwoLinkBinaryRelation<StringIteratorPair, numSeqs_t, hashStringIteratorPair, equalStringIteratorPair> SwarmingInvertedIndex;
+typedef RollingIndices<SwarmingInvertedIndex> SwarmingIndices;
 
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id);
-
-        void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
-
-    private:
-        const AmpliconCollection& ac_;
-        SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices_;
-        std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive_;
-        const SwarmClustering::SwarmConfig& sc_;
-
-        lenSeqs_t* M_;
-        val_t* D_;
-        val_t* P_;
-        lenSeqs_t* cntDiffs_;
-        lenSeqs_t* cntDiffsP_;
-
-    };
-
-    /**
-     * Encapsulates the computation of children of given amplicons (see getChildren[TwoWay] methods below)
-     * in multiple threads.
-     */
-    class ParallelChildrenFinder {
-
-    public:
-        ParallelChildrenFinder(const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc);
-
-        ~ParallelChildrenFinder();
-
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id);
-
-        void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
-
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id);
-
-        void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
-
-    private:
-#if !SIMD_VERIFICATION
-        void verify(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
-
-        void verifyGotoh(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
 #endif
 
-        const AmpliconCollection& ac_;
-        SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices_;
-        std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive_;
-        const SwarmClustering::SwarmConfig& sc_;
+/**
+ * Looks up the segments of the amplicon in the inverted indices and makes a tally of the found candidates.
+ */
+void addCandCnts(const Amplicon& amplicon, lenSeqs_t childLen, lenSeqs_t numSegments, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive);
 
+/**
+ * Applies forward filter and verifies candidates by computing the bounded edit distance.
+ */
+void verifyCands(const Amplicon& amplicon, const AmpliconCollection& ac, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+
+/**
+ * Applies forward + pipelined backward filtering and verifies candidates by computing the bounded edit distance.
+ */
+void verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std::string>& segmentStrs, const AmpliconCollection& ac, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+
+
+
+/**
+ * Encapsulates the computation of children of given amplicons (see getChildren[TwoWay] methods below)
+ * in one thread.
+ */
+class ChildrenFinder {
+
+public:
+    ChildrenFinder(const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id);
+
+    void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
+
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id);
+
+    void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
+
+private:
+    const AmpliconCollection& ac_;
+    SwarmingIndices& indices_;
+    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive_;
+    const SwarmClustering::SwarmConfig& sc_;
+
+    lenSeqs_t* M_;
+    val_t* D_;
+    val_t* P_;
+    lenSeqs_t* cntDiffs_;
+    lenSeqs_t* cntDiffsP_;
+
+};
+
+/**
+ * Encapsulates the computation of children of given amplicons (see getChildren[TwoWay] methods below)
+ * in multiple threads.
+ */
+class ParallelChildrenFinder {
+
+public:
+    ParallelChildrenFinder(const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc);
+
+    ~ParallelChildrenFinder();
+
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id);
+
+    void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
+
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id);
+
+    void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
+
+private:
 #if !SIMD_VERIFICATION
-        RotatingBuffers<Candidate> cbs_;
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches_;
-        std::vector<std::thread> verifierThreads_;
+    numSeqs_t sendCandsToVerification(const numSeqs_t id, const Amplicon& amplicon, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts);
+    numSeqs_t sendCandsToVerificationTwoWay(const numSeqs_t id, const Amplicon& amplicon, std::vector<std::string>& segmentStrs, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs);
 
-        std::mutex mtxMatches_;
-        std::mutex mtxDiscard_;
-        numSeqs_t numDiscarded_;
+    void verify(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
+
+    void verifyGotoh(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
 #endif
 
-    };
-
-    /**
-     * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a one-way filter.
-     * Employs forward resp. backward filtering depending on the relative lengths of the amplicons.
-     */
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-    void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-
-    /**
-     * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a two-way filter.
-     * Employs forward-backward resp. backward-forward filtering depending on the relative lengths of the amplicons.
-     */
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-    void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SharingRollingIndices<RankedAscendingLabels, SuccinctInvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-
-    /**
-     * Determine OTUs (swarms) like swarm by using a segment filter.
-     *
-     * Indexes all amplicons and directly determines the swarms by iteratively adding amplicons
-     * (and, thus, emptying the amplicon pool).
-     * Delegates the verification of candidates to other threads.
-     */
-    void swarmFilter(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc);
-
-    /**
-     * Determine OTUs (swarms) like swarm by using a segment filter.
-     *
-     * Indexes all amplicons and directly determines the swarms by iteratively adding amplicons
-     * (and, thus, emptying the amplicon pool).
-     * Performs the verification of candidates itself.
-     */
-    void swarmFilterDirectly(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc);
-#else //SUCCINCT
-    /**
-     * Encapsulates the computation of children of given amplicons (see getChildren[TwoWay] methods below)
-     * in one thread.
-     */
-    class ChildrenFinder {
-
-    public:
-        ChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
-
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id);
-
-        void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
-
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id);
-
-        void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
-
-    private:
-        const AmpliconCollection& ac_;
-        RollingIndices<InvertedIndex>& indices_;
-        std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive_;
-        const SwarmClustering::SwarmConfig& sc_;
-
-        lenSeqs_t* M_;
-        val_t* D_;
-        val_t* P_;
-        lenSeqs_t* cntDiffs_;
-        lenSeqs_t* cntDiffsP_;
-
-    };
-
-    /**
-     * Encapsulates the computation of children of given amplicons (see getChildren[TwoWay] methods below)
-     * in multiple threads.
-     */
-    class ParallelChildrenFinder {
-
-    public:
-        ParallelChildrenFinder(const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc);
-
-        ~ParallelChildrenFinder();
-
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id);
-
-        void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
-
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id);
-
-        void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
-
-    private:
-#if !SIMD_VERIFICATION
-        void verify(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
-
-        void verifyGotoh(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
-#endif
-
-        const AmpliconCollection& ac_;
-        RollingIndices<InvertedIndex>& indices_;
-        std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive_;
-        const SwarmClustering::SwarmConfig& sc_;
+    const AmpliconCollection& ac_;
+    SwarmingIndices& indices_;
+    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive_;
+    const SwarmClustering::SwarmConfig& sc_;
 
 #if !SIMD_VERIFICATION
-        RotatingBuffers<Candidate> cbs_;
-        std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches_;
-        std::vector<std::thread> verifierThreads_;
+    RotatingBuffers<Candidate> cbs_;
+    std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches_;
+    std::vector<std::thread> verifierThreads_;
 
-        std::mutex mtxMatches_;
-        std::mutex mtxDiscard_;
-        numSeqs_t numDiscarded_;
+    std::mutex mtxMatches_;
+    std::mutex mtxDiscard_;
+    numSeqs_t numDiscarded_;
 #endif
 
-    };
+};
 
-    /**
-     * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a one-way filter.
-     * Employs forward resp. backward filtering depending on the relative lengths of the amplicons.
-     */
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-    void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+/**
+ * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a one-way filter.
+ * Employs forward resp. backward filtering depending on the relative lengths of the amplicons.
+ */
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
 
-    /**
-     * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a two-way filter.
-     * Employs forward-backward resp. backward-forward filtering depending on the relative lengths of the amplicons.
-     */
-    std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-    void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, RollingIndices<InvertedIndex>& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+/**
+ * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a two-way filter.
+ * Employs forward-backward resp. backward-forward filtering depending on the relative lengths of the amplicons.
+ */
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
 
-    /**
-     * Determine OTUs (swarms) like swarm by using a segment filter.
-     *
-     * Indexes all amplicons and directly determines the swarms by iteratively adding amplicons
-     * (and, thus, emptying the amplicon pool).
-     * Delegates the verification of candidates to other threads.
-     */
-    void swarmFilter(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc);
 
-    /**
-     * Determine OTUs (swarms) like swarm by using a segment filter.
-     *
-     * Indexes all amplicons and directly determines the swarms by iteratively adding amplicons
-     * (and, thus, emptying the amplicon pool).
-     * Performs the verification of candidates itself.
-     */
-    void swarmFilterDirectly(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc);
-#endif //SUCCINCT
+/**
+ * Fill the inverted indices and the substrings archive.
+ */
+void prepareIndices(const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc);
+
+/**
+ * Determine OTUs (swarms) like swarm by using a segment filter.
+ *
+ * Indexes all amplicons and directly determines the swarms by iteratively adding amplicons
+ * (and, thus, emptying the amplicon pool).
+ * Delegates the verification of candidates to other threads.
+ */
+void swarmFilter(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc);
+
+/**
+ * Determine OTUs (swarms) like swarm by using a segment filter.
+ *
+ * Indexes all amplicons and directly determines the swarms by iteratively adding amplicons
+ * (and, thus, emptying the amplicon pool).
+ * Performs the verification of candidates itself.
+ */
+void swarmFilterDirectly(const AmpliconCollection& ac, std::vector<SwarmClustering::Otu*>& otus, const SwarmClustering::SwarmConfig& sc);
+
 }
 }
 

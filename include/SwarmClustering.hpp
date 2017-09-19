@@ -539,7 +539,7 @@ void processOtus(const AmpliconPools& pools, std::vector<std::vector<Otu*>>& otu
 
 /**
  * Cluster amplicons according to swarm's iterative strategy (based on the provided matching information) and generates the requested outputs.
- * Supports also swarm's dereplication and fastidious clustering options.
+ * Supports also swarm's fastidious clustering options.
  *
  * Version one uses the iterative segment filter (as proposed by Li et al.) and determines the OTUs from all matches.
  * Version two uses a "full index" version of the segment filter and directly determines the OTUs (like swarm).
@@ -547,6 +547,10 @@ void processOtus(const AmpliconPools& pools, std::vector<std::vector<Otu*>>& otu
 void cluster(const AmpliconPools& pools, std::vector<Matches*>& allMatches, const SwarmConfig& sc);
 void cluster(const AmpliconPools& pools, const SwarmConfig& sc);
 
+/**
+ * Dereplicates the amplicons and generates the requested outputs.
+ */
+void dereplicate(const AmpliconPools& pools, const SwarmConfig& sc);
 
 /**
  * Write the links of the given OTUs to file (corresponds to output of swarm's option -i).

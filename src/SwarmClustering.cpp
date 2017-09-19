@@ -112,8 +112,7 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
                 }
 
                 // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
-                // and when dereplicating each contributes (numUniqueSequences used to count the multiplicity of the sequence)
-                unique = unique || sc.dereplicate || nonUniques.insert(StringIteratorPair(curSeed.member->seq, curSeed.member->seq + curSeed.member->len)).second;
+                unique = unique || nonUniques.insert(StringIteratorPair(curSeed.member->seq, curSeed.member->seq + curSeed.member->len)).second;
                 curOtu->numUniqueSequences += unique;
 
                 lastGen = curSeed.gen;
@@ -1212,7 +1211,7 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
     numOtusAdjusted = numOtus;
 
 #if !PRINT_INTERNAL_MODIFIED
-    if (!sc.dereplicate && sc.outInternals) {
+    if (sc.outInternals) {
 
         std::vector<Otu*> flattened;
         flattened.reserve(numOtus);
@@ -1266,29 +1265,19 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 
     }
 
-    if (sc.dereplicate) {
-
-        std::sort(flattened.begin(), flattened.end(), CompareOtusMass());
-
-        outputDereplicate(pools, flattened, sc);
-
-    } else {
-
-        std::sort(flattened.begin(), flattened.end(), CompareOtusSeedAbund());
+    std::sort(flattened.begin(), flattened.end(), CompareOtusSeedAbund());
 
 #if PRINT_INTERNAL_MODIFIED
-        if (sc.outInternals) outputInternalStructures(sc.oFileInternals, pools, flattened, sc.sepInternals);
+    if (sc.outInternals) outputInternalStructures(sc.oFileInternals, pools, flattened, sc.sepInternals);
 #endif
-        if (sc.outOtus) {
-            (sc.outMothur) ?
-              outputOtusMothur(sc.oFileOtus, pools, flattened, sc.threshold, numOtusAdjusted, sc.sepMothur, sc.sepMothurOtu, sc.sepAbundance)
-            : outputOtus(sc.oFileOtus, pools, flattened, sc.sepOtus, sc.sepAbundance);
-        }
-        if (sc.outStatistics) outputStatistics(sc.oFileStatistics, pools, flattened, sc.sepStatistics);
-        if (sc.outSeeds) outputSeeds(sc.oFileSeeds, pools, flattened, sc.sepAbundance);
-        if (sc.outUclust) outputUclust(sc.oFileUclust, pools, flattened, sc);
-
+    if (sc.outOtus) {
+        (sc.outMothur) ?
+          outputOtusMothur(sc.oFileOtus, pools, flattened, sc.threshold, numOtusAdjusted, sc.sepMothur, sc.sepMothurOtu, sc.sepAbundance)
+        : outputOtus(sc.oFileOtus, pools, flattened, sc.sepOtus, sc.sepAbundance);
     }
+    if (sc.outStatistics) outputStatistics(sc.oFileStatistics, pools, flattened, sc.sepStatistics);
+    if (sc.outSeeds) outputSeeds(sc.oFileSeeds, pools, flattened, sc.sepAbundance);
+    if (sc.outUclust) outputUclust(sc.oFileUclust, pools, flattened, sc);
 
     std::cout << "Number of swarms: " << numOtusAdjusted << std::endl;
     std::cout << "Largest swarm: " << maxSize << std::endl;
@@ -1374,6 +1363,62 @@ void SwarmClustering::cluster(const AmpliconPools& pools, const SwarmConfig& sc)
 
 }
 #endif
+
+
+void SwarmClustering::dereplicate(const AmpliconPools& pools, const SwarmConfig& sc) {
+
+    struct lessCharArray {
+        bool operator()(const char* lhs, const char* rhs) const {
+            return strcmp(lhs, rhs) < 0;
+        }
+    };
+
+    std::vector<Otu*> otus;
+
+    for (numSeqs_t p = 0; p < pools.numPools(); p++) {
+
+        AmpliconCollection* ac = pools.get(p);
+        std::map<const char*, std::vector<Amplicon*>, lessCharArray> groups;
+
+        for (auto iter = ac->begin(); iter != ac->end(); iter++) {
+            groups[iter->seq].push_back(iter);
+        }
+
+        for (auto& g : groups) {
+
+            Otu* otu = new Otu();
+
+            otu->numMembers = g.second.size();
+            otu->numUniqueSequences = otu->numMembers;
+            otu->members = new OtuEntry[otu->numMembers];
+
+            for (auto i = 0; i < otu->numMembers; i++) {
+
+                otu->members[i] = OtuEntry(g.second[i], g.second[0], 0, 0);
+                otu->mass += g.second[i]->abundance;
+
+            }
+
+            otus.push_back(otu);
+
+        }
+
+    }
+
+    std::sort(otus.begin(), otus.end(), CompareOtusMass());
+    outputDereplicate(pools, otus, sc);
+
+    numSeqs_t maxSize = 0;
+    for (auto& o : otus) {
+        maxSize = std::max(maxSize, o->numMembers);
+    }
+
+    std::cout << "Number of swarms: " << otus.size() << std::endl;
+    std::cout << "Largest swarm: " << maxSize << std::endl;
+    std::cout << "Max generations: 0" << std::endl;
+
+}
+
 
 void SwarmClustering::outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep) {
 
@@ -1669,12 +1714,16 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
             sStreamUclust.str(std::string());
 
             for (auto memberIter = otu.members + 1; memberIter != otu.members + otu.numMembers; memberIter++) {
-                sStreamOtus << 'H' << sc.sepUclust << i << sc.sepUclust << memberIter->member->len << sc.sepUclust << "100.0" << sc.sepUclust << '+' << sc.sepUclust << '0' << sc.sepUclust << '0' << sc.sepUclust << '=' << sc.sepUclust
+
+                sStreamUclust << 'H' << sc.sepUclust << i << sc.sepUclust << memberIter->member->len << sc.sepUclust << "100.0" << sc.sepUclust << '+' << sc.sepUclust << '0' << sc.sepUclust << '0' << sc.sepUclust << '=' << sc.sepUclust
                             << memberIter->member->id << sc.sepAbundance << memberIter->member->abundance << sc.sepUclust
                             << seed.id << sc.sepAbundance << seed.abundance << '\n';
+
+                oStreamUclust << sStreamUclust.rdbuf();
+                sStreamUclust.str(std::string());
+
             }
-            oStreamUclust << sStreamUclust.rdbuf();
-            sStreamUclust.str(std::string());
+
 
         }
 

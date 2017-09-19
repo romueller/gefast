@@ -103,12 +103,14 @@ int run(int argc, const char* argv[]) {
     sc.numGrafters = std::stoul(c.get(SWARM_NUM_GRAFTERS));
     sc.fastidiousCheckingMode = std::stoul(c.get(SWARM_FASTIDIOUS_CHECKING_MODE));
     sc.numThreadsPerCheck = std::stoul(c.get(SWARM_NUM_THREADS_PER_CHECK));
-
-    if (sc.dereplicate) { // dereplication uses matching with distance 0
-        c.set(THRESHOLD, "0");
-    }
-
     sc.threshold = std::stoul(c.get(THRESHOLD));
+
+    if (sc.threshold <= 0 && !sc.dereplicate) { // check for feasible threshold unless dereplication is chosen
+
+        std::cerr << "ERROR: Only positive thresholds are allowed." << std::endl;
+        return 1;
+
+    }
 
     if (c.get(SWARM_FASTIDIOUS_THRESHOLD) == "0") { // "default" corresponds to swarm postulating one virtual linking amplicon
 
@@ -119,7 +121,7 @@ int run(int argc, const char* argv[]) {
         sc.fastidiousThreshold = std::stoul(c.get(SWARM_FASTIDIOUS_THRESHOLD));
     }
 
-    if (sc.dereplicate || (c.get(THRESHOLD) == "0")) { // fastidious option pointless when dereplicating or matching with distance 0
+    if (sc.dereplicate) { // fastidious option pointless when dereplicating or matching with distance 0
 
         c.set(SWARM_FASTIDIOUS, "0");
         sc.fastidious = false;
@@ -188,12 +190,20 @@ int run(int argc, const char* argv[]) {
     SimdVerification::swarm_simd_init(sc.numThreadsPerCheck);
 #endif
 
-    /* Swarming */
+    if (sc.dereplicate) { /* Dereplication */
 
-    std::cout << "Swarming results..." << std::endl;
-    // parallel computation of swarm clusters & subsequent generation of outputs
-    SwarmClustering::cluster(*pools, sc);
-    std::cout << "Swarming results...DONE" << std::endl;
+        std::cout << "Dereplicating..." << std::endl;
+        SwarmClustering::dereplicate(*pools, sc);
+        std::cout << "Dereplicating...DONE" << std::endl;
+
+    } else { /* Swarming */
+
+        std::cout << "Swarming results..." << std::endl;
+        // parallel computation of swarm clusters & subsequent generation of outputs
+        SwarmClustering::cluster(*pools, sc);
+        std::cout << "Swarming results...DONE" << std::endl;
+
+    }
 
     /* Cleaning up */
     std::cout << "Cleaning up..." << std::flush;

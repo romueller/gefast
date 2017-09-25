@@ -343,13 +343,6 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
         appendInput(conf, *pools, counts, *iter, sep);
     }
 
-    for (lenSeqs_t i = 0; i < pools->numPools(); i++) {
-
-        auto p = pools->get(i);
-        std::sort(p->begin(), p->end(), AmpliconCompareAlph());
-
-    }
-
     return pools;
 
 }

@@ -222,16 +222,17 @@ int run(int argc, const char* argv[]) {
     for (numSeqs_t p = 0; p < pools->numPools(); p++) {
 
         ac = pools->get(p);
-        std::sort(ac->begin(), ac->end(), AmpliconCompareLen());
+        std::sort(ac->begin(), ac->end(),
+                  [](const Amplicon& amplA, const Amplicon& amplB) {
+                      return (amplA.len < amplB.len) || ((amplA.len == amplB.len) && (strcmp(amplA.seq, amplB.seq) < 0));
+                  }
+        );
 
     }
 
     if (c.get(PREPROCESSING_ONLY) == "1") {
 
         std::cout << "Cleaning up..." << std::flush;
-        for (auto iter = allMatches.begin(); iter != allMatches.end(); iter++) {
-            delete *iter;
-        }
         delete pools;
         std::cout << "DONE" << std::endl;
 

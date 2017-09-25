@@ -174,22 +174,6 @@ int run(int argc, const char* argv[]) {
 
     }
 
-#if SIMD_VERIFICATION
-    lenSeqs_t maxLen = 0;
-    AmpliconCollection* pool = pools->get(pools->numPools() - 1);
-    for (auto& ampl : *pool) {
-        maxLen = std::max(maxLen, ampl.len);
-    }
-
-    if (sc.useScore) {
-        SimdVerification::args_init(maxLen, sc.scoring.penMismatch, sc.scoring.penOpen, sc.scoring.penExtend);
-    } else {
-        SimdVerification::args_init(maxLen, 1, 0, 1);
-    }
-
-    SimdVerification::swarm_simd_init(sc.numThreadsPerCheck);
-#endif
-
     if (sc.dereplicate) { /* Dereplication */
 
         std::cout << "Dereplicating..." << std::endl;
@@ -208,12 +192,6 @@ int run(int argc, const char* argv[]) {
     /* Cleaning up */
     std::cout << "Cleaning up..." << std::flush;
     delete pools;
-
-#if SIMD_VERIFICATION
-    SimdVerification::swarm_simd_exit();
-    SimdVerification::score_matrix_free();
-#endif
-
     std::cout << "DONE" << std::endl;
 #else // iterative index, swarming via matches
     std::cout << "DONE" << std::endl;

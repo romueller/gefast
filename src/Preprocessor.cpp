@@ -65,11 +65,7 @@ void Preprocessor::lowerCase(std::string& s) {
 
     //std::transform(s.begin(), s.end(), s.begin(), ::tolower); // safer, more general (but slower) version
     for (auto i = 0; i < s.size(); i++) {
-#if SIMD_VERIFICATION
-        s[i] = acgtuMap[(int)s[i]];
-#else
         s[i] = convert[s[i]];
-#endif
     }
 
 }
@@ -125,14 +121,10 @@ unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, s
 
     int flagLength = std::stoi(conf.get(FILTER_LENGTH));
 
-#if QGRAM_FILTER || SIMD_VERIFICATION
+#if QGRAM_FILTER
 
     bool flagAlph = true;
-#if SIMD_VERIFICATION
-    alphabet = "\1\2\3\4";
-#else
     alphabet = "acgtu";
-#endif
 
 #else
 
@@ -239,14 +231,10 @@ void Preprocessor::appendInput(const Config<std::string>& conf, AmpliconPools& p
 
     int flagLength = std::stoi(conf.get(FILTER_LENGTH));
 
-#if QGRAM_FILTER || SIMD_VERIFICATION
+#if QGRAM_FILTER
 
     bool flagAlph = true;
-#if SIMD_VERIFICATION
-    alphabet = "\1\2\3\4";
-#else
     alphabet = "acgtu";
-#endif
 
 #else
 

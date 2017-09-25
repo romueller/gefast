@@ -339,127 +339,6 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 
 }
 
-#if SIMD_VERIFICATION
-void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
-
-    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
-    std::vector<numSeqs_t> candMembers;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
-    lenSeqs_t seqLen;
-
-    lenSeqs_t M[sc.useScore ? 1 : width];
-    val_t D[sc.useScore? width : 1];
-    val_t P[sc.useScore? width : 1];
-    lenSeqs_t cntDiffs[sc.useScore? width : 1];
-    lenSeqs_t cntDiffsP[sc.useScore? width : 1];
-
-    for (auto otuIter = otus.begin(); otuIter != otus.end(); otuIter++) {
-
-        if ((*otuIter)->mass >= sc.boundary) { // for each heavy OTU of the pool ...
-
-            for (numSeqs_t m = 0; m < (*otuIter)->numMembers; m++) { // ... consider every amplicon in the OTU and ...
-
-                auto ampl = (*otuIter)->members[m].member;
-                seqLen = ampl->len;
-
-                std::vector<numSeqs_t> cands;
-                std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrsArchive[seqLen];
-
-                // on reaching new length group, open new inverted indices
-                if (substrs.empty()) {
-
-                    // ... and determine position information shared by all amplicons of this length
-                    for (lenSeqs_t partnerLen = (seqLen > sc.fastidiousThreshold) * (seqLen - sc.fastidiousThreshold); partnerLen <= seqLen + sc.fastidiousThreshold; partnerLen++) {
-
-                        std::vector<Substrings>& vec = substrs[partnerLen];
-                        for (lenSeqs_t segmentIndex = 0; segmentIndex < sc.fastidiousThreshold + sc.extraSegs; segmentIndex++) {
-                            if (partnerLen <= seqLen) {
-                                vec.push_back(selectSubstrs(seqLen, partnerLen, segmentIndex, sc.fastidiousThreshold, sc.extraSegs));
-                            } else {
-                                vec.push_back(selectSubstrsBackward(seqLen, partnerLen, segmentIndex, sc.fastidiousThreshold, sc.extraSegs));
-                            }
-                        }
-
-                    }
-
-                }
-
-
-                for (lenSeqs_t len = (seqLen > sc.fastidiousThreshold) * (seqLen - sc.fastidiousThreshold); len <= seqLen + sc.fastidiousThreshold; len++) { // ... search for graft candidates among the amplicons in light OTUs
-
-                    for (lenSeqs_t i = 0; i < sc.fastidiousThreshold + sc.extraSegs; i++) { // ... and apply segment filter for each segment
-
-                        Substrings& subs = substrs[len][i];
-                        InvertedIndexFastidious& inv = indices.getIndex(len, i);
-
-                        for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++) {
-
-                            candMembers = inv.getLabelsOf(StringIteratorPair(ampl->seq + substrPos, ampl->seq + substrPos + subs.len));
-
-                            for (auto candIter = candMembers.begin(); candIter != candMembers.end(); candIter++) {
-                                candCnts[*candIter]++;
-                            }
-
-                        }
-
-                    }
-
-                    // general pigeonhole principle: for being a candidate, at least sc.extraSegs segments have to be matched
-                    for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
-
-//                        if ((candIter->second >= sc.extraSegs)
-//                                &&((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember))
-//                                && ((useScore ?
-//                                        Verification::computeGotohLengthAwareEarlyRow8(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-//                                      : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold)) {
-//
-//                                    graftCands[candIter->first].parentOtu = *otuIter;
-//                                    graftCands[candIter->first].parentMember = ampl;
-//
-//                        }
-
-                        std::unique_lock<std::mutex> lock(graftCandsMtx);
-#if QGRAM_FILTER
-                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember)) && (qgram_diff(*ampl, acIndices[candIter->first]) <= sc.fastidiousThreshold)) {
-#else
-                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember))) {
-#endif
-                            cands.push_back(candIter->first);
-                        }
-
-                    }
-
-                    candCnts = std::unordered_map<numSeqs_t, lenSeqs_t>();
-
-                }
-
-                if (cands.size() > 0) {
-
-                    auto verifiedCands = SimdVerification::computeDiffsReduce((AmpliconCollection&) acIndices, (Amplicon&) *ampl, cands, sc.fastidiousThreshold);
-
-                    std::unique_lock<std::mutex> lock(graftCandsMtx);
-
-                    for (auto& c : verifiedCands) {
-                        if (((graftCands[c.first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[c.first].parentMember))) {
-
-                            graftCands[c.first].parentOtu = *otuIter;
-                            graftCands[c.first].parentMember = ampl;
-
-                        }
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-
-}
-
-#else
-
 void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
@@ -571,15 +450,8 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
     }
 
 }
-#endif
 
 void SwarmClustering::checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
-
-#if SIMD_VERIFICATION
-
-    fastidiousCheckOtusDirectly(pools, otus, acOtus, indices, acIndices, graftCands, width, graftCandsMtx, sc);
-
-#else
 
     if (sc.numThreadsPerCheck == 1) {
 
@@ -620,8 +492,6 @@ void SwarmClustering::checkAndVerify(const AmpliconPools& pools, const std::vect
         }
 
     }
-
-#endif
 
 }
 
@@ -1351,20 +1221,6 @@ void SwarmClustering::cluster(const AmpliconPools& pools, const SwarmConfig& sc)
 }
 
 
-#if SIMD_VERIFICATION
-    std::string mapBack(const std::string& s) {
-
-    std::string res(s);
-    for (auto i = 0; i < res.length(); i++) {
-        res[i] = SimdVerification::sym_nt[res[i]];
-    }
-
-    return res;
-
-}
-#endif
-
-
 void SwarmClustering::dereplicate(const AmpliconPools& pools, const SwarmConfig& sc) {
 
     struct lessCharArray {
@@ -1557,11 +1413,7 @@ void SwarmClustering::outputSeeds(const std::string oFile, const AmpliconPools& 
 
         if (!otu->attached()) {
 
-#if SIMD_VERIFICATION
-            sStream << ">" << otu->seed()->id << sepAbundance << otu->mass << std::endl << mapBack(otu->seed()->seq) << std::endl;
-#else
             sStream << ">" << otu->seed()->id << sepAbundance << otu->mass << std::endl << otu->seed()->seq << std::endl;
-#endif
             oStream << sStream.rdbuf();
             sStream.str(std::string());
 

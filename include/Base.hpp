@@ -31,7 +31,6 @@
 #include <vector>
 
 #define QGRAM_FILTER 1
-#define SIMD_VERIFICATION 0
 #define SUCCINCT 0
 #define SUCCINCT_FASTIDIOUS 0
 
@@ -54,7 +53,7 @@ typedef lenSeqs_t val_t;
 //const val_t NEG_INF = INT16_MIN;
 const val_t POS_INF = INT16_MAX;
 
-#if QGRAM_FILTER || SIMD_VERIFICATION
+#if QGRAM_FILTER
 // mapping of nucleotides onto integers (a/A -> 1, c/C -> 2, g/G -> 3, t/T/u/U -> 4)
 extern char acgtuMap[256];
 #endif
@@ -102,22 +101,14 @@ struct Amplicon {
 
         while((j < QGRAMLENGTH - 1) && (j < len)) {
 
-#if SIMD_VERIFICATION
-            qGram = (qGram << 2) | (seq[j] - 1);
-#else
             qGram = (qGram << 2) | (acgtuMap[seq[j]] - 1);
-#endif
             j++;
 
         }
 
         while(j < len) {
 
-#if SIMD_VERIFICATION
-            qGram = (qGram << 2) | (seq[j] - 1);
-#else
             qGram = (qGram << 2) | (acgtuMap[seq[j]] - 1);
-#endif
             qGramVector[(qGram >> 3) & (QGRAMVECTORBYTES - 1)] ^= (1 << (qGram & 7));
             j++;
 

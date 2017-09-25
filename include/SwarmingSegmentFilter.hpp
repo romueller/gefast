@@ -118,21 +118,18 @@ public:
     void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
 
 private:
-#if !SIMD_VERIFICATION
     numSeqs_t sendCandsToVerification(const numSeqs_t id, const Amplicon& amplicon, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts);
     numSeqs_t sendCandsToVerificationTwoWay(const numSeqs_t id, const Amplicon& amplicon, std::vector<std::string>& segmentStrs, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs);
 
     void verify(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
 
     void verifyGotoh(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
-#endif
 
     const AmpliconCollection& ac_;
     SwarmingIndices& indices_;
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive_;
     const SwarmClustering::SwarmConfig& sc_;
 
-#if !SIMD_VERIFICATION
     RotatingBuffers<Candidate> cbs_;
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches_;
     std::vector<std::thread> verifierThreads_;
@@ -140,7 +137,6 @@ private:
     std::mutex mtxMatches_;
     std::mutex mtxDiscard_;
     numSeqs_t numDiscarded_;
-#endif
 
 };
 

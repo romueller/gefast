@@ -28,7 +28,7 @@
 
 namespace GeFaST {
 
-#if QGRAM_FILTER || SIMD_VERIFICATION
+#if QGRAM_FILTER
 char acgtuMap[256] =
         {
                 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,

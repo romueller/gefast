@@ -500,37 +500,6 @@ void determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<O
  */
 void graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc); //TODO? other segment filters (forward-backward etc.)
 
-#if 0
-/* Implementation 2 of fastidious clustering */
-
-/**
- * Store child information of grafting candidate entries for amplicons of all OTUs of the current pool.
- */
-void prepareGraftInfos(const numSeqs_t poolSize, const std::vector<Otu*>& otus, std::vector<GraftCandidate>& curGraftCands, std::vector<GraftCandidate>& nextGraftCands, const SwarmConfig& sc);
-
-/**
- * Shifts the indexing window so that afterwards all amplicons with a length in [len - sc.fastidiousThreshold : len + sc.fastidiousThreshold] are indexed.
- * This may advances the indexing iterator beyond the pool containing the amplicons we are currently filtering.
- * In this case, the vector containing child information of grafting candidates for the next pool is (and has to be) initialised,
- * because these information are also used to decide whether an amplicon comes from a light or a heavy OTU.
- * However, the indexing iterator can only move ahead one pool, because the pools are separated by "gaps" (in terms of sequence length) of at least sc.threshold
- * and doubling the threshold for the fastidious stage thus cannot lead to matches beyond the directly neighbouring pools.
- */
-AmpliconCollection::iterator shiftIndexWindow(RollingIndices<InvertedIndexFastidious2>& indices, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const numSeqs_t poolIndex, const AmpliconCollection::iterator indexIter, std::vector<GraftCandidate>& curGraftCands, std::vector<GraftCandidate>& nextGraftCands, const lenSeqs_t len, const bool forerunning, const SwarmConfig& sc);
-
-/**
- *  Graft light OTUs onto heavy OTUs by "simulating virtual amplicons".
- *  To this end, we iterate over the amplicons of all pools (in the order of increasing length).
- *  For fastidious threshold T and an amplicon of length L, we have to consider all other amplicons with a length in [L - T : L + T].
- *  While iterating, we therefore keep the relevant amplicons in the inverted indices by shifting an indexing window appropriately whenever moving on to longer amplicons.
- *  Here, we are indexing amplicons from heavy OTUs and filter amplicons from light OTUs.
- *  Based on the resulting grafting candidates, light OTUs are grafted upon heavy ones:
- *   - The (final) grafting partner of an amplicon from a light OTU, is a matching amplicon with the highest abundance.
- *   - Each light OTU can be grafted upon at most one heavy OTU (even though there can be grafting candidates for several amplicons of the light OTU).
- *   - Grafting candidates with a higher parent amplicon abundance (and, for ties, higher child amplicon abundance) have a higher priority.
- */
-void graftOtus2(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc);
-#endif
 
 /**
  * Determine overall statistics, start fastidious clustering phase (if requested) and output the results.

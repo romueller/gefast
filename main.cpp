@@ -32,7 +32,6 @@
 #include "include/SIMD.hpp"
 #include "include/SwarmClustering.hpp"
 #include "include/Utility.hpp"
-#include "include/Worker.hpp"
 
 
 
@@ -149,7 +148,7 @@ int run(int argc, const char* argv[]) {
     /* Preprocessing */
     std::cout << "Preprocessing..." << std::flush;
     auto pools = Preprocessor::run(c, files);
-#if 1 // full index, direct swarming
+
     AmpliconCollection* ac;
     for (numSeqs_t p = 0; p < pools->numPools(); p++) {
 
@@ -193,87 +192,6 @@ int run(int argc, const char* argv[]) {
     std::cout << "Cleaning up..." << std::flush;
     delete pools;
     std::cout << "DONE" << std::endl;
-#else // iterative index, swarming via matches
-    std::cout << "DONE" << std::endl;
-
-    AmpliconCollection* ac;
-    for (numSeqs_t p = 0; p < pools->numPools(); p++) {
-
-        ac = pools->get(p);
-        std::sort(ac->begin(), ac->end(),
-                  [](const Amplicon& amplA, const Amplicon& amplB) {
-                      return (amplA.len < amplB.len) || ((amplA.len == amplB.len) && (strcmp(amplA.seq, amplB.seq) < 0));
-                  }
-        );
-
-    }
-
-    if (c.get(PREPROCESSING_ONLY) == "1") {
-
-        std::cout << "Cleaning up..." << std::flush;
-        delete pools;
-        std::cout << "DONE" << std::endl;
-
-        return 0;
-
-    }
-
-    /* Matching */
-    std::cout << "Matching..." << std::flush;
-    unsigned long numWorkers = std::stoul(c.get(NUM_WORKERS));
-    int mode = std::stoi(c.get(SEGMENT_FILTER));
-
-    lenSeqs_t threshold = std::stoul(c.get(THRESHOLD));
-    lenSeqs_t numExtraSegments = std::stoul(c.get(NUM_EXTRA_SEGMENTS));
-
-    std::vector<Matches*> allMatches(pools->numPools()); // one Matches instance per pool
-    std::vector<Subpool> subpools; // subpools of one pool
-    std::thread workers[numWorkers]; // at most numWorkers per pool
-
-    for (numSeqs_t p = 0; p < pools->numPools(); p++) {
-
-        allMatches[p] = new Matches();
-        if (mode % 2 == 0) {
-            subpools = getSubpoolBoundaries(*(pools->get(p)), numWorkers, threshold);
-        } else {
-            subpools = getSubpoolBoundariesBackward(*(pools->get(p)), numWorkers, threshold);
-        }
-
-        for (unsigned long w = 0; w < subpools.size(); w++) {
-            workers[w] = std::thread(&Worker::run, Worker(*(pools->get(p)), subpools[w], *(allMatches[p]), c), threshold, numExtraSegments);
-        }
-
-        for (unsigned long w = 0; w < subpools.size(); w++) {
-            workers[w].join();
-        }
-
-    }
-
-    std::cout << "DONE" << std::endl;
-
-    /* Postprocessing */
-    if (c.peek(MATCHES_OUTPUT_FILE)) {
-
-        std::cout << "Writing matches..." << std::flush;
-        SegmentFilter::writeMatches(c.get(MATCHES_OUTPUT_FILE), *pools, allMatches);
-        std::cout << "DONE" << std::endl;
-
-    }
-
-    std::cout << "Swarming results..." << std::endl;
-    // parallel computation of swarm clusters & subsequent generation of outputs
-    SwarmClustering::cluster(*pools, allMatches, sc);
-    std::cout << "Swarming results...DONE" << std::endl;
-
-
-    /* Cleaning up */
-    std::cout << "Cleaning up..." << std::flush;
-    for (auto iter = allMatches.begin(); iter != allMatches.end(); iter++) {
-        delete *iter;
-    }
-    delete pools;
-    std::cout << "DONE" << std::endl;
-#endif
 
     return 0;
 

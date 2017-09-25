@@ -880,34 +880,6 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 
 }
 
-void SwarmClustering::cluster(const AmpliconPools& pools, std::vector<Matches*>& allMatches, const SwarmConfig& sc) {
-
-    /* (a) Mandatory (first) clustering phase of swarm */
-    // determine OTUs by exploring all pools
-    std::vector<std::vector<Otu*>> otus(pools.numPools());
-    std::thread explorers[sc.numExplorers];
-    unsigned long r = 0;
-    for (; r + sc.numExplorers <= pools.numPools(); r += sc.numExplorers) {
-
-        for (unsigned long e = 0; e < sc.numExplorers; e++) {
-            explorers[e] = std::thread(&SwarmClustering::explorePool, std::ref(*(pools.get(r + e))), std::ref(*(allMatches[r + e])), std::ref(otus[r + e]), std::ref(sc));
-        }
-        for (unsigned long e = 0; e < sc.numExplorers; e++) {
-            explorers[e].join();
-        }
-
-    }
-
-    for (unsigned long e = 0; e < pools.numPools() % sc.numExplorers; e++) {
-        explorers[e] = std::thread(&SwarmClustering::explorePool, std::ref(*(pools.get(r + e))), std::ref(*(allMatches[r + e])), std::ref(otus[r + e]), std::ref(sc));
-    }
-    for (unsigned long e = 0; e < pools.numPools() % sc.numExplorers; e++) {
-        explorers[e].join();
-    }
-
-    processOtus(pools, otus, sc);
-
-}
 
 void SwarmClustering::cluster(const AmpliconPools& pools, const SwarmConfig& sc) {
 

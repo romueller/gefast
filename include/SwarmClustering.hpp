@@ -510,10 +510,8 @@ void processOtus(const AmpliconPools& pools, std::vector<std::vector<Otu*>>& otu
  * Cluster amplicons according to swarm's iterative strategy (based on the provided matching information) and generates the requested outputs.
  * Supports also swarm's fastidious clustering options.
  *
- * Version one uses the iterative segment filter (as proposed by Li et al.) and determines the OTUs from all matches.
- * Version two uses a "full index" version of the segment filter and directly determines the OTUs (like swarm).
+ * Uses a "full index" version of the segment filter and directly determines the OTUs (like swarm).
  */
-void cluster(const AmpliconPools& pools, std::vector<Matches*>& allMatches, const SwarmConfig& sc);
 void cluster(const AmpliconPools& pools, const SwarmConfig& sc);
 
 /**

@@ -103,8 +103,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 
     parameters["--min-length"] = 1001;
     parameters["--max-length"] = 1002;
-    parameters["--per-worker"] = 1003;
-    parameters["--workers"] = 1004;
+//    parameters["--per-worker"] = 1003;
+//    parameters["--workers"] = 1004;
     parameters["--info-folder"] = 1005;
     parameters["--sep-abundance"] = 1006;
     parameters["--use-score"] = 1007;
@@ -133,8 +133,8 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
     config.set(FILTER_ALPHABET, "0");
     config.set(FILTER_LENGTH, "0");
     config.set(NUM_EXTRA_SEGMENTS, "1");
-    config.set(NUM_THREADS_PER_WORKER, "1");
-    config.set(NUM_WORKERS, "1");
+//    config.set(NUM_THREADS_PER_WORKER, "1");
+//    config.set(NUM_WORKERS, "1");
     config.set(PREPROCESSING_ONLY, "0");
     config.set(SEGMENT_FILTER, "0"); //TODO set "best" version of segment filter as default
     config.set(SEPARATOR_ABUNDANCE, "_");
@@ -327,15 +327,15 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
                     config.set(MAX_LENGTH, std::to_string(val));
                     break;
 
-                case 1003:
-                    val = std::stoul(argv[++i]);
-                    config.set(NUM_THREADS_PER_WORKER, std::to_string(val));
-                    break;
+//                case 1003:
+//                    val = std::stoul(argv[++i]);
+//                    config.set(NUM_THREADS_PER_WORKER, std::to_string(val));
+//                    break;
 
-                case 1004:
-                    val = std::stoul(argv[++i]);
-                    config.set(NUM_WORKERS, std::to_string(val));
-                    break;
+//                case 1004:
+//                    val = std::stoul(argv[++i]);
+//                    config.set(NUM_WORKERS, std::to_string(val));
+//                    break;
 
                 case 1005:
                     config.set(INFO_FOLDER, argv[++i]);

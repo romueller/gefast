@@ -53,8 +53,8 @@ enum ConfigParameters {
     MIN_LENGTH,                         // minimal sequence length
     NAME,                               // name of the job to be executed
     NUM_EXTRA_SEGMENTS,                 // parameter of the pigeonhole principle (segment filter)
-    NUM_THREADS_PER_WORKER,             // number of parallel threads employed by each work
-    NUM_WORKERS,                        // number of parallel workers
+//    NUM_THREADS_PER_WORKER,             // number of parallel threads employed by each work
+//    NUM_WORKERS,                        // number of parallel workers
     PREPROCESSING_ONLY,                 // flag indicating whether only the preprocessing step should be executed
     SEGMENT_FILTER,                     // mode of the segment filter (forward, backward, forward-backward, backward-forward)
     SEPARATOR_ABUNDANCE,                // seperator symbol (string) between ID and abundance in a FASTA header line
@@ -196,8 +196,8 @@ private:
                         {"MIN_LENGTH",                        MIN_LENGTH},
                         {"NAME",                              NAME},
                         {"NUM_EXTRA_SEGMENTS",                NUM_EXTRA_SEGMENTS},
-                        {"NUM_THREADS_PER_WORKER",            NUM_THREADS_PER_WORKER},
-                        {"NUM_WORKERS",                       NUM_WORKERS},
+//                        {"NUM_THREADS_PER_WORKER",            NUM_THREADS_PER_WORKER},
+//                        {"NUM_WORKERS",                       NUM_WORKERS},
                         {"PREPROCESSING_ONLY",                PREPROCESSING_ONLY},
                         {"SEGMENT_FILTER",                    SEGMENT_FILTER},
                         {"SEPARATOR_ABUNDANCE",               SEPARATOR_ABUNDANCE},

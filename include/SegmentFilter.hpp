@@ -63,11 +63,6 @@ namespace SegmentFilter {
     void filter(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k, const int mode);
     void filterDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const int mode, const bool useScore, const Verification::Scoring& scoring);
 
-
-    void writeMatches(std::string oFile, AmpliconPools& pools, std::vector<Matches*>& allMatches);
-
-    void writeMatchesOneWay(std::string oFile, AmpliconPools& pools, std::vector<Matches*>& allMatches);
-
 }
 }
 

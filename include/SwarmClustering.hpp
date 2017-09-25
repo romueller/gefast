@@ -402,8 +402,8 @@ struct CompareIndicesAbund {
 
 // Sort OTU members according to the respective abundance (descending) of the amplicons
 // Use the "rank" of the amplicons as the tie-breaker
-struct CompareOtuEntriesAbund {
-    bool operator()(const OtuEntry& a, const OtuEntry& b) {
+struct CompareOtuEntryPrecursorsAbund {
+    bool operator()(const OtuEntryPrecursor& a, const OtuEntryPrecursor& b) {
         return (a.member->abundance > b.member->abundance) || ((a.member->abundance == b.member->abundance) && (a.member->seq < b.member->seq));
     }
 };

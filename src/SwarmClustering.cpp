@@ -79,7 +79,7 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
             while (pos < tmpMembers.size()) { // expand current OTU until no further similar amplicons can be added
 
                 if (lastGen != tmpMembers[pos].gen) { // work through generation by decreasing abundance
-                    std::sort(tmpMembers.begin() + pos, tmpMembers.end(), CompareOtuEntriesAbund());
+                    std::sort(tmpMembers.begin() + pos, tmpMembers.end(), CompareOtuEntryPrecursorsAbund());
                 }
 
                 // get next OTU (sub)seed

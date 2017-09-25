@@ -1438,7 +1438,7 @@ void SegmentFilter::swarmFilter(const AmpliconCollection& ac, std::vector<SwarmC
             while (pos < tmpMembers.size()) { // expand current OTU until no further similar amplicons can be added
 
                 if (lastGen != tmpMembers[pos].gen) { // work through generation by decreasing abundance
-                    std::sort(tmpMembers.begin() + pos, tmpMembers.end(), SwarmClustering::CompareOtuEntriesAbund());
+                    std::sort(tmpMembers.begin() + pos, tmpMembers.end(), SwarmClustering::CompareOtuEntryPrecursorsAbund());
                 }
 
                 // get next OTU (sub)seed
@@ -1569,7 +1569,7 @@ void SegmentFilter::swarmFilterDirectly(const AmpliconCollection& ac, std::vecto
             while (pos < tmpMembers.size()) { // expand current OTU until no further similar amplicons can be added
 
                 if (lastGen != tmpMembers[pos].gen) { // work through generation by decreasing abundance
-                    std::sort(tmpMembers.begin() + pos, tmpMembers.end(), SwarmClustering::CompareOtuEntriesAbund());
+                    std::sort(tmpMembers.begin() + pos, tmpMembers.end(), SwarmClustering::CompareOtuEntryPrecursorsAbund());
                 }
 
                 // get next OTU (sub)seed

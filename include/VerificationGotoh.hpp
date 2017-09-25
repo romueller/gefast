@@ -128,60 +128,20 @@ lenSeqs_t computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* 
 //===========================================================
 //                  Bounded computation
 //===========================================================
-#if 0
 /**
  * Space-reduced version of above classic dynamic-programming scheme with early termination and restricted to some diagonals (number depends on bound).
- */
-lenSeqs_t computeGotohBoundedEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
-
-/**
- * Space-reduced version of above classic dynamic-programming scheme with early termination and restricted to some diagonals (number depends on bound and length difference).
- * More restricted w.r.t. the number of diagonals than computeGotohBoundedEarlyRow(...).
- *
  * Uses ideas from Li et al. (2013), A partition-based method for string similarity joins with edit-distance constraints.
- */
-lenSeqs_t computeGotohLengthAwareEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
-
-/**
- * Improved version of computeGotohLengthAwareEarlyRow(...). Handles one-diagonal case separately.
- */
-lenSeqs_t computeGotohLengthAwareEarlyRow2(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
-
-/**
- * Improved version of computeGotohLengthAwareEarlyRow2(...). Renders the BT array redundant.
- */
-lenSeqs_t computeGotohLengthAwareEarlyRow3(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
-
-/**
- * Improved version of computeGotohLengthAwareEarlyRow3(...). Removes case distinction between left-most, right-most and inner diagonals through a few extra assignments.
- * Also uses casts and labs(...) instead of ternary operator in computation of early-flag.
- */
-lenSeqs_t computeGotohLengthAwareEarlyRow4(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
-
-/**
- * Improved version of computeGotohLengthAwareEarlyRow4(...). Avoids recomputing (bound -/+ delta) / 2 often by storing it in local variables.
- */
-lenSeqs_t computeGotohLengthAwareEarlyRow5(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
-
-/**
- * Improved version of computeGotohLengthAwareEarlyRow4(...). Combines computation of maximum values for next entry in arrays D, P and Q with case distinction for differences-counting arrays.
- */
-lenSeqs_t computeGotohLengthAwareEarlyRow6(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
-#endif
-
-/**
- * Improved verison of computeGotohLengthAwareEarlyRow6(...). Substitutes the arrays Q and cntDiffsQ with two integer variables.
  *
- * First tests have indicated that this version (together with version 8) is the fastest one.
+ * Contains several additional optimisations:
+ *  - Handles one-diagonal case separately.
+ *  - Renders the BT array redundant.
+ *  - Removes case distinction between left-most, right-most and inner diagonals through a few extra assignments.
+ *  - Uses casts and labs(...) instead of ternary operator in computation of early-flag.
+ *  - Combines computation of maximum values for next entry in arrays D, P and Q with case distinction for differences-counting arrays.
+ *  - Substitutes the arrays Q and cntDiffsQ with two integer variables.
+ *  - Avoids some recomputations by using a few additional integer variables.
  */
-lenSeqs_t computeGotohLengthAwareEarlyRow7(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
-
-/**
- * Improved version of computeGotohLengthAwareEarlyRow7(...). Avoids some recomputations by using a few additional integer variables.
- *
- * First tests have indicated that this version (together with version 7) is the fastest one.
- */
-lenSeqs_t computeGotohLengthAwareEarlyRow8(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+lenSeqs_t computeGotohLengthAwareEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
 
 // compute differences in best alignments of all incoming candidates

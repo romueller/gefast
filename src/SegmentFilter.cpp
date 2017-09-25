@@ -211,7 +211,7 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
                 if (candIter->second >= k) {
 
                     dist = useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow8(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
                            : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, M);
 
                     if (dist <= t){
@@ -421,7 +421,7 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
                 if (candIter->second >= k) {
 
                     dist = useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow8(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
                            : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, M);
 
                     if (dist <= t) {
@@ -683,7 +683,7 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
                     if (cnt == k) {
 
                         dist = useScore ?
-                                 Verification::computeGotohLengthAwareEarlyRow8(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
                                : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, M);
 
                         if (dist <= t){
@@ -957,7 +957,7 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
                     if (cnt == k) {
 
                         dist = useScore ?
-                                 Verification::computeGotohLengthAwareEarlyRow8(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
                                : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, M);
 
                         if (dist <= t){

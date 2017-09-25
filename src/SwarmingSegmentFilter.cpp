@@ -57,7 +57,7 @@ void SegmentFilter::verifyCands(const Amplicon& amplicon, const AmpliconCollecti
 #endif
 
             lenSeqs_t dist = sc.useScore ?
-                                  Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                  Verification::computeGotohLengthAwareEarlyRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
                                 : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, M);
 
             if (dist <= sc.threshold) {
@@ -94,7 +94,7 @@ void SegmentFilter::verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std:
 #endif
 
                 lenSeqs_t dist = sc.useScore ?
-                                      Verification::computeGotohLengthAwareEarlyRow8(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                      Verification::computeGotohLengthAwareEarlyRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
                                     : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, M);
 
                 if (dist <= sc.threshold) {
@@ -353,7 +353,7 @@ void SegmentFilter::ParallelChildrenFinder::verifyGotoh(std::vector<std::pair<nu
 
             c = localBuffer.pop();
 
-            lenSeqs_t d = Verification::computeGotohLengthAwareEarlyRow8(ac_[c.first].seq, ac_[c.first].len, ac_[c.second].seq, ac_[c.second].len, sc_.threshold, sc_.scoring, D, P, cntDiffs, cntDiffsP);
+            lenSeqs_t d = Verification::computeGotohLengthAwareEarlyRow(ac_[c.first].seq, ac_[c.first].len, ac_[c.second].seq, ac_[c.second].len, sc_.threshold, sc_.scoring, D, P, cntDiffs, cntDiffsP);
 
             if (d <= sc_.threshold) {
 

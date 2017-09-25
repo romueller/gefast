@@ -232,7 +232,7 @@ void SwarmClustering::verifyGotohFastidious(const AmpliconPools& pools, const Am
                 if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember, *graftCands[*childIter].parentMember)) {
 
                     lock.unlock();
-                    if (Verification::computeGotohLengthAwareEarlyRow8(c.parentMember->seq, c.parentMember->len, acIndices[*childIter].seq, acIndices[*childIter].len, t, scoring, D, P, cntDiffs, cntDiffsP) <= t) {
+                    if (Verification::computeGotohLengthAwareEarlyRow(c.parentMember->seq, c.parentMember->len, acIndices[*childIter].seq, acIndices[*childIter].len, t, scoring, D, P, cntDiffs, cntDiffsP) <= t) {
 
                         lock.lock();
                         if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember, *graftCands[*childIter].parentMember)) {
@@ -404,7 +404,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 //                        if ((candIter->second >= sc.extraSegs)
 //                                &&((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember))
 //                                && ((useScore ?
-//                                        Verification::computeGotohLengthAwareEarlyRow8(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+//                                        Verification::computeGotohLengthAwareEarlyRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
 //                                      : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold)) {
 //
 //                                    graftCands[candIter->first].parentOtu = *otuIter;
@@ -421,7 +421,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 
                             lock.unlock();
                             if ((sc.useScore ?
-                                  Verification::computeGotohLengthAwareEarlyRow8(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                  Verification::computeGotohLengthAwareEarlyRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
                                 : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold) {
 
                                 lock.lock();
@@ -454,25 +454,7 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 void SwarmClustering::checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
     if (sc.numThreadsPerCheck == 1) {
-
-#if 0
-
-        RotatingBuffers<CandidateFastidious> cbs = RotatingBuffers<CandidateFastidious>(1);
-        fastidiousCheckOtus(cbs, otus, acOtus, indices, acIndices, graftCands, sc);
-        cbs.close();
-
-        if (sc.useScore) {
-            verifyGotohFastidious(pools, acOtus, acIndices, graftCands, cbs.getBuffer(0), width, sc.fastidiousThreshold, sc.scoring, graftCandsMtx);
-        } else {
-            verifyFastidious(pools, acOtus, acIndices, graftCands, cbs.getBuffer(0), width, sc.fastidiousThreshold, graftCandsMtx);
-        }
-
-#else
-
         fastidiousCheckOtusDirectly(pools, otus, acOtus, indices, acIndices, graftCands, width, graftCandsMtx, sc);
-
-#endif
-
     } else {
 
         RotatingBuffers<CandidateFastidious> cbs = RotatingBuffers<CandidateFastidious>(sc.numThreadsPerCheck);

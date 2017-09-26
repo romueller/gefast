@@ -61,7 +61,7 @@ namespace Preprocessor {
     // splits description line into actual header, abundance value and additional information (if any)
     Defline parseDescriptionLine(const std::string& defline, const std::string sep);
 
-    void lowerCase(std::string& s);
+    void upperCase(std::string& s);
 
     // checks whether the given sequence satisfies the given filter criteria
     bool checkSequence(const std::string& seq, const std::string& alphabet, lenSeqs_t minLen, lenSeqs_t maxLen, bool flagAlph, int flagLen);

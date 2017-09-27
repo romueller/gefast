@@ -155,7 +155,7 @@ int run(int argc, const char* argv[]) {
         ac = pools->get(p);
         std::sort(ac->begin(), ac->end(),
              [](const Amplicon& amplA, const Amplicon& amplB) {
-                 return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (amplA.seq < amplB.seq));
+                 return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (strcmp(amplA.id, amplB.id) < 0));
              }
         );
 

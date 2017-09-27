@@ -161,7 +161,7 @@ void SwarmClustering::fastidiousIndexOtu(PrecursorIndices& indices, std::unorder
 }
 
 inline bool compareCandidates(const Amplicon& newCand, const Amplicon& oldCand) {
-    return (oldCand.abundance < newCand.abundance) || ((oldCand.abundance == newCand.abundance) && (oldCand.seq > newCand.seq));
+    return (newCand.abundance > oldCand.abundance) || ((newCand.abundance == oldCand.abundance) && (strcmp(newCand.id, oldCand.id) < 0));
 }
 
 void SwarmClustering::verifyFastidious(const AmpliconPools& pools, const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t, std::mutex& mtx) {

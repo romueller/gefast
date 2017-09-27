@@ -395,7 +395,7 @@ struct CompareIndicesAbund {
     }
 
     bool operator()(numSeqs_t a, numSeqs_t b) {
-        return (ac[a].abundance > ac[b].abundance)|| ((ac[a].abundance == ac[b].abundance) && (ac[a].seq < ac[b].seq));
+        return (ac[a].abundance > ac[b].abundance) || ((ac[a].abundance == ac[b].abundance) && (strcmp(ac[a].id, ac[b].id) < 0));
     }
 
 };
@@ -404,7 +404,7 @@ struct CompareIndicesAbund {
 // Use the "rank" of the amplicons as the tie-breaker
 struct CompareOtuEntryPrecursorsAbund {
     bool operator()(const OtuEntryPrecursor& a, const OtuEntryPrecursor& b) {
-        return (a.member->abundance > b.member->abundance) || ((a.member->abundance == b.member->abundance) && (a.member->seq < b.member->seq));
+        return (a.member->abundance > b.member->abundance) || ((a.member->abundance == b.member->abundance) && (strcmp(a.member->id, b.member->id) < 0));
     }
 };
 
@@ -412,27 +412,27 @@ struct CompareOtuEntryPrecursorsAbund {
 // Use the rank of the seeds as the tie-breaker
 struct CompareOtusMass {
     bool operator()(const Otu* a, const Otu* b) {
-        return (a->mass > b->mass) || ((a->mass == b->mass) && (a->seed()->seq < b->seed()->seq));
+        return (a->mass > b->mass) || ((a->mass == b->mass) && ((a->seed()->abundance > b->seed()->abundance) || ((a->seed()->abundance == b->seed()->abundance) && (strcmp(a->seed()->id, b->seed()->id) < 0))));
     }
 };
 
 // Sort OTUs by the abundance of their seeds (descending)
 struct CompareOtusSeedAbund {
     bool operator()(const Otu* a, const Otu* b) {
-        return (a->seedAbundance() > b->seedAbundance()) || ((a->seedAbundance() == b->seedAbundance()) && (a->seed()->seq < b->seed()->seq));
+        return (a->seedAbundance() > b->seedAbundance()) || ((a->seedAbundance() == b->seedAbundance()) && (strcmp(a->seed()->id, b->seed()->id) < 0));
     }
 };
 
 // Sort grafting candidates by the abundances of the parents and, if necessary, break ties through the abundances of the children (both descending)
-// Use the rank of the amplicons as the tie-breaker for the abundance comparison
+// Use the lexicographical order of the ids of the amplicons as the tie-breaker for the abundance comparison
 struct CompareGraftCandidatesAbund {
 
     inline bool compareMember(const Amplicon& amplA, const Amplicon& amplB) {
-        return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (amplA.seq < amplB.seq));
+        return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (strcmp(amplA.id, amplB.id) < 0));
     }
 
     bool operator()(const GraftCandidate& a, const GraftCandidate& b) {
-        return compareMember(*a.parentMember, *b.parentMember) || (a.parentMember->seq == b.parentMember->seq && compareMember(*a.childMember, *b.childMember));
+        return compareMember(*a.parentMember, *b.parentMember) || ((a.parentMember == b.parentMember) && compareMember(*a.childMember, *b.childMember));
     }
 
 };

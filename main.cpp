@@ -148,19 +148,6 @@ int run(int argc, const char* argv[]) {
     /* Preprocessing */
     std::cout << "Preprocessing..." << std::flush;
     auto pools = Preprocessor::run(c, files);
-
-    AmpliconCollection* ac;
-    for (numSeqs_t p = 0; p < pools->numPools(); p++) {
-
-        ac = pools->get(p);
-        std::sort(ac->begin(), ac->end(),
-             [](const Amplicon& amplA, const Amplicon& amplB) {
-                 return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (strcmp(amplA.id, amplB.id) < 0));
-             }
-        );
-
-    }
-
     std::cout << "DONE" << std::endl;
 
     if (c.get(PREPROCESSING_ONLY) == "1") {

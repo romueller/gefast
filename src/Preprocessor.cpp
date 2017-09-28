@@ -331,6 +331,17 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
         appendInput(conf, *pools, counts, *iter, sep);
     }
 
+    for (numSeqs_t p = 0; p < pools->numPools(); p++) {
+
+        auto ac = pools->get(p);
+        std::sort(ac->begin(), ac->end(),
+                  [](const Amplicon& amplA, const Amplicon& amplB) {
+                      return (amplA.abundance > amplB.abundance) || ((amplA.abundance == amplB.abundance) && (strcmp(amplA.id, amplB.id) < 0));
+                  }
+        );
+
+    }
+
     return pools;
 
 }

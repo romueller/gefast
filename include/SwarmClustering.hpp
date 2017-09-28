@@ -343,7 +343,6 @@ typedef RollingIndices<InvertedIndexFastidious> PrecursorIndices;
 typedef RollingIndices<InvertedIndexFastidious> IndicesFastidious;
 
 #endif
-//typedef SimpleBinaryRelation<StringIteratorPair, std::pair<Otu*, OtuEntry*>, hashStringIteratorPair, equalStringIteratorPair> InvertedIndexFastidious2;
 
 /**
  * Representation of a grafting candidate.

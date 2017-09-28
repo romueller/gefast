@@ -30,8 +30,6 @@
 #include "Verification.hpp"
 #include "VerificationGotoh.hpp"
 
-#define PRINT_INTERNAL_MODIFIED 0
-
 #define FASTIDIOUS_PARALLEL_POOL 1
 #define FASTIDIOUS_PARALLEL_CHECK 1
 
@@ -198,6 +196,12 @@ struct Otu {
     numSeqs_t numMembers;
     lenSeqs_t maxRad;
 
+    Otu* nextGraftedOtu;
+    Otu* lastGraftedOtu;
+
+    OtuEntry* graftParent;
+    const Amplicon* graftChild;
+
     Otu() {
 
         numUniqueSequences = 0;
@@ -205,6 +209,12 @@ struct Otu {
         members = 0;
         numMembers = 0;
         maxRad = 0;
+
+        nextGraftedOtu = 0;
+        lastGraftedOtu = 0;
+
+        graftParent = 0;
+        graftChild = 0;
 
     }
 
@@ -236,21 +246,17 @@ struct Otu {
         return members[0].member->abundance;
     }
 
-    void attach(Otu* childOtu) {
+    void attach(Otu* childOtu, OtuEntry* parentMember, const Amplicon* childMember) {
 
-        OtuEntry* tmp = new OtuEntry[numMembers + childOtu->numMembers];
-        auto pos = std::copy(members, members + numMembers, tmp);
-        delete[] members;
+        if (lastGraftedOtu == 0) {
+            nextGraftedOtu = childOtu;
+        } else {
+            lastGraftedOtu->nextGraftedOtu = childOtu;
+        }
+        lastGraftedOtu = childOtu;
 
-        std::copy(childOtu->members, childOtu->members + childOtu->numMembers, pos);
-        delete[] childOtu->members;
-
-        childOtu->members = new OtuEntry[1];
-        childOtu->members[0] = tmp[numMembers];
-
-        members = tmp;
-        numMembers += childOtu->numMembers;
-        childOtu->numMembers = 1;
+        childOtu->graftParent = parentMember;
+        childOtu->graftChild = childMember;
 
         numUniqueSequences += childOtu->numUniqueSequences;
         mass += childOtu->mass;
@@ -261,6 +267,17 @@ struct Otu {
 
     bool attached() const {
         return mass == 0;
+    }
+
+    numSeqs_t numTotalMembers() const {
+
+        numSeqs_t cnt = numMembers;
+        for (auto otuIter = nextGraftedOtu; otuIter != 0; otuIter = otuIter->nextGraftedOtu) {
+            cnt += otuIter->numMembers;
+        }
+
+        return cnt;
+
     }
 
     numSeqs_t numSingletons() const {
@@ -274,11 +291,21 @@ struct Otu {
 
     }
 
+    numSeqs_t numTotalSingletons() const {
+
+        numSeqs_t cnt = numSingletons();
+        for (auto otuIter = nextGraftedOtu; otuIter != 0; otuIter = otuIter->nextGraftedOtu) {
+            cnt += otuIter->numSingletons();
+        }
+
+        return cnt;
+
+    }
+
     std::pair<lenSeqs_t, lenSeqs_t> maxGenRad() {
 
         lenSeqs_t mg = 0;
-//        for (numSeqs_t i = 0; i < numMembers; i++) {
-        for (numSeqs_t i = 1; i < numMembers && members[i].gen != 0; i++) { // do not consider members added by fastidious clustering
+        for (numSeqs_t i = 1; i < numMembers; i++) { // do not consider members added by fastidious clustering
             mg = std::max(mg, members[i].gen);
         }
 
@@ -289,8 +316,7 @@ struct Otu {
     lenSeqs_t maxGen() {
 
         lenSeqs_t max = 0;
-//        for (numSeqs_t i = 0; i < numMembers; i++) {
-        for (numSeqs_t i = 1; i < numMembers && members[i].gen != 0; i++) { // do not consider members added by fastidious clustering
+        for (numSeqs_t i = 1; i < numMembers; i++) { // do not consider members added by fastidious clustering
             max = std::max(max, members[i].gen);
         }
 
@@ -327,7 +353,7 @@ typedef RollingIndices<InvertedIndexFastidious> IndicesFastidious;
 struct GraftCandidate {
 
     Otu* parentOtu;
-    const Amplicon* parentMember;
+    OtuEntry* parentMember;
 
     Otu* childOtu;
     const Amplicon* childMember;
@@ -335,11 +361,12 @@ struct GraftCandidate {
     GraftCandidate() {
 
         parentOtu = childOtu = 0;
-        parentMember = childMember = 0;
+        parentMember = 0;
+        childMember = 0;
 
     }
 
-    GraftCandidate(Otu* po, const Amplicon* pm, Otu* co, const Amplicon* cm) {
+    GraftCandidate(Otu* po, OtuEntry* pm, Otu* co, const Amplicon* cm) {
 
         parentOtu = po;
         parentMember = pm;
@@ -361,7 +388,7 @@ struct GraftCandidate {
 struct CandidateFastidious {
 
     Otu* parentOtu;
-    const Amplicon* parentMember;
+    OtuEntry* parentMember;
 
     std::vector<numSeqs_t> children;
 
@@ -372,7 +399,7 @@ struct CandidateFastidious {
 
     }
 
-    CandidateFastidious(Otu* po, const Amplicon* pm) {
+    CandidateFastidious(Otu* po, OtuEntry* pm) {
 
         parentOtu = po;
         parentMember = pm;
@@ -432,7 +459,7 @@ struct CompareGraftCandidatesAbund {
     }
 
     bool operator()(const GraftCandidate& a, const GraftCandidate& b) {
-        return compareMember(*a.parentMember, *b.parentMember) || ((a.parentMember == b.parentMember) && compareMember(*a.childMember, *b.childMember));
+        return compareMember(*a.parentMember->member, *b.parentMember->member) || ((a.parentMember->member->id == b.parentMember->member->id) && compareMember(*a.childMember, *b.childMember));
     }
 
 };
@@ -529,7 +556,7 @@ void dereplicate(const AmpliconPools& pools, const SwarmConfig& sc);
  * (5) generation number of the child amplicon,
  * separated by the given separator.
  */
-void outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep);
+void outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc);
 
 /**
  * Writes the members of the given OTUs to file (corresponds to output of swarm's option -o).

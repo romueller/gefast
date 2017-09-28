@@ -181,13 +181,13 @@ void SwarmClustering::verifyFastidious(const AmpliconPools& pools, const Amplico
             for (auto childIter = c.children.begin(); childIter != c.children.end(); childIter++) {
 
                 std::unique_lock<std::mutex> lock(mtx);
-                if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember, *graftCands[*childIter].parentMember)) {
+                if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember->member, *graftCands[*childIter].parentMember->member)) {
 
                     lock.unlock();
-                    if (Verification::computeLengthAwareRow(c.parentMember->seq, c.parentMember->len, acIndices[*childIter].seq, acIndices[*childIter].len, t, M) <= t) {
+                    if (Verification::computeLengthAwareRow(c.parentMember->member->seq, c.parentMember->member->len, acIndices[*childIter].seq, acIndices[*childIter].len, t, M) <= t) {
 
                         lock.lock();
-                        if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember, *graftCands[*childIter].parentMember)) {
+                        if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember->member, *graftCands[*childIter].parentMember->member)) {
 
                             graftCands[*childIter].parentOtu = c.parentOtu;
                             graftCands[*childIter].parentMember = c.parentMember;
@@ -229,13 +229,13 @@ void SwarmClustering::verifyGotohFastidious(const AmpliconPools& pools, const Am
             for (auto childIter = c.children.begin(); childIter != c.children.end(); childIter++) {
 
                 std::unique_lock<std::mutex> lock(mtx);
-                if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember, *graftCands[*childIter].parentMember)) {
+                if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember->member, *graftCands[*childIter].parentMember->member)) {
 
                     lock.unlock();
-                    if (Verification::computeGotohLengthAwareEarlyRow(c.parentMember->seq, c.parentMember->len, acIndices[*childIter].seq, acIndices[*childIter].len, t, scoring, D, P, cntDiffs, cntDiffsP) <= t) {
+                    if (Verification::computeGotohLengthAwareEarlyRow(c.parentMember->member->seq, c.parentMember->member->len, acIndices[*childIter].seq, acIndices[*childIter].len, t, scoring, D, P, cntDiffs, cntDiffsP) <= t) {
 
                         lock.lock();
-                        if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember, *graftCands[*childIter].parentMember)) {
+                        if ((graftCands[*childIter].parentOtu == 0) || compareCandidates(*c.parentMember->member, *graftCands[*childIter].parentMember->member)) {
 
                             graftCands[*childIter].parentOtu = c.parentOtu;
                             graftCands[*childIter].parentMember = c.parentMember;
@@ -294,7 +294,7 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 
                 }
 
-                localCands.push_back(CandidateFastidious(*otuIter, ampl));
+                localCands.push_back(CandidateFastidious(*otuIter, (*otuIter)->members + m));
 
                 for (lenSeqs_t len = (seqLen > sc.fastidiousThreshold) * (seqLen - sc.fastidiousThreshold); len <= seqLen + sc.fastidiousThreshold; len++) { // ... search for graft candidates among the amplicons in light OTUs
 
@@ -414,9 +414,9 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 
                         std::unique_lock<std::mutex> lock(graftCandsMtx);
 #if QGRAM_FILTER
-                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember)) && (qgram_diff(*ampl, acIndices[candIter->first]) <= sc.fastidiousThreshold)) {
+                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember->member)) && (qgram_diff(*ampl, acIndices[candIter->first]) <= sc.fastidiousThreshold)) {
 #else
-                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember))) {
+                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember->member))) {
 #endif
 
                             lock.unlock();
@@ -425,10 +425,10 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
                                 : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold) {
 
                                 lock.lock();
-                                if (((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember))) {
+                                if (((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember->member))) {
 
                                     graftCands[candIter->first].parentOtu = *otuIter;
-                                    graftCands[candIter->first].parentMember = ampl;
+                                    graftCands[candIter->first].parentMember = (*otuIter)->members + m;
 
                                 }
                                 lock.unlock();
@@ -736,12 +736,10 @@ void SwarmClustering::graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const Am
 
             // "attach the seed of the light swarm to the tail of the heavy swarm"
             // OTU entries are moved unchanged (entry of seed of attached swarm stays 'incomplete', grafting 'link' is not recorded)
-            parentOtu->attach(childOtu);
+            parentOtu->attach(childOtu, graftIter->parentMember, graftIter->childMember);
 
             // update stats
-            if (parentOtu->numMembers > maxSize) {
-                maxSize = parentOtu->numMembers;
-            }
+            maxSize = std::max(maxSize, parentOtu->numTotalMembers());
 
             numGrafts++;
             numOtus--;
@@ -769,7 +767,7 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 
         for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
 
-            maxSize = std::max(maxSize, (*otuIter)->numMembers);
+            maxSize = std::max(maxSize, (*otuIter)->numMembers); // sufficient prior to fastidious grafting
             maxGen = std::max(maxGen, (*otuIter)->maxGen());
 
         }
@@ -780,22 +778,6 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
     }
 
     numOtusAdjusted = numOtus;
-
-#if !PRINT_INTERNAL_MODIFIED
-    if (sc.outInternals) {
-
-        std::vector<Otu*> flattened;
-        flattened.reserve(numOtus);
-
-        for (auto p = 0; p < pools.numPools(); p++) {
-            flattened.insert(flattened.end(), otus[p].begin(), otus[p].end());
-        }
-
-        std::sort(flattened.begin(), flattened.end(), CompareOtusSeedAbund());
-        outputInternalStructures(sc.oFileInternals, pools, flattened, sc.sepInternals);
-
-    }
-#endif
 
     /* (b) Optional (second) clustering phase of swarm */
     if (sc.fastidious) {
@@ -811,7 +793,7 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
             for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
 
                 numLightOtus += ((*otuIter)->mass < sc.boundary);
-                numAmplLightOtus += ((*otuIter)->mass < sc.boundary) * (*otuIter)->numMembers;
+                numAmplLightOtus += ((*otuIter)->mass < sc.boundary) * (*otuIter)->numMembers; // sufficient prior to fastidious grafting
 
             }
         }
@@ -838,9 +820,7 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 
     std::sort(flattened.begin(), flattened.end(), CompareOtusSeedAbund());
 
-#if PRINT_INTERNAL_MODIFIED
-    if (sc.outInternals) outputInternalStructures(sc.oFileInternals, pools, flattened, sc.sepInternals);
-#endif
+    if (sc.outInternals) outputInternalStructures(sc.oFileInternals, pools, flattened, sc);
     if (sc.outOtus) {
         (sc.outMothur) ?
           outputOtusMothur(sc.oFileOtus, pools, flattened, sc.threshold, numOtusAdjusted, sc.sepMothur, sc.sepMothurOtu, sc.sepAbundance)
@@ -949,12 +929,24 @@ void SwarmClustering::dereplicate(const AmpliconPools& pools, const SwarmConfig&
 }
 
 
-void SwarmClustering::outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep) {
+void SwarmClustering::outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc) {
 
     std::ofstream oStream(oFile);
     std::stringstream sStream;
 
+    lenSeqs_t width = 0;
+    for (lenSeqs_t p = 0; p < pools.numPools(); p++) {
+        width = std::max(width, pools.get(p)->maxLen());
+    }
+
+    lenSeqs_t M[sc.useScore ? 1 : width];
+    val_t D[sc.useScore? width : 1];
+    val_t P[sc.useScore? width : 1];
+    lenSeqs_t cntDiffs[sc.useScore? width : 1];
+    lenSeqs_t cntDiffsP[sc.useScore? width : 1];
+
     Otu* otu = 0;
+    numSeqs_t otuId = 0;
 
     for (auto i = 0; i < otus.size(); i++) {
 
@@ -962,13 +954,27 @@ void SwarmClustering::outputInternalStructures(const std::string oFile, const Am
 
         if (!otu->attached()) {
 
-            for (auto memberIter = otu->members; memberIter != otu->members + otu->numMembers; memberIter++) {
+            otuId++;
 
-                if (memberIter->gen != 0) {
+            for (auto otuIter = otu; otuIter != 0; otuIter = otuIter->nextGraftedOtu) {
 
-                    sStream << memberIter->parent->id << sep << memberIter->member->id << sep << memberIter->parentDist << sep << (i + 1) << sep << memberIter->gen << std::endl;
-                    oStream << sStream.rdbuf();
-                    sStream.str(std::string());
+                for (auto memberIter = otuIter->members; memberIter != otuIter->members + otuIter->numMembers; memberIter++) {
+
+                    if (otuIter->graftChild == memberIter->member) {
+
+                        lenSeqs_t dist = (sc.useScore) ? Verification::computeGotohLengthAwareEarlyRow(otuIter->graftChild->seq, otuIter->graftChild->len, otuIter->graftParent->member->seq, otuIter->graftParent->member->len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                                       : Verification::computeLengthAwareRow(otuIter->graftChild->seq, otuIter->graftChild->len, otuIter->graftParent->member->seq, otuIter->graftParent->member->len, sc.fastidiousThreshold, M);
+                        sStream << otuIter->graftParent->member->id << sc.sepInternals << otuIter->graftChild->id << sc.sepInternals << dist << sc.sepInternals << otuId << sc.sepInternals << (otuIter->graftParent->gen + 1) << std::endl;
+
+                    }
+
+                    if (memberIter->gen != 0) {
+
+                        sStream << memberIter->parent->id << sc.sepInternals << memberIter->member->id << sc.sepInternals << memberIter->parentDist << sc.sepInternals << otuId << sc.sepInternals << memberIter->gen << std::endl;
+                        oStream << sStream.rdbuf();
+                        sStream.str(std::string());
+
+                    }
 
                 }
 
@@ -995,15 +1001,25 @@ void SwarmClustering::outputOtus(const std::string oFile, const AmpliconPools& p
 
         if (!otu->attached()) {
 
-            sStream << otu->seed()->id << sepAbundance << otu->seedAbundance();
+            for (auto otuIter = otu; otuIter != 0; otuIter = otuIter->nextGraftedOtu) {
 
-            for (auto memberIter = otu->members + 1; memberIter != otu->members + otu->numMembers; memberIter++) {
-                sStream << sep << memberIter->member->id << sepAbundance << memberIter->member->abundance;
+                if (otuIter != otu) {
+                    sStream << sep;
+                }
+
+                sStream << otuIter->seed()->id << sepAbundance << otuIter->seedAbundance();
+
+                for (auto memberIter = otuIter->members + 1; memberIter != otuIter->members + otuIter->numMembers; memberIter++) {
+                    sStream << sep << memberIter->member->id << sepAbundance << memberIter->member->abundance;
+                }
+
+                sStream << std::flush;
+                oStream << sStream.rdbuf();
+                sStream.str(std::string());
+
             }
 
-            sStream << std::endl;
-            oStream << sStream.rdbuf();
-            sStream.str(std::string());
+            oStream << std::endl;
 
         }
 
@@ -1028,14 +1044,18 @@ void SwarmClustering::outputOtusMothur(const std::string oFile, const AmpliconPo
 
         if (!otu->attached()) {
 
-            sStream << sepOtu << otu->seed()->id << sepAbundance << otu->seed()->abundance;
+            for (auto otuIter = otu; otuIter != 0; otuIter = otuIter->nextGraftedOtu) {
 
-            for (auto memberIter = otu->members + 1; memberIter != otu->members + otu->numMembers; memberIter++) {
-                sStream << sep << memberIter->member->id << sepAbundance << memberIter->member->abundance;
+                sStream << ((otuIter == otu) ? sepOtu : std::string(1, sep)) << otuIter->seed()->id << sepAbundance << otuIter->seed()->abundance;
+
+                for (auto memberIter = otuIter->members + 1; memberIter != otuIter->members + otuIter->numMembers; memberIter++) {
+                    sStream << sep << memberIter->member->id << sepAbundance << memberIter->member->abundance;
+                }
+
+                oStream << sStream.rdbuf();
+                sStream.str(std::string());
+
             }
-
-            oStream << sStream.rdbuf();
-            sStream.str(std::string());
 
         }
 
@@ -1061,7 +1081,7 @@ void SwarmClustering::outputStatistics(const std::string oFile, const AmpliconPo
         if (!otu->attached()) {
 
             auto maxGenRad = otu->maxGenRad();
-            sStream << otu->numUniqueSequences << sep << otu->mass << sep << otu->seed()->id << sep << otu->seedAbundance() << sep << otu->numSingletons() << sep << maxGenRad.first << sep << maxGenRad.second << std::endl;
+            sStream << otu->numUniqueSequences << sep << otu->mass << sep << otu->seed()->id << sep << otu->seedAbundance() << sep << otu->numTotalSingletons() << sep << maxGenRad.first << sep << maxGenRad.second << std::endl;
             oStream << sStream.rdbuf();
             sStream.str(std::string());
 
@@ -1106,6 +1126,7 @@ void SwarmClustering::outputUclust(const std::string oFile, const AmpliconPools&
 
     AmpliconCollection* ac = 0;
     Otu* otu = 0;
+    numSeqs_t otuId = 0;
 
     ac = pools.get(pools.numPools() - 1);
     lenSeqs_t maxLen = 0;
@@ -1124,25 +1145,31 @@ void SwarmClustering::outputUclust(const std::string oFile, const AmpliconPools&
 
             auto& seed = *otu->seed();
 
-            sStream << 'C' << sc.sepUclust << i << sc.sepUclust << otu->numMembers << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
+            sStream << 'C' << sc.sepUclust << otuId << sc.sepUclust << otu->numTotalMembers() << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
                     << seed.id << sc.sepAbundance << seed.abundance << sc.sepUclust << '*' << '\n';
-            sStream << 'S' << sc.sepUclust << i << sc.sepUclust << seed.len << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
+            sStream << 'S' << sc.sepUclust << otuId << sc.sepUclust << seed.len << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
                     << seed.id << sc.sepAbundance << seed.abundance << sc.sepUclust << '*' << '\n';
             oStream << sStream.rdbuf();
             sStream.str(std::string());
 
-            for (auto memberIter = otu->members + 1; memberIter != otu->members + otu->numMembers; memberIter++) {
+            for (auto otuIter = otu; otuIter != 0; otuIter = otuIter->nextGraftedOtu) {
 
-                auto& member = *memberIter->member;
-                auto ai = Verification::computeGotohCigarRow1(seed.seq, seed.len, member.seq, member.len, sc.scoring, D, P, BT);
+                for (auto memberIter = otuIter->members + 1; memberIter != otuIter->members + otuIter->numMembers; memberIter++) {
 
-                sStream << 'H' << sc.sepUclust << i << sc.sepUclust << member.len << sc.sepUclust << (100.0 * (ai.length - ai.numDiffs) / ai.length) << sc.sepUclust << '+' << sc.sepUclust << '0' << sc.sepUclust << '0' << sc.sepUclust << ((ai.numDiffs == 0) ? "=" : ai.cigar) << sc.sepUclust
-                        << member.id << sc.sepAbundance << member.abundance << sc.sepUclust
-                        << seed.id << sc.sepAbundance << seed.abundance << '\n';
-                oStream << sStream.rdbuf();
-                sStream.str(std::string());
+                    auto& member = *memberIter->member;
+                    auto ai = Verification::computeGotohCigarRow1(seed.seq, seed.len, member.seq, member.len, sc.scoring, D, P, BT);
+
+                    sStream << 'H' << sc.sepUclust << otuId << sc.sepUclust << member.len << sc.sepUclust << (100.0 * (ai.length - ai.numDiffs) / ai.length) << sc.sepUclust << '+' << sc.sepUclust << '0' << sc.sepUclust << '0' << sc.sepUclust << ((ai.numDiffs == 0) ? "=" : ai.cigar) << sc.sepUclust
+                            << member.id << sc.sepAbundance << member.abundance << sc.sepUclust
+                            << seed.id << sc.sepAbundance << seed.abundance << '\n';
+                    oStream << sStream.rdbuf();
+                    sStream.str(std::string());
+
+                }
 
             }
+
+            otuId++;
 
         }
 
@@ -1235,7 +1262,7 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
                           << seed.id << sc.sepAbundance << seed.abundance << sc.sepUclust << '*' << '\n';
             sStreamUclust << 'S' << sc.sepUclust << i << sc.sepUclust << seed.len << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust << '*' << sc.sepUclust
                           << seed.id << sc.sepAbundance << seed.abundance << sc.sepUclust << '*' << '\n';
-            oStreamUclust << sStreamUclust.rdbuf();
+            oStreamUclust << sStreamUclust.rdbuf() << std::flush;
             sStreamUclust.str(std::string());
 
             for (auto memberIter = otu.members + 1; memberIter != otu.members + otu.numMembers; memberIter++) {
@@ -1244,7 +1271,7 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
                             << memberIter->member->id << sc.sepAbundance << memberIter->member->abundance << sc.sepUclust
                             << seed.id << sc.sepAbundance << seed.abundance << '\n';
 
-                oStreamUclust << sStreamUclust.rdbuf();
+                oStreamUclust << sStreamUclust.rdbuf() << std::flush;
                 sStreamUclust.str(std::string());
 
             }

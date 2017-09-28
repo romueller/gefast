@@ -262,6 +262,10 @@ numSeqs_t AmpliconCollection::numSeqsOfLen(const lenSeqs_t len) const {
 
 }
 
+lenSeqs_t AmpliconCollection::maxLen() const {
+    return counts_[numLengths_ - 1].first;
+}
+
 void AmpliconCollection::reserve(const numSeqs_t newCapacity) {
 
     if (capacity_ >= newCapacity || size_ >= newCapacity) return;

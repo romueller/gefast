@@ -223,6 +223,8 @@ public:
 
     numSeqs_t numSeqsOfLen(const lenSeqs_t len) const;
 
+    lenSeqs_t maxLen() const;
+
     void reserve(const numSeqs_t newCapacity);
 
 private:

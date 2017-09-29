@@ -249,9 +249,12 @@ private:
 
 
 /**
- * Variant of SimpleBinaryRelation(Set) with an optimisations for column-based queries.
+ * Variant of SimpleBinaryRelation with an optimisations for column-based queries.
  * Instead of iterating over all rows, each column (label) can be processed by following vertical links
  * pointing to the next row containing the label.
+ *
+ * NOTE: The labels of the added elements have to be monotonically increasing,
+ * so that the labels_ vector is sorted without any further action.
  */
 template<typename O, typename L, typename H = std::hash<O>, typename P = std::equal_to<O>>
 class TwoLinkBinaryRelation {
@@ -315,7 +318,11 @@ public:
     }
 
     bool containsLabel(const L& lab) {
-        return labels_.find(lab) != labels_.end();
+
+        auto iter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+
+        return (iter != labels_.end()) && (iter->first == lab) && (iter->second != 0);
+
     }
 
     bool containsObject(const O& obj) {
@@ -356,8 +363,8 @@ public:
     std::vector<O> getObjectsOf(const L& lab) {
 
         std::vector<O> objects;
-        auto labIter = labels_.find(lab);
-        auto entry = (labIter != labels_.end()) ? Entry(lab, labIter->second) : Entry(lab);
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+        auto entry = ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) ? Entry(lab, labIter->second) : Entry(lab);
 
         while (entry.next != 0) {
 
@@ -400,8 +407,8 @@ public:
     unsigned long countObjectsOf(const L& lab) {
 
         unsigned long sum = 0;
-        auto labIter = labels_.find(lab);
-        auto entry = (labIter != labels_.end()) ? Entry(lab, labIter->second) : Entry(lab);
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+        auto entry = ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) ? Entry(lab, labIter->second) : Entry(lab);
 
         while (entry.next != 0) {
 
@@ -418,23 +425,23 @@ public:
 
     void add(const O& obj, const L& lab) {
 
-        auto labIter = labels_.find(lab);
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
         auto& row = binRel_[obj];
 
-        if (labIter != labels_.end()) { // add to already existing column
+        if ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) { // add to already existing column
 
             auto e = Entry(lab, labIter->second);
             auto iter = std::find(row.begin(), row.end(), e);
 
             if (iter == row.end()) { // only "redirect iterator" if insertion is actually done
-                labels_[lab] = &(*(binRel_.find(obj)));
+                labIter->second = &(*(binRel_.find(obj)));
                 row.push_back(e);
             }
 
         } else { // open new column
 
             auto e = Entry(lab);
-            labels_[lab] = &(*(binRel_.find(obj)));
+            labels_.emplace_back(lab, &(*(binRel_.find(obj))));
             row.push_back(e);
 
         }
@@ -444,9 +451,9 @@ public:
     void remove(const O& obj, const L& lab) {
 
         auto keyIter = binRel_.find(obj);
-        auto labIter = labels_.find(lab);
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
 
-        if (keyIter != binRel_.end() && labIter != labels_.end()) {
+        if ((keyIter != binRel_.end()) && (labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) {
 
             auto entry = Entry(lab, labIter->second);
             auto prevEntry = entry;
@@ -459,7 +466,7 @@ public:
                     auto iter = std::find(nextRow.begin(), nextRow.end(), entry);
 
                     if (prevEntry.next->first == entry.next->first) { // remove first element of vertical chain
-                        labels_[lab] = iter->next;
+                        labIter->second = iter->next;
                     } else {
 
                         auto& prevRow = binRel_[prevEntry.next->first];
@@ -500,12 +507,12 @@ public:
 
     void removeLabel(const L& lab) {
 
-        auto labIter = labels_.find(lab);
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
 
-        if (labIter != labels_.end()) {
+        if ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) {
 
             auto entry = Entry(lab, labIter->second);
-            labels_.erase(labIter);
+            labIter->second = 0;
 
             while (entry.next != 0) {
 
@@ -521,21 +528,17 @@ public:
 
     }
 
-    void join(const TwoLinkBinaryRelation& sbr) {
+private:
+    std::vector<std::pair<L, std::pair<const O, LinkedRow>*>> labels_;
+    std::unordered_map<O, LinkedRow, H, P> binRel_;
 
-        for (auto iter = sbr.binRel_.begin(); iter != sbr.binRel_.end(); iter++) {
+    struct CompareLabels {
 
-            for (auto labIter = iter->second.begin(); labIter != iter->second.end(); labIter++) {
-                add(iter->first, labIter->value);
-            }
-
+        bool operator() (const std::pair<L, std::pair<const O, LinkedRow>*>& lhs, const L rhs) {
+            return lhs.first < rhs;
         }
 
-    }
-
-private:
-    std::unordered_map<L, std::pair<const O, LinkedRow>*> labels_;
-    std::unordered_map<O, LinkedRow, H, P> binRel_;
+    } cmp_;
 
 };
 

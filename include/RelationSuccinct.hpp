@@ -122,6 +122,8 @@ public:
         width_ = w;
         forward_ = f;
         shrink_ = s;
+        minLength_ = 0;
+        maxLength_ = 0;
 
         empty_ = T();
         emptyRow_ = Row(0, 0);
@@ -157,6 +159,8 @@ public:
         if (rows_.find(len) == rows_.end()) {
 
             rows_[len] = Row(width_, sharedCapacity);
+            minLength_ = std::min(minLength_, len);
+            maxLength_ = std::max(maxLength_, len);
             if (shrink_) shrink(len);
 
         }
@@ -170,13 +174,35 @@ public:
 
         if (forward_) {
 
-            auto bound = rows_.lower_bound(cur - threshold_);
-            rows_.erase(rows_.begin(), bound);
+            for (lenSeqs_t len = minLength_; len < (cur - threshold_); len++) {
+                rows_.erase(len);
+            }
+            for (lenSeqs_t len = cur - threshold_; len <= cur; len++) {
+
+                if (rows_.find(len) != rows_.end()) {
+
+                    minLength_ = len;
+                    break;
+
+                }
+
+            }
 
         } else {
 
-            auto bound = rows_.upper_bound(cur + threshold_);
-            rows_.erase(bound, rows_.end());
+            for (lenSeqs_t len = cur + threshold_ + 1; len <= maxLength_; len++) {
+                rows_.erase(len);
+            }
+            for (lenSeqs_t len = cur + threshold_; len >= cur; len--) {
+
+                if (rows_.find(len) != rows_.end()) {
+
+                    maxLength_ = len;
+                    break;
+
+                }
+
+            }
 
         }
 
@@ -187,10 +213,10 @@ public:
     }
 
     lenSeqs_t minLength() const {
-        return rows_.begin()->first;
+        return minLength_;
     }
     lenSeqs_t maxLength() const {
-        return rows_.rbegin()->first;
+        return maxLength_;
     }
 
 
@@ -198,8 +224,10 @@ private:
 
     lenSeqs_t threshold_; // limits number of rows when applying shrink()
     lenSeqs_t width_; // number of columns / segments per row
+    lenSeqs_t minLength_;
+    lenSeqs_t maxLength_;
 
-    std::map<lenSeqs_t, Row> rows_; // indices grid
+    std::unordered_map<lenSeqs_t, Row> rows_; // indices grid
 
     T empty_; // empty (dummy) index returned for out-of-bounds queries
     Row emptyRow_; // empty (dummy) row returned for out-of-bounds queries

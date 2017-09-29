@@ -28,6 +28,7 @@
 #include <cstring>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #define QGRAM_FILTER 1
@@ -355,6 +356,8 @@ public:
         width_ = w;
         forward_ = f;
         shrink_ = s;
+        minLength_ = 0;
+        maxLength_ = 0;
 
         empty_ = T();
         emptyRow_ = Row(0);
@@ -390,6 +393,8 @@ public:
         if (indices_.find(len) == indices_.end()) {
 
             indices_[len] = Row(width_);
+            minLength_ = std::min(minLength_, len);
+            maxLength_ = std::max(maxLength_, len);
             if (shrink_) shrink(len);
 
         }
@@ -403,13 +408,35 @@ public:
 
         if (forward_) {
 
-            auto bound = indices_.lower_bound(cur - threshold_);
-            indices_.erase(indices_.begin(), bound);
+            for (lenSeqs_t len = minLength_; len < (cur - threshold_); len++) {
+                indices_.erase(len);
+            }
+            for (lenSeqs_t len = cur - threshold_; len <= cur; len++) {
+
+                if (indices_.find(len) != indices_.end()) {
+
+                    minLength_ = len;
+                    break;
+
+                }
+
+            }
 
         } else {
 
-            auto bound = indices_.upper_bound(cur + threshold_);
-            indices_.erase(bound, indices_.end());
+            for (lenSeqs_t len = cur + threshold_ + 1; len <= maxLength_; len++) {
+                indices_.erase(len);
+            }
+            for (lenSeqs_t len = cur + threshold_; len >= cur; len--) {
+
+                if (indices_.find(len) != indices_.end()) {
+
+                    maxLength_ = len;
+                    break;
+
+                }
+
+            }
 
         }
 
@@ -420,10 +447,10 @@ public:
     }
 
     lenSeqs_t minLength() const {
-        return indices_.begin()->first;
+        return minLength_;
     }
     lenSeqs_t maxLength() const {
-        return indices_.rbegin()->first;
+        return maxLength_;
     }
 
 
@@ -431,8 +458,10 @@ private:
 
     lenSeqs_t threshold_; // limits number of rows when applying shrink()
     lenSeqs_t width_; // number of columns / segments per row
+    lenSeqs_t minLength_;
+    lenSeqs_t maxLength_;
 
-    std::map<lenSeqs_t, Row> indices_; // indices grid
+    std::unordered_map<lenSeqs_t, Row> indices_; // indices grid
 
     T empty_; // empty (dummy) index returned for out-of-bounds queries
     Row emptyRow_; // empty (dummy) row returned for out-of-bounds queries

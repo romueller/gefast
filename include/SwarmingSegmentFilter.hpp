@@ -53,17 +53,17 @@ typedef RollingIndices<SwarmingInvertedIndex> SwarmingIndices;
 /**
  * Looks up the segments of the amplicon in the inverted indices and makes a tally of the found candidates.
  */
-void addCandCnts(const Amplicon& amplicon, lenSeqs_t childLen, lenSeqs_t numSegments, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive);
+void addCandCnts(const Amplicon& amplicon, lenSeqs_t childLen, lenSeqs_t numSegments, std::vector<numSeqs_t>& candCnts, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive);
 
 /**
  * Applies forward filter and verifies candidates by computing the bounded edit distance.
  */
-void verifyCands(const Amplicon& amplicon, const AmpliconCollection& ac, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+void verifyCands(const Amplicon& amplicon, const AmpliconCollection& ac, std::vector<numSeqs_t>& candCnts, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
 /**
  * Applies forward + pipelined backward filtering and verifies candidates by computing the bounded edit distance.
  */
-void verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std::string>& segmentStrs, const AmpliconCollection& ac, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+void verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std::string>& segmentStrs, const AmpliconCollection& ac, std::vector<numSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
 
 
@@ -118,8 +118,8 @@ public:
     void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children);
 
 private:
-    numSeqs_t sendCandsToVerification(const numSeqs_t id, const Amplicon& amplicon, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts);
-    numSeqs_t sendCandsToVerificationTwoWay(const numSeqs_t id, const Amplicon& amplicon, std::vector<std::string>& segmentStrs, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs);
+    numSeqs_t sendCandsToVerification(const numSeqs_t id, const Amplicon& amplicon, std::vector<numSeqs_t>& candCnts);
+    numSeqs_t sendCandsToVerificationTwoWay(const numSeqs_t id, const Amplicon& amplicon, std::vector<std::string>& segmentStrs, std::vector<numSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs);
 
     void verify(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
 

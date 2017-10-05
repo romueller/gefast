@@ -27,7 +27,7 @@
 
 namespace GeFaST {
 
-void SegmentFilter::addCandCnts(const Amplicon& amplicon, lenSeqs_t childLen, lenSeqs_t numSegments, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive) {
+void SegmentFilter::addCandCnts(const Amplicon& amplicon, lenSeqs_t childLen, lenSeqs_t numSegments, std::vector<numSeqs_t>& candCnts, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive) {
 
     StringIteratorPair sip;
     for (lenSeqs_t i = 0; i < numSegments; i++) {
@@ -45,65 +45,133 @@ void SegmentFilter::addCandCnts(const Amplicon& amplicon, lenSeqs_t childLen, le
 
 }
 
-void SegmentFilter::verifyCands(const Amplicon& amplicon, const AmpliconCollection& ac, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+void SegmentFilter::verifyCands(const Amplicon& amplicon, const AmpliconCollection& ac, std::vector<numSeqs_t>& candCnts, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+
+    std::sort(candCnts.begin(), candCnts.end());
 
     // general pigeonhole principle: for being a candidate, at least k segments have to be matched
-    for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+    lenSeqs_t cnt = 0;
+    numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+    for (auto candId : candCnts) {
+
+        if (prevCand != candId) {
 
 #if QGRAM_FILTER
-        if ((candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+            if ((cnt >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[prevCand].abundance) && (qgram_diff(amplicon, ac[prevCand]) <= sc.threshold)) {
 #else
-            if ((candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
+            if ((cnt >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[prevCand].abundance)) {
 #endif
 
-            lenSeqs_t dist = sc.useScore ?
-                                  Verification::computeGotohLengthAwareEarlyRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-                                : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, M);
+                lenSeqs_t dist = sc.useScore ?
+                                   Verification::computeGotohLengthAwareEarlyRow(amplicon.seq, amplicon.len, ac[prevCand].seq, ac[prevCand].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                 : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[prevCand].seq, ac[prevCand].len, sc.threshold, M);
 
-            if (dist <= sc.threshold) {
-                matches.push_back(std::make_pair(candIter->first, dist));
+                if (dist <= sc.threshold) {
+                    matches.push_back(std::make_pair(prevCand, dist));
+                }
+
             }
 
+            cnt = 1;
+            prevCand = candId;
+
+
+        } else {
+            cnt++;
+        }
+
+    }
+
+#if QGRAM_FILTER
+    if ((cnt >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[prevCand].abundance) && (qgram_diff(amplicon, ac[prevCand]) <= sc.threshold)) {
+#else
+    if ((cnt >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[prevCand].abundance)) {
+#endif
+
+        lenSeqs_t dist = sc.useScore ?
+                           Verification::computeGotohLengthAwareEarlyRow(amplicon.seq, amplicon.len, ac[prevCand].seq, ac[prevCand].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                         : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[prevCand].seq, ac[prevCand].len, sc.threshold, M);
+
+        if (dist <= sc.threshold) {
+            matches.push_back(std::make_pair(prevCand, dist));
         }
 
     }
 
 }
 
-void SegmentFilter::verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std::string>& segmentStrs, const AmpliconCollection& ac, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+void SegmentFilter::verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std::string>& segmentStrs, const AmpliconCollection& ac, std::vector<numSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+
+    std::sort(candCnts.begin(), candCnts.end());
 
     std::string candStr;
-    lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+    lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in each filter step
 
     // general pigeonhole principle: for being a candidate, at least k segments have to be matched
     //  + pipelined backward filtering
-    for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+    numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+    for (auto candId : candCnts) {
 
-        if ((candIter->second >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[candIter->first].abundance)) {
+        if (prevCand != candId) {
 
-            candStr = ac[candIter->first].seq;
+            if ((cnt >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[prevCand].abundance)) {
 
-            for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs && cnt < sc.extraSegs; i++) {
-                cnt += (candStr.substr(candSubstrs[i].first, (candSubstrs[i].last - candSubstrs[i].first) + candSubstrs[i].len).find(segmentStrs[i]) < std::string::npos);
-            }
+                cnt = 0;
+                candStr = ac[prevCand].seq;
+
+                for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs && cnt < sc.extraSegs; i++) {
+                    cnt += (candStr.substr(candSubstrs[i].first, (candSubstrs[i].last - candSubstrs[i].first) + candSubstrs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
 
 #if QGRAM_FILTER
-            if ((cnt == sc.extraSegs) && (qgram_diff(amplicon, ac[candIter->first]) <= sc.threshold)) {
+                if ((cnt == sc.extraSegs) && (qgram_diff(amplicon, ac[prevCand]) <= sc.threshold)) {
 #else
                 if (cnt == sc.extraSegs) {
 #endif
 
-                lenSeqs_t dist = sc.useScore ?
-                                      Verification::computeGotohLengthAwareEarlyRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-                                    : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[candIter->first].seq, ac[candIter->first].len, sc.threshold, M);
+                    lenSeqs_t dist = sc.useScore ?
+                                          Verification::computeGotohLengthAwareEarlyRow(amplicon.seq, amplicon.len, ac[prevCand].seq, ac[prevCand].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                        : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[prevCand].seq, ac[prevCand].len, sc.threshold, M);
 
-                if (dist <= sc.threshold) {
-                    matches.push_back(std::make_pair(candIter->first, dist));
+                    if (dist <= sc.threshold) {
+                        matches.push_back(std::make_pair(prevCand, dist));
+                    }
+
                 }
 
             }
 
-            cnt = 0;
+            prevCand = candId;
+            cnt = 1;
+
+        } else {
+            cnt++;
+        }
+
+    }
+
+    if ((cnt >= sc.extraSegs) && (sc.noOtuBreaking || amplicon.abundance >= ac[prevCand].abundance)) {
+
+        cnt = 0;
+        candStr = ac[prevCand].seq;
+
+        for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs && cnt < sc.extraSegs; i++) {
+            cnt += (candStr.substr(candSubstrs[i].first, (candSubstrs[i].last - candSubstrs[i].first) + candSubstrs[i].len).find(segmentStrs[i]) < std::string::npos);
+        }
+
+#if QGRAM_FILTER
+        if ((cnt == sc.extraSegs) && (qgram_diff(amplicon, ac[prevCand]) <= sc.threshold)) {
+#else
+            if (cnt == sc.extraSegs) {
+#endif
+
+            lenSeqs_t dist = sc.useScore ?
+                             Verification::computeGotohLengthAwareEarlyRow(amplicon.seq, amplicon.len, ac[prevCand].seq, ac[prevCand].len, sc.threshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                         : Verification::computeLengthAwareRow(amplicon.seq, amplicon.len, ac[prevCand].seq, ac[prevCand].len, sc.threshold, M);
+
+            if (dist <= sc.threshold) {
+                matches.push_back(std::make_pair(prevCand, dist));
+            }
 
         }
 
@@ -125,7 +193,7 @@ SegmentFilter::ChildrenFinder::ChildrenFinder(const AmpliconCollection& ac, Swar
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id) {
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac_[id];
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
@@ -145,7 +213,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 
     children.clear();
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac_[id];
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
@@ -162,7 +230,7 @@ void SegmentFilter::ChildrenFinder::getChildren(const numSeqs_t id, std::vector<
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id) {
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac_[id];
 
     Segments segments(sc_.threshold + sc_.extraSegs);
@@ -190,7 +258,7 @@ void SegmentFilter::ChildrenFinder::getChildrenTwoWay(const numSeqs_t id, std::v
 
     children.clear();
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac_[id];
 
     Segments segments(sc_.threshold + sc_.extraSegs);
@@ -237,24 +305,49 @@ SegmentFilter::ParallelChildrenFinder::~ParallelChildrenFinder() {
 
 }
 
-numSeqs_t SegmentFilter::ParallelChildrenFinder::sendCandsToVerification(const numSeqs_t id, const Amplicon& amplicon, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+numSeqs_t SegmentFilter::ParallelChildrenFinder::sendCandsToVerification(const numSeqs_t id, const Amplicon& amplicon, std::vector<numSeqs_t>& candCnts) {
+
+    std::sort(candCnts.begin(), candCnts.end());
 
     numSeqs_t numCands = 0;
 
     // general pigeonhole principle: for being a candidate, at least k segments have to be matched
-    for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+    lenSeqs_t cnt = 0;
+    numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+    for (auto candId : candCnts) {
+
+        if (prevCand != candId) {
 
 #if QGRAM_FILTER
-        if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+            if ((cnt >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[prevCand].abundance) && (qgram_diff(amplicon, ac_[prevCand]) <= sc_.threshold)) {
 #else
-            if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+            if ((cnt >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[prevCand].abundance)) {
 #endif
 
-            Candidate cand(id, candIter->first);
-            cbs_.push(cand);
-            numCands++;
+                Candidate cand(id, prevCand);
+                cbs_.push(cand);
+                numCands++;
 
+            }
+
+            cnt = 1;
+            prevCand = candId;
+
+        } else {
+            cnt++;
         }
+
+    }
+
+#if QGRAM_FILTER
+    if ((cnt >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[prevCand].abundance) && (qgram_diff(amplicon, ac_[prevCand]) <= sc_.threshold)) {
+#else
+    if ((cnt >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[prevCand].abundance)) {
+#endif
+
+        Candidate cand(id, prevCand);
+        cbs_.push(cand);
+        numCands++;
 
     }
 
@@ -262,37 +355,71 @@ numSeqs_t SegmentFilter::ParallelChildrenFinder::sendCandsToVerification(const n
 
 }
 
-numSeqs_t SegmentFilter::ParallelChildrenFinder::sendCandsToVerificationTwoWay(const numSeqs_t id, const Amplicon& amplicon, std::vector<std::string>& segmentStrs, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs) {
+numSeqs_t SegmentFilter::ParallelChildrenFinder::sendCandsToVerificationTwoWay(const numSeqs_t id, const Amplicon& amplicon, std::vector<std::string>& segmentStrs, std::vector<numSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs) {
+
+    std::sort(candCnts.begin(), candCnts.end());
 
     std::string candStr;
-    lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+    lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in each filter step
     numSeqs_t numCands = 0;
 
     // general pigeonhole principle: for being a candidate, at least k segments have to be matched
     //  + pipelined backward filtering
-    for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+    numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+    for (auto candId : candCnts) {
 
-        if ((candIter->second >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[candIter->first].abundance)) {
+        if (prevCand != candId) {
 
-            candStr = ac_[candIter->first].seq;
+            if ((cnt >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[prevCand].abundance)) {
 
-            for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs && cnt < sc_.extraSegs; i++) {
-                cnt += (candStr.substr(candSubstrs[i].first, (candSubstrs[i].last - candSubstrs[i].first) + candSubstrs[i].len).find(segmentStrs[i]) < std::string::npos);
-            }
+                cnt = 0;
+                candStr = ac_[prevCand].seq;
+
+                for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs && cnt < sc_.extraSegs; i++) {
+                    cnt += (candStr.substr(candSubstrs[i].first, (candSubstrs[i].last - candSubstrs[i].first) + candSubstrs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
 
 #if QGRAM_FILTER
-            if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[candIter->first]) <= sc_.threshold)) {
+                if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[prevCand]) <= sc_.threshold)) {
 #else
                 if (cnt == sc_.extraSegs) {
 #endif
 
-                Candidate cand(id, candIter->first);
-                cbs_.push(cand);
-                numCands++;
+                    Candidate cand(id, prevCand);
+                    cbs_.push(cand);
+                    numCands++;
+
+                }
 
             }
 
-            cnt = 0;
+            prevCand = candId;
+            cnt = 1;
+
+        } else {
+            cnt++;
+        }
+
+    }
+
+    if ((cnt >= sc_.extraSegs) && (sc_.noOtuBreaking || amplicon.abundance >= ac_[prevCand].abundance)) {
+
+        cnt = 0;
+        candStr = ac_[prevCand].seq;
+
+        for (lenSeqs_t i = 0; i < sc_.threshold + sc_.extraSegs && cnt < sc_.extraSegs; i++) {
+            cnt += (candStr.substr(candSubstrs[i].first, (candSubstrs[i].last - candSubstrs[i].first) + candSubstrs[i].len).find(segmentStrs[i]) < std::string::npos);
+        }
+
+#if QGRAM_FILTER
+        if ((cnt == sc_.extraSegs) && (qgram_diff(amplicon, ac_[prevCand]) <= sc_.threshold)) {
+#else
+        if (cnt == sc_.extraSegs) {
+#endif
+
+            Candidate cand(id, prevCand);
+            cbs_.push(cand);
+            numCands++;
 
         }
 
@@ -385,7 +512,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     }
 
     numSeqs_t numCands = 0;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac_[id];
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
@@ -428,7 +555,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildren(const numSeqs_t id, std:
     }
 
     numSeqs_t numCands = 0;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac_[id];
 
     for (lenSeqs_t childLen = (amplicon.len > sc_.threshold) * (amplicon.len - sc_.threshold); childLen <= amplicon.len + sc_.threshold; childLen++) {
@@ -473,7 +600,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::ParallelChildrenFind
     }
 
     numSeqs_t numCands = 0;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac_[id];
 
     Segments segments(sc_.threshold + sc_.extraSegs);
@@ -524,7 +651,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
     }
 
     numSeqs_t numCands = 0;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac_[id];
 
     Segments segments(sc_.threshold + sc_.extraSegs);
@@ -569,7 +696,7 @@ void SegmentFilter::ParallelChildrenFinder::getChildrenTwoWay(const numSeqs_t id
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const numSeqs_t id, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac[id];
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
@@ -587,7 +714,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildren(const nu
 
 void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac[id];
 
     for (lenSeqs_t childLen = (amplicon.len > sc.threshold) * (amplicon.len - sc.threshold); childLen <= amplicon.len + sc.threshold; childLen++) {
@@ -604,7 +731,7 @@ void SegmentFilter::getChildren(const numSeqs_t id, std::vector<std::pair<numSeq
 std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> matches;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac[id];
 
     Segments segments(sc.threshold + sc.extraSegs);
@@ -629,7 +756,7 @@ std::vector<std::pair<numSeqs_t, lenSeqs_t>> SegmentFilter::getChildrenTwoWay(co
 
 void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc){
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     auto& amplicon = ac[id];
 
     Segments segments(sc.threshold + sc.extraSegs);

@@ -39,7 +39,7 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
     Segments segments(t + k);
     StringIteratorPair sip;
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     std::vector<Candidate> candColl;
 
     lenSeqs_t seqLen = 0;
@@ -103,13 +103,30 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 
             }
 
-            // general pigeonhole principle: for being a candidate, at least k segments have to be matched
-            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+            std::sort(candCnts.begin(), candCnts.end());
 
-                if (candIter->second >= k) {
-                    candColl.push_back(Candidate(curIntId, candIter->first));
+            // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+            lenSeqs_t cnt = 0;
+            numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+            for (auto candId : candCnts) {
+
+                if (prevCand != candId) {
+
+                    if (cnt >= k) {
+                        candColl.push_back(Candidate(curIntId, prevCand));
+                    }
+
+                    cnt = 1;
+                    prevCand = candId;
+
+                } else {
+                    cnt++;
                 }
 
+            }
+
+            if (cnt >= k) {
+                candColl.push_back(Candidate(curIntId, prevCand));
             }
 
         }
@@ -141,11 +158,10 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
     lenSeqs_t cntDiffs[useScore? ac.back().len + 1 : 1];
     lenSeqs_t cntDiffsP[useScore? ac.back().len + 1 : 1];
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
 
     lenSeqs_t seqLen = 0;
     numSeqs_t curIntId = sp.beginIndex;
-    lenSeqs_t dist;
 
     // process index-only amplicons
     for (; curIntId < sp.beginMatch; curIntId++) {
@@ -205,19 +221,44 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
             }
 
+            std::sort(candCnts.begin(), candCnts.end());
+
             // general pigeonhole principle: for being a candidate, at least k segments have to be matched
-            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+            lenSeqs_t cnt = 0;
+            numSeqs_t prevCand = (candCnts.front() > 0) ? candCnts.front() : 0;
+            for (auto candId : candCnts) {
 
-                if (candIter->second >= k) {
+                if (prevCand != candId) {
 
-                    dist = useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, M);
+                    if (cnt >= k) {
 
-                    if (dist <= t){
-                        matches.add(curIntId, candIter->first, dist);
+                        lenSeqs_t dist = useScore ?
+                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+
+                        if (dist <= t){
+                            matches.add(curIntId, prevCand, dist);
+                        }
+
                     }
 
+                    cnt = 1;
+                    prevCand = candId;
+
+                } else {
+                    cnt++;
+                }
+
+            }
+
+            if (cnt >= k) {
+
+                lenSeqs_t dist = useScore ?
+                         Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                       : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+
+                if (dist <= t){
+                    matches.add(curIntId, prevCand, dist);
                 }
 
             }
@@ -243,7 +284,7 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
     Segments segments(t + k);
     StringIteratorPair sip;
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     std::vector<Candidate> candColl;
 
     lenSeqs_t seqLen = 0;
@@ -310,13 +351,30 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 
             }
 
-            // general pigeonhole principle: for being a candidate, at least k segments have to be matched
-            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+            std::sort(candCnts.begin(), candCnts.end());
 
-                if (candIter->second >= k) {
-                    candColl.push_back(Candidate(curIntId, candIter->first));
+            // general pigeonhole principle: for being a candidate, at least k segments have to be matched
+            lenSeqs_t cnt = 0;
+            numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+            for (auto candId : candCnts) {
+
+                if (prevCand != candId) {
+
+                    if (cnt >= k) {
+                        candColl.push_back(Candidate(curIntId, prevCand));
+                    }
+
+                    cnt = 1;
+                    prevCand = candId;
+
+                } else {
+                    cnt++;
                 }
 
+            }
+
+            if (cnt >= k) {
+                candColl.push_back(Candidate(curIntId, prevCand));
             }
 
         }
@@ -348,11 +406,10 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
     lenSeqs_t cntDiffs[useScore? ac.back().len + 1 : 1];
     lenSeqs_t cntDiffsP[useScore? ac.back().len + 1 : 1];
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
 
     lenSeqs_t seqLen = 0;
     numSeqs_t curIntId = sp.end - 1;
-    lenSeqs_t dist;
 
     // process index-only amplicons
     for (; curIntId >= sp.beginIndex; curIntId--) {
@@ -415,18 +472,44 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
             }
 
+            std::sort(candCnts.begin(), candCnts.end());
+
             // general pigeonhole principle: for being a candidate, at least k segments have to be matched
-            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+            lenSeqs_t cnt = 0;
+            numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+            for (auto candId : candCnts) {
 
-                if (candIter->second >= k) {
+                if (prevCand != candId) {
 
-                    dist = useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, M);
+                    if (cnt >= k) {
 
-                    if (dist <= t) {
-                        matches.add(curIntId, candIter->first, dist);
+                        lenSeqs_t dist = useScore ?
+                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+
+                        if (dist <= t) {
+                            matches.add(curIntId, prevCand, dist);
+                        }
+
                     }
+
+                    cnt = 1;
+                    prevCand = candId;
+
+                } else {
+                    cnt++;
+                }
+
+            }
+
+            if (cnt >= k) {
+
+                lenSeqs_t dist = useScore ?
+                         Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                       : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+
+                if (dist <= t) {
+                    matches.add(curIntId, prevCand, dist);
                 }
 
             }
@@ -453,7 +536,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
     std::vector<std::string> segmentStrs(t + k);
     StringIteratorPair sip;
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     std::vector<Candidate> candColl;
 
     lenSeqs_t seqLen = 0;
@@ -521,6 +604,7 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 
             }
 
+            std::sort(candCnts.begin(), candCnts.end());
 
             // general pigeonhole principle: for being a candidate, at least k segments have to be matched
             //  + pipelined backward filtering
@@ -529,30 +613,53 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
             //      (b) length of candidates is known and equal for all of them -> selectSubstrs() needed only once
             //      (c) segment information of current amplicon known -> reuse
             std::string candStr;
-            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in each filter step
 
             Substrings candSubs[t + k]; // common substring information of all candidates
             for (lenSeqs_t i = 0; i < t + k; i++) {
                 candSubs[i] = selectSubstrsBackward(len, seqLen, i, t, k);
             }
 
-            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) { // 1st component = integer id of amplicon, 2nd component = number of substring-segment matches during first filter step
+            numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+            for (auto candId : candCnts) { // candCnts = list of integer ids of amplicon, cnt = number of substring-segment matches during first filter step
 
-                if (candIter->second >= k) { // initial candidate found -> immediate backward filtering
+                if (prevCand != candId) {
 
-                    candStr = ac[candIter->first].seq;
+                    if (cnt >= k) { // initial candidate found -> immediate backward filtering
 
-                    for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                        cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                        cnt = 0;
+                        candStr = ac[prevCand].seq;
+
+                        for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                            cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                        }
+
+                        if (cnt == k) {
+                            candColl.push_back(Candidate(curIntId, prevCand));
+                        }
+
                     }
 
-                    if (cnt == k) {
-                        candColl.push_back(Candidate(curIntId, candIter->first));
-                    }
+                    prevCand = candId;
+                    cnt = 1;
 
-                    cnt = 0;
+                } else {
+                    cnt++;
+                }
 
+            }
 
+            if (cnt >= k) { // initial candidate found -> immediate backward filtering
+
+                cnt = 0;
+                candStr = ac[prevCand].seq;
+
+                for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+                if (cnt == k) {
+                    candColl.push_back(Candidate(curIntId, prevCand));
                 }
 
             }
@@ -587,11 +694,10 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
     lenSeqs_t cntDiffs[useScore? ac.back().len + 1 : 1];
     lenSeqs_t cntDiffsP[useScore? ac.back().len + 1 : 1];
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
 
     lenSeqs_t seqLen = 0;
     numSeqs_t curIntId = sp.beginIndex;
-    lenSeqs_t dist;
 
     // process index-only amplicons
     for (; curIntId < sp.beginMatch; curIntId++) {
@@ -655,6 +761,7 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
             }
 
+            std::sort(candCnts.begin(), candCnts.end());
 
             // general pigeonhole principle: for being a candidate, at least k segments have to be matched
             //  + pipelined backward filtering
@@ -663,37 +770,68 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
             //      (b) length of candidates is known and equal for all of them -> selectSubstrs() needed only once
             //      (c) segment information of current amplicon known -> reuse
             std::string candStr;
-            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in each filter step
 
             Substrings candSubs[t + k]; // common substring information of all candidates
             for (lenSeqs_t i = 0; i < t + k; i++) {
                 candSubs[i] = selectSubstrsBackward(len, seqLen, i, t, k);
             }
 
-            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) { // 1st component = integer id of amplicon, 2nd component = number of substring-segment matches during first filter step
+            numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+            for (auto candId : candCnts) { // candCnts = list of integer ids of amplicon, cnt = number of substring-segment matches during first filter step
 
-                if (candIter->second >= k) { // initial candidate found -> immediate backward filtering
+                if (prevCand != candId) {
 
-                    candStr = ac[candIter->first].seq;
+                    if (cnt >= k) { // initial candidate found -> immediate backward filtering
 
-                    for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                        cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
-                    }
+                        cnt = 0;
+                        candStr = ac[prevCand].seq;
 
-                    if (cnt == k) {
+                        for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                            cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                        }
 
-                        dist = useScore ?
-                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, M);
+                        if (cnt == k) {
 
-                        if (dist <= t){
-                            matches.add(curIntId, candIter->first, dist);
+                            lenSeqs_t dist = useScore ?
+                                     Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                                   : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+
+                            if (dist <= t){
+                                matches.add(curIntId, prevCand, dist);
+                            }
+
                         }
 
                     }
 
-                    cnt = 0;
+                    prevCand = candId;
+                    cnt = 1;
 
+                } else {
+                    cnt++;
+                }
+
+            }
+
+            if (cnt >= k) { // initial candidate found -> immediate backward filtering
+
+                cnt = 0;
+                candStr = ac[prevCand].seq;
+
+                for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+                if (cnt == k) {
+
+                    lenSeqs_t dist = useScore ?
+                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+
+                    if (dist <= t){
+                        matches.add(curIntId, prevCand, dist);
+                    }
 
                 }
 
@@ -721,7 +859,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
     std::vector<std::string> segmentStrs(t + k);
     StringIteratorPair sip;
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     std::vector<Candidate> candColl;
 
     lenSeqs_t seqLen = 0;
@@ -792,6 +930,7 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 
             }
 
+            std::sort(candCnts.begin(), candCnts.end());
 
             // general pigeonhole principle: for being a candidate, at least k segments have to be matched
             //  + pipelined forward filtering
@@ -800,30 +939,53 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
             //      (b) length of candidates is known and equal for all of them -> selectSubstrs() needed only once
             //      (c) segment information of current amplicon known -> reuse
             std::string candStr;
-            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in each filter step
 
             Substrings candSubs[t + k]; // common substring information of all candidates
             for (lenSeqs_t i = 0; i < t + k; i++) {
                 candSubs[i] = selectSubstrs(len, seqLen, i, t, k);
             }
 
-            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) { // 1st component = integer id of amplicon, 2nd component = number of substring-segment matches during first filter step
+            numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+            for (auto candId : candCnts) { // candCnts = list of integer ids of amplicon, cnt = number of substring-segment matches during first filter step
 
-                if (candIter->second >= k) { // initial candidate found -> immediate forward filtering
+                if (prevCand != candId) {
 
-                    candStr = ac[candIter->first].seq;
+                    if (cnt >= k) { // initial candidate found -> immediate forward filtering
 
-                    for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                        cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                        cnt = 0;
+                        candStr = ac[prevCand].seq;
+
+                        for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                            cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                        }
+
+                        if (cnt == k) {
+                            candColl.push_back(Candidate(curIntId, prevCand));
+                        }
+
                     }
 
-                    if (cnt == k) {
-                        candColl.push_back(Candidate(curIntId, candIter->first));
-                    }
+                    prevCand = candId;
+                    cnt = 1;
 
-                    cnt = 0;
+                } else {
+                    cnt++;
+                }
 
+            }
 
+            if (cnt >= k) { // initial candidate found -> immediate forward filtering
+
+                cnt = 0;
+                candStr = ac[prevCand].seq;
+
+                for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+                if (cnt == k) {
+                    candColl.push_back(Candidate(curIntId, prevCand));
                 }
 
             }
@@ -858,11 +1020,10 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
     lenSeqs_t cntDiffs[useScore? ac.back().len + 1 : 1];
     lenSeqs_t cntDiffsP[useScore? ac.back().len + 1 : 1];
 
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
 
     lenSeqs_t seqLen = 0;
     numSeqs_t curIntId = sp.end - 1;
-    lenSeqs_t dist;
 
     // process index-only amplicons
     for (; curIntId >= sp.beginIndex; curIntId--) {
@@ -929,6 +1090,7 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 
             }
 
+            std::sort(candCnts.begin(), candCnts.end());
 
             // general pigeonhole principle: for being a candidate, at least k segments have to be matched
             //  + pipelined forward filtering
@@ -937,37 +1099,68 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
             //      (b) length of candidates is known and equal for all of them -> selectSubstrs() needed only once
             //      (c) segment information of current amplicon known -> reuse
             std::string candStr;
-            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in the second filter step
+            lenSeqs_t cnt = 0; // number of substring-segment matches for the current candidate in each filter step
 
             Substrings candSubs[t + k]; // common substring information of all candidates
             for (lenSeqs_t i = 0; i < t + k; i++) {
                 candSubs[i] = selectSubstrs(len, seqLen, i, t, k);
             }
 
-            for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) { // 1st component = integer id of amplicon, 2nd component = number of substring-segment matches during first filter step
+            numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+            for (auto candId : candCnts) { // candCnts = list of integer ids of amplicon, cnt = number of substring-segment matches during first filter step
 
-                if (candIter->second >= k) { // initial candidate found -> immediate forward filtering
+                if (prevCand != candId) {
 
-                    candStr = ac[candIter->first].seq;
+                    if (cnt >= k) { // initial candidate found -> immediate forward filtering
 
-                    for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                        cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
-                    }
+                        cnt = 0;
+                        candStr = ac[prevCand].seq;
 
-                    if (cnt == k) {
+                        for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                            cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                        }
 
-                        dist = useScore ?
-                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[candIter->first].seq, ac[candIter->first].len, t, M);
+                        if (cnt == k) {
 
-                        if (dist <= t){
-                            matches.add(curIntId, candIter->first, dist);
+                            lenSeqs_t dist = useScore ?
+                                     Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                                   : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+
+                            if (dist <= t){
+                                matches.add(curIntId, prevCand, dist);
+                            }
+
                         }
 
                     }
 
-                    cnt = 0;
+                    prevCand = candId;
+                    cnt = 1;
 
+                } else {
+                    cnt++;
+                }
+
+            }
+
+            if (cnt >= k) { // initial candidate found -> immediate forward filtering
+
+                cnt = 0;
+                candStr = ac[prevCand].seq;
+
+                for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
+                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                }
+
+                if (cnt == k) {
+
+                    lenSeqs_t dist = useScore ?
+                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
+                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+
+                    if (dist <= t){
+                        matches.add(curIntId, prevCand, dist);
+                    }
 
                 }
 

@@ -258,7 +258,7 @@ void SwarmClustering::verifyGotohFastidious(const AmpliconPools& pools, const Am
 void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     lenSeqs_t seqLen;
     StringIteratorPair sip;
 
@@ -311,20 +311,41 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 
                     }
 
+                    std::sort(candCnts.begin(), candCnts.end());
+
                     // general pigeonhole principle: for being a candidate, at least sc.extraSegs segments have to be matched
-                    for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+                    lenSeqs_t cnt = 0;
+                    numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+                    for (auto candId : candCnts) {
+
+                        if (prevCand != candId) {
 
 #if QGRAM_FILTER
-                        if ((candIter->second >= sc.extraSegs) && (qgram_diff(*ampl, acIndices[candIter->first]) <= sc.fastidiousThreshold)) {
+                            if ((cnt >= sc.extraSegs) && (qgram_diff(*ampl, acIndices[prevCand]) <= sc.fastidiousThreshold)) {
 #else
-                        if (candIter->second >= sc.extraSegs) {
+                            if (cnt >= sc.extraSegs) {
 #endif
-                            localCands.back().children.push_back(candIter->first);
+                                localCands.back().children.push_back(prevCand);
+                            }
+
+                            cnt = 1;
+                            prevCand = candId;
+
+                        } else {
+                            cnt++;
                         }
 
                     }
 
-                    candCnts = std::unordered_map<numSeqs_t, lenSeqs_t>();
+#if QGRAM_FILTER
+                    if ((cnt >= sc.extraSegs) && (qgram_diff(*ampl, acIndices[prevCand]) <= sc.fastidiousThreshold)) {
+#else
+                    if (cnt >= sc.extraSegs) {
+#endif
+                        localCands.back().children.push_back(prevCand);
+                    }
+
+                    candCnts.clear();
 
                 }
 
@@ -342,7 +363,7 @@ void SwarmClustering::fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& 
 void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc) {
 
     std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrsArchive;
-    std::unordered_map<numSeqs_t, lenSeqs_t> candCnts;
+    std::vector<numSeqs_t> candCnts;
     lenSeqs_t seqLen;
     StringIteratorPair sip;
 
@@ -398,48 +419,86 @@ void SwarmClustering::fastidiousCheckOtusDirectly(const AmpliconPools& pools, co
 
                     }
 
+                    std::sort(candCnts.begin(), candCnts.end());
+
                     // general pigeonhole principle: for being a candidate, at least sc.extraSegs segments have to be matched
-                    for (auto candIter = candCnts.begin(); candIter != candCnts.end(); candIter++) {
+                    lenSeqs_t cnt = 0;
+                    numSeqs_t prevCand = (candCnts.size() > 0) ? candCnts.front() : 0;
+                    for (auto candId : candCnts) {
 
-//                        if ((candIter->second >= sc.extraSegs)
-//                                &&((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember))
-//                                && ((useScore ?
-//                                        Verification::computeGotohLengthAwareEarlyRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-//                                      : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold)) {
-//
-//                                    graftCands[candIter->first].parentOtu = *otuIter;
-//                                    graftCands[candIter->first].parentMember = ampl;
-//
-//                        }
+                        if (prevCand != candId) {
 
-                        std::unique_lock<std::mutex> lock(graftCandsMtx);
+//                            if ((cnt >= sc.extraSegs)
+//                                    &&((graftCands[prevCand].parentOtu == 0) || compareCandidates(*ampl, *graftCands[prevCand].parentMember))
+//                                    && ((useScore ?
+//                                            Verification::computeGotohLengthAwareEarlyRow(ampl->seq, ampl->len, acIndices[prevCand].seq, acIndices[prevCand].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+//                                          : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[prevCand].seq, acIndices[prevCand].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold)) {
+//
+//                                        graftCands[prevCand].parentOtu = *otuIter;
+//                                        graftCands[prevCand].parentMember = ampl;
+//
+//                            }
+
+                            std::unique_lock<std::mutex> lock(graftCandsMtx);
 #if QGRAM_FILTER
-                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember->member)) && (qgram_diff(*ampl, acIndices[candIter->first]) <= sc.fastidiousThreshold)) {
+                            if ((cnt >= sc.extraSegs) && ((graftCands[prevCand].parentOtu == 0) || compareCandidates(*ampl, *graftCands[prevCand].parentMember->member)) && (qgram_diff(*ampl, acIndices[prevCand]) <= sc.fastidiousThreshold)) {
 #else
-                        if ((candIter->second >= sc.extraSegs) && ((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember->member))) {
+                            if ((cnt >= sc.extraSegs) && ((graftCands[prevCand].parentOtu == 0) || compareCandidates(*ampl, *graftCands[prevCand].parentMember->member))) {
 #endif
 
-                            lock.unlock();
-                            if ((sc.useScore ?
-                                  Verification::computeGotohLengthAwareEarlyRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
-                                : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[candIter->first].seq, acIndices[candIter->first].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold) {
+                                lock.unlock();
+                                if ((sc.useScore ?
+                                      Verification::computeGotohLengthAwareEarlyRow(ampl->seq, ampl->len, acIndices[prevCand].seq, acIndices[prevCand].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                                    : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[prevCand].seq, acIndices[prevCand].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold) {
 
-                                lock.lock();
-                                if (((graftCands[candIter->first].parentOtu == 0) || compareCandidates(*ampl, *graftCands[candIter->first].parentMember->member))) {
+                                    lock.lock();
+                                    if (((graftCands[prevCand].parentOtu == 0) || compareCandidates(*ampl, *graftCands[prevCand].parentMember->member))) {
 
-                                    graftCands[candIter->first].parentOtu = *otuIter;
-                                    graftCands[candIter->first].parentMember = (*otuIter)->members + m;
+                                        graftCands[prevCand].parentOtu = *otuIter;
+                                        graftCands[prevCand].parentMember = (*otuIter)->members + m;
+
+                                    }
+                                    lock.unlock();
 
                                 }
-                                lock.unlock();
 
                             }
+
+                            cnt = 1;
+                            prevCand = candId;
+
+                        } else {
+                            cnt++;
+                        }
+
+                    }
+
+                    std::unique_lock<std::mutex> lock(graftCandsMtx);
+#if QGRAM_FILTER
+                    if ((cnt >= sc.extraSegs) && ((graftCands[prevCand].parentOtu == 0) || compareCandidates(*ampl, *graftCands[prevCand].parentMember->member)) && (qgram_diff(*ampl, acIndices[prevCand]) <= sc.fastidiousThreshold)) {
+#else
+                    if ((cnt >= sc.extraSegs) && ((graftCands[prevCand].parentOtu == 0) || compareCandidates(*ampl, *graftCands[prevCand].parentMember->member))) {
+#endif
+
+                        lock.unlock();
+                        if ((sc.useScore ?
+                               Verification::computeGotohLengthAwareEarlyRow(ampl->seq, ampl->len, acIndices[prevCand].seq, acIndices[prevCand].len, sc.fastidiousThreshold, sc.scoring, D, P, cntDiffs, cntDiffsP)
+                             : Verification::computeLengthAwareRow(ampl->seq, ampl->len, acIndices[prevCand].seq, acIndices[prevCand].len, sc.fastidiousThreshold, M)) <= sc.fastidiousThreshold) {
+
+                            lock.lock();
+                            if (((graftCands[prevCand].parentOtu == 0) || compareCandidates(*ampl, *graftCands[prevCand].parentMember->member))) {
+
+                                graftCands[prevCand].parentOtu = *otuIter;
+                                graftCands[prevCand].parentMember = (*otuIter)->members + m;
+
+                            }
+                            lock.unlock();
 
                         }
 
                     }
 
-                    candCnts = std::unordered_map<numSeqs_t, lenSeqs_t>();
+                    candCnts.clear();
 
                 }
 

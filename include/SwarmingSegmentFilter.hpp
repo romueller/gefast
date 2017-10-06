@@ -45,7 +45,7 @@ typedef SharingRollingIndices<RankedAscendingLabels, SwarmingInvertedIndex> Swar
 
 #else
 
-typedef TwoLinkBinaryRelation<StringIteratorPair, numSeqs_t, hashStringIteratorPair, equalStringIteratorPair> SwarmingInvertedIndex;
+typedef LabelLinkBinaryRelation<StringIteratorPair, numSeqs_t, hashStringIteratorPair, equalStringIteratorPair> SwarmingInvertedIndex;
 typedef RollingIndices<SwarmingInvertedIndex> SwarmingIndices;
 
 #endif

@@ -249,6 +249,162 @@ private:
 
 
 /**
+ * Variant of SimpleBinaryRelation tailored to the case when there is only one object per label.
+ * Instead of iterating over all rows, each column (label) can be processed by following the vertical link
+ * pointing to the row containing the label.
+ *
+ * NOTE: The labels of the added elements have to be monotonically increasing,
+ * so that the labels_ vector is sorted without any further action.
+ */
+template<typename O, typename L, typename H = std::hash<O>, typename P = std::equal_to<O>>
+class LabelLinkBinaryRelation {
+
+public:
+    LabelLinkBinaryRelation() {
+        // nothing to do
+    }
+
+    ~LabelLinkBinaryRelation() {
+        // nothing to do
+    }
+
+    bool areRelated(const O& obj, const L& lab) {
+
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+
+        return (labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0) && (obj == labIter->second->first);
+
+    }
+
+    bool containsLabel(const L& lab) {
+
+        auto iter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+
+        return (iter != labels_.end()) && (iter->first == lab) && (iter->second != 0);
+
+    }
+
+    bool containsObject(const O& obj) {
+        return binRel_.find(obj) != binRel_.end();
+    }
+
+    std::vector<L> getLabelsOf(const O& obj) {
+
+        auto keyIter = binRel_.find(obj);
+
+        return (keyIter != binRel_.end()) ? keyIter->second : std::vector<L>();
+
+    }
+
+    void addLabelCountsOf(const O& obj, std::vector<numSeqs_t>& candCnts) {
+
+        auto keyIter = binRel_.find(obj);
+
+        if (keyIter != binRel_.end()) {
+            candCnts.insert(candCnts.end(), keyIter->second.begin(), keyIter->second.end());
+        }
+
+    }
+
+    std::vector<O> getObjectsOf(const L& lab) {
+
+        std::vector<O> objects;
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+        if ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) {
+            objects.push_back(labIter->second->first);
+        }
+
+        return objects;
+
+    }
+
+
+    unsigned long countPairs() {
+
+        unsigned long sum = 0;
+
+        for (auto iter = binRel_.begin(); iter != binRel_.end(); iter++) {
+            sum += iter->second.size();
+        }
+
+        return sum;
+
+    }
+
+    unsigned long countLabelsOf(const O& obj) {
+
+        auto keyIter = binRel_.find(obj);
+
+        return (keyIter != binRel_.end()) ? keyIter->second.size() : 0;
+
+    }
+
+    unsigned long countObjectsOf(const L& lab) {
+
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+
+        return ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0));
+
+    }
+
+
+    void add(const O& obj, const L& lab) {
+
+        binRel_[obj].push_back(lab);
+        labels_.emplace_back(lab, &(*(binRel_.find(obj))));
+
+    }
+
+    void remove(const O& obj, const L& lab) {
+
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+
+        if ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0) && (obj == labIter->second->first)) {
+
+            auto iter = std::find(labIter->second->second.begin(), labIter->second->second.end(), lab);
+            labIter->second->second.erase(iter);
+            labIter->second = 0;
+
+        }
+
+    }
+
+    void removeLabel(const L& lab) {
+
+        auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
+
+        if ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) {
+
+            if (labIter->second != 0) {
+
+                auto iter = std::find(labIter->second->second.begin(), labIter->second->second.end(), lab);
+                labIter->second->second.erase(iter);
+                labIter->second = 0;
+
+            }
+
+//            labels_.erase(labIter);
+
+        }
+
+    }
+
+private:
+    std::vector<std::pair<L, std::pair<const O, std::vector<L>>*>> labels_;
+    std::unordered_map<O, std::vector<L>, H, P> binRel_;
+
+    struct CompareLabels {
+
+        bool operator() (const std::pair<L, std::pair<const O, std::vector<L>>*>& lhs, const L rhs) {
+            return lhs.first < rhs;
+        }
+
+    } cmp_;
+
+};
+
+
+/**
  * Variant of SimpleBinaryRelation with an optimisations for column-based queries.
  * Instead of iterating over all rows, each column (label) can be processed by following vertical links
  * pointing to the next row containing the label.

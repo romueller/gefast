@@ -47,7 +47,7 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
 
     OtuEntryPrecursor curSeed, newSeed;
     bool unique;
-    std::unordered_set<StringIteratorPair, hashStringIteratorPair, equalStringIteratorPair> nonUniques;
+    std::unordered_set<StringIteratorPair, hashStringIteratorPair, equalStringIteratorPair> uniqueSeqs;
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> next;
     lenSeqs_t lastGen;
     numSeqs_t pos;
@@ -69,7 +69,7 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
             tmpMembers.push_back(newSeed);
 
             visited[*seedIter] = true;
-            nonUniques.clear();
+            uniqueSeqs.insert(StringIteratorPair(newSeed.member->seq, newSeed.member->seq + newSeed.member->len));
 
             lastGen = 0;
 
@@ -79,13 +79,17 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
             while (pos < tmpMembers.size()) { // expand current OTU until no further similar amplicons can be added
 
                 if (lastGen != tmpMembers[pos].gen) { // work through generation by decreasing abundance
+
+                    uniqueSeqs.clear();
                     std::sort(tmpMembers.begin() + pos, tmpMembers.end(), CompareOtuEntryPrecursorsAbund());
+
                 }
 
                 // get next OTU (sub)seed
                 curSeed = tmpMembers[pos];
 
-                unique = true;
+                // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
+                unique = (curSeed.parentDist != 0) && uniqueSeqs.insert(StringIteratorPair(curSeed.member->seq, curSeed.member->seq + curSeed.member->len)).second;
 
                 // update OTU information
                 curOtu->mass += curSeed.member->abundance;
@@ -109,11 +113,10 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
                         visited[matchIter->first] = true;
 
                     }
+
                 }
 
-                // unique sequences contribute when they occur, non-unique sequences only at their first occurrence
-                unique = unique || nonUniques.insert(StringIteratorPair(curSeed.member->seq, curSeed.member->seq + curSeed.member->len)).second;
-                curOtu->numUniqueSequences += unique;
+                curOtu->numUniqueSequences += unique || (curSeed.gen == 0);
 
                 lastGen = curSeed.gen;
                 pos++;
@@ -121,6 +124,7 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
             }
 
             /* (c) Close the no longer extendable OTU */
+            uniqueSeqs.clear();
             curOtu->setMembers(tmpMembers);
             std::vector<SwarmClustering::OtuEntryPrecursor>().swap(tmpMembers);
             otus.push_back(curOtu);

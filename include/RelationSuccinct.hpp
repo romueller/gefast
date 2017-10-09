@@ -400,13 +400,13 @@ public:
 
     }
 
-    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+    void addLabelCountsOf(const O& obj, std::vector<numSeqs_t>& candCnts) {
 
         if (containsObject(obj) && labels_ != 0) {
 
             for (auto& l : binRel_.getSuccessors(segIdMap_[obj])) {
                 if (labels_->containsRank(l)) {
-                    candCnts[labels_->unrank(l)]++;
+                    candCnts.push_back(labels_->unrank(l));
                 }
             }
 //            binRel_.addSuccessorCountsOf(segIdMap_[obj], candCnts, *labels_);
@@ -547,13 +547,13 @@ public:
 
     }
 
-    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+    void addLabelCountsOf(const O& obj, std::vector<numSeqs_t>& candCnts) {
 
         if (containsObject(obj) && labels_ != 0) {
 
             for (auto& l : binRel_[segIdMap_[obj]].getAllPositions()) {
                 if (labels_->containsRank(l)) {
-                    candCnts[labels_->unrank(l)]++;
+                    candCnts.push_back(labels_->unrank(l));
                 }
             }
 
@@ -724,13 +724,13 @@ public:
 
     }
 
-    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+    void addLabelCountsOf(const O& obj, std::vector<numSeqs_t>& candCnts) {
 
         if (containsObject(obj) && labels_ != 0) {
 
             for (auto& l : binRel_[segIdMap_[obj]]->getAllPositions()) {
                 if (labels_->containsRank(l)) {
-                    candCnts[labels_->unrank(l)]++;
+                    candCnts.push_back(labels_->unrank(l));
                 }
             }
 
@@ -861,13 +861,13 @@ public:
 
     }
 
-    void addLabelCountsOf(const O& obj, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts) {
+    void addLabelCountsOf(const O& obj, std::vector<numSeqs_t>& candCnts) {
 
         if (containsObject(obj) && labels_ != 0) {
 
             for (auto& l : binRel_->getSuccessors(segIdMap_[obj])) {
                 if (labels_->containsRank(l)) {
-                    candCnts[labels_->unrank(l)]++;
+                    candCnts.push_back(labels_->unrank(l));
                 }
             }
 

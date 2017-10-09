@@ -136,21 +136,14 @@ void SwarmClustering::explorePool(const AmpliconCollection& ac, Matches& matches
 }
 
 
-void SwarmClustering::fastidiousIndexOtu(PrecursorIndices& indices, std::unordered_map<lenSeqs_t, Segments>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
+void SwarmClustering::fastidiousIndexOtu(PrecursorIndices& indices, std::vector<std::pair<lenSeqs_t, Segments>>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc) {
 
     auto begin = ac.begin();
     for (numSeqs_t m = 0; m < otu.numMembers; m++) {
 
         auto ampl = otu.members[m].member;
-        Segments& segments = segmentsArchive[ampl->len];
-
-        if (segments.size() == 0) {
-
-            indices.roll(ampl->len);
-            segments = Segments(sc.fastidiousThreshold + sc.extraSegs);
-            selectSegments(segments, ampl->len, sc.fastidiousThreshold, sc.extraSegs);
-
-        }
+        Segments& segments = std::lower_bound(segmentsArchive.begin(), segmentsArchive.end(), ampl->len, [](const std::pair<lenSeqs_t, Segments>& lhs, const lenSeqs_t rhs) {return lhs.first < rhs;})->second;
+        indices.roll(ampl->len);
 
         auto& row = indices.getIndicesRow(ampl->len);
         for (lenSeqs_t i = 0; i < sc.fastidiousThreshold + sc.extraSegs; i++) {
@@ -551,7 +544,16 @@ void SwarmClustering::determineGrafts(const AmpliconPools& pools, const std::vec
     {
         SuccinctConfig succinctConfig(0, 2, 5, 0, 0, 0, 5);
         PrecursorIndices tmpIndices(2 * sc.fastidiousThreshold + 1, sc.fastidiousThreshold + sc.extraSegs, true, false);
-        std::unordered_map<lenSeqs_t, Segments> segmentsArchive;
+        std::vector<std::pair<lenSeqs_t, Segments>> segmentsArchive;
+
+        Segments segments(sc.fastidiousThreshold + sc.extraSegs);
+        for (auto len : ac->allLengths()) {
+
+            selectSegments(segments, len, sc.fastidiousThreshold, sc.extraSegs);
+            segmentsArchive.emplace_back(len, segments);
+
+        }
+
         for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
 
             if ((*otuIter)->mass < sc.boundary) {
@@ -591,7 +593,16 @@ void SwarmClustering::determineGrafts(const AmpliconPools& pools, const std::vec
     }
 #else
     {
-        std::unordered_map<lenSeqs_t, Segments> segmentsArchive;
+        std::vector<std::pair<lenSeqs_t, Segments>> segmentsArchive;
+
+        Segments segments(sc.fastidiousThreshold + sc.extraSegs);
+        for (auto len : ac->allLengths()) {
+
+            selectSegments(segments, len, sc.fastidiousThreshold, sc.extraSegs);
+            segmentsArchive.emplace_back(len, segments);
+
+        }
+
         for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
 
             if ((*otuIter)->mass < sc.boundary) {

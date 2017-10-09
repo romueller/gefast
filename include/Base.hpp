@@ -228,6 +228,8 @@ public:
 
     void reserve(const numSeqs_t newCapacity);
 
+    std::vector<lenSeqs_t> allLengths() const;
+
 private:
     Amplicon* amplicons_;
     numSeqs_t size_;

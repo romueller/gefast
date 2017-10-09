@@ -280,6 +280,17 @@ void AmpliconCollection::reserve(const numSeqs_t newCapacity) {
 
 }
 
+std::vector<lenSeqs_t> AmpliconCollection::allLengths() const {
+
+    std::vector<lenSeqs_t> lengths;
+    for (lenSeqs_t i = 0; i < numLengths_; i++) {
+        lengths.push_back(counts_[i].first);
+    }
+
+    return lengths;
+
+}
+
 
 // ===== AmpliconPools =====
 

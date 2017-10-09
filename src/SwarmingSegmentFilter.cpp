@@ -782,23 +782,25 @@ void SegmentFilter::getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<
 void SegmentFilter::prepareIndices(const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc) { // fill indices and substrsArchive
 
     SharingRollingIndices<RankedAscendingLabels, RelationPrecursor> tmpIndices(sc.threshold + 1, sc.threshold + sc.extraSegs, true, false);
-    std::unordered_map<lenSeqs_t, Segments> segmentsArchive;
+    std::vector<std::pair<lenSeqs_t, Segments>> segmentsArchive;
     Segments segments(sc.threshold + sc.extraSegs);
-    lenSeqs_t seqLen;
+
+    for (auto len : ac.allLengths()) {
+
+        selectSegments(segments, len, sc.threshold, sc.extraSegs);
+        segmentsArchive.emplace_back(len, segments);
+
+    }
 
     // index all amplicons
     for (numSeqs_t curIntId = 0; curIntId < ac.size(); curIntId++) {
 
-        seqLen = ac[curIntId].len;
+        lenSeqs_t seqLen = ac[curIntId].len;
 
         if (!tmpIndices.contains(seqLen)) {
 
             // inverted index
             tmpIndices.roll(seqLen, ac.numSeqsOfLen(seqLen));
-
-            // segments information
-            selectSegments(segments, seqLen, sc.threshold, sc.extraSegs);
-            segmentsArchive[seqLen] = segments;
 
             // substrings information
             std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrsArchive[seqLen];
@@ -815,9 +817,9 @@ void SegmentFilter::prepareIndices(const AmpliconCollection& ac, SwarmingIndices
 
             }
 
-        } else {
-            segments = segmentsArchive[seqLen];
         }
+
+        segments = std::lower_bound(segmentsArchive.begin(), segmentsArchive.end(), seqLen, [](const std::pair<lenSeqs_t, Segments>& lhs, const lenSeqs_t rhs) {return lhs.first < rhs;})->second;
 
         auto& row = tmpIndices.getIndicesRow(seqLen);
         numSeqs_t rankedId = row.shared.add(curIntId);
@@ -851,23 +853,25 @@ void SegmentFilter::prepareIndices(const AmpliconCollection& ac, SwarmingIndices
 #else
 void SegmentFilter::prepareIndices(const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc) {
 
-    std::unordered_map<lenSeqs_t, Segments> segmentsArchive;
+    std::vector<std::pair<lenSeqs_t, Segments>> segmentsArchive;
     Segments segments(sc.threshold + sc.extraSegs);
-    lenSeqs_t seqLen;
+
+    for (auto len : ac.allLengths()) {
+
+        selectSegments(segments, len, sc.threshold, sc.extraSegs);
+        segmentsArchive.emplace_back(len, segments);
+
+    }
 
     // index all amplicons
     for (numSeqs_t curIntId = 0; curIntId < ac.size(); curIntId++) {
 
-        seqLen = ac[curIntId].len;
+        lenSeqs_t seqLen = ac[curIntId].len;
 
         if (!indices.contains(seqLen)) {
 
             // inverted index
             indices.roll(seqLen);
-
-            // segments information
-            selectSegments(segments, seqLen, sc.threshold, sc.extraSegs);
-            segmentsArchive[seqLen] = segments;
 
             // substrings information
             std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrsArchive[seqLen];
@@ -884,9 +888,9 @@ void SegmentFilter::prepareIndices(const AmpliconCollection& ac, SwarmingIndices
 
             }
 
-        } else {
-            segments = segmentsArchive[seqLen];
         }
+
+        segments = std::lower_bound(segmentsArchive.begin(), segmentsArchive.end(), seqLen, [](const std::pair<lenSeqs_t, Segments>& lhs, const lenSeqs_t rhs) {return lhs.first < rhs;})->second;
 
         for (lenSeqs_t i = 0; i < sc.threshold + sc.extraSegs; i++) {
             indices.getIndex(seqLen, i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);

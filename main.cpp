@@ -41,7 +41,17 @@
 
 namespace GeFaST {
 
+void printInformation() {
+
+    std::cout << "##### GeFaST (0.9.0) #####" << std::endl;
+    std::cout << "Copyright (C) 2016 - 2017 Robert Mueller" << std::endl;
+    std::cout << "https://github.com/romueller/gefast" << std::endl << std::endl;
+
+}
+
 int run(int argc, const char* argv[]) {
+
+    printInformation();
 
     /* Bootstrapping */
     Config<std::string> c = getConfiguration(argc, argv);
@@ -136,49 +146,40 @@ int run(int argc, const char* argv[]) {
     sc.useScore = (c.get(USE_SCORE) == "1");
     sc.scoring = Verification::Scoring(std::stoull(c.get(SWARM_MATCH_REWARD)), std::stoll(c.get(SWARM_MISMATCH_PENALTY)), std::stoll(c.get(SWARM_GAP_OPENING_PENALTY)), std::stoll(c.get(SWARM_GAP_EXTENSION_PENALTY)));
 
-    //TODO remove or redirect to logger
     std::cout << "===== Configuration =====" << std::endl;
     c.print(std::cout);
-    std::cout << "=========================" << std::endl;
+    std::cout << "=========================" << std::endl << std::endl;
     std::string jobName = c.get(NAME);
     std::replace(jobName.begin(), jobName.end(), ':', '-');
     if (c.peek(INFO_FOLDER)) writeJobParameters(c.get(INFO_FOLDER) + jobName + ".txt", c, files);
 
 
     /* Preprocessing */
-    std::cout << "Preprocessing..." << std::flush;
     auto pools = Preprocessor::run(c, files);
-    std::cout << "DONE" << std::endl;
 
     if (c.get(PREPROCESSING_ONLY) == "1") {
 
-        std::cout << "Cleaning up..." << std::flush;
+        std::cout << "Cleaning up..." << std::endl;
         delete pools;
-        std::cout << "DONE" << std::endl;
+        std::cout << "Computation finished." << std::endl;
 
         return 0;
 
     }
 
     if (sc.dereplicate) { /* Dereplication */
-
-        std::cout << "Dereplicating..." << std::endl;
         SwarmClustering::dereplicate(*pools, sc);
-        std::cout << "Dereplicating...DONE" << std::endl;
-
     } else { /* Swarming */
 
-        std::cout << "Swarming results..." << std::endl;
-        // parallel computation of swarm clusters & subsequent generation of outputs
+        // (parallel) computation of swarm clusters & subsequent generation of outputs
         SwarmClustering::cluster(*pools, sc);
-        std::cout << "Swarming results...DONE" << std::endl;
 
     }
 
     /* Cleaning up */
-    std::cout << "Cleaning up..." << std::flush;
+    std::cout << "Cleaning up..." << std::endl;
     delete pools;
-    std::cout << "DONE" << std::endl;
+    std::cout << "Computation finished." << std::endl;
 
     return 0;
 

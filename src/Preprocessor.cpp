@@ -324,27 +324,21 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
 
     unsigned long long totalLength = 0;
     std::map<lenSeqs_t, numSeqs_t> counts;
+
+    std::cout << "Analysing input files..." << std::endl;
     for (auto iter = fileNames.begin(); iter != fileNames.end(); iter++) {
-
-        std::cout << "Analysing inputs: file " << (iter - fileNames.begin()) + 1 << " / " << fileNames.size() << "\r" << std::flush;
         totalLength += analyseInput(conf, counts, *iter, sep);
-
     }
-    std::cout << std::endl;
 
     AmpliconPools* pools = new AmpliconPools(counts, totalLength, std::stoul(conf.get(THRESHOLD)));
 
+    std::cout << "Reading input files..." << std::endl;
     for (auto iter = fileNames.begin(); iter != fileNames.end(); iter++) {
-
-        std::cout << "Reading inputs: file " << (iter - fileNames.begin()) + 1 << " / " << fileNames.size() << "\r" << std::flush;
         appendInput(conf, *pools, counts, *iter, sep);
-
     }
-    std::cout << std::endl;
 
+    std::cout << "Sorting amplicons..." << std::endl;
     for (numSeqs_t p = 0; p < pools->numPools(); p++) {
-
-        std::cout << "Sorting amplicons: pool " << p + 1 << " / " << pools->numPools() << "\r" << std::flush;
 
         auto ac = pools->get(p);
         std::sort(ac->begin(), ac->end(),
@@ -354,7 +348,6 @@ AmpliconPools* Preprocessor::run(const Config<std::string>& conf, const std::vec
         );
 
     }
-    std::cout << std::endl;
 
     return pools;
 

@@ -822,6 +822,8 @@ void SwarmClustering::graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const Am
     std::vector<GraftCandidate> allGraftCands;
     std::mutex allGraftCandsMtx;
 
+    std::cout << "Determining grafting candidates..." << std::endl;
+
 #if FASTIDIOUS_PARALLEL_POOL
 
     std::thread grafters[sc.numGrafters];
@@ -829,11 +831,8 @@ void SwarmClustering::graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const Am
     for (; r + sc.numGrafters <= pools.numPools(); r += sc.numGrafters) {
 
         for (unsigned long g = 0; g < sc.numGrafters; g++) {
-
-            std::cout << "Determining grafting candidates: pool " << r + g + 1 << " / " << pools.numPools() << "\r" << std::flush;
             grafters[g] = std::thread(&SwarmClustering::determineGrafts, std::ref(pools), std::ref(otus), std::ref(allGraftCands),
                                       r + g, std::ref(allGraftCandsMtx), std::ref(sc));
-
         }
         for (unsigned long g = 0; g < sc.numGrafters; g++) {
             grafters[g].join();
@@ -842,26 +841,18 @@ void SwarmClustering::graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const Am
     }
 
     for (unsigned long g = 0; g < pools.numPools() % sc.numGrafters; g++) {
-
-        std::cout << "Determining grafting candidates: pool " << r + g + 1 << " / " << pools.numPools() << "\r" << std::flush;
         grafters[g] = std::thread(&SwarmClustering::determineGrafts, std::ref(pools), std::ref(otus), std::ref(allGraftCands),
                                   r + g, std::ref(allGraftCandsMtx), std::ref(sc));
-
     }
     for (unsigned long g = 0; g < pools.numPools() % sc.numGrafters; g++) {
         grafters[g].join();
     }
-    std::cout << std::endl;
 
 #else
 
     for (numSeqs_t p = 0; p < pools.numPools(); p++) {
-
-        std::cout << "Determining grafting candidates: pool " << p + 1 << " / " << pools.numPools() << "\r" << std::flush;
         determineGrafts(pools, otus, allGraftCands, p, allGraftCandsMtx, sc);
-
     }
-    std::cout << std::endl;
 
 #endif
 
@@ -933,9 +924,9 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 
         numSeqs_t numLightOtus = 0;
         numSeqs_t numAmplLightOtus = 0;
-        for (numSeqs_t p = 0; p < pools.numPools(); p++) {
 
-            std::cout << "Counting amplicons in heavy and light swarms: pool " << p + 1 << " / " << pools.numPools() << "\r" << std::flush;
+        std::cout << "Counting amplicons in heavy and light swarms..." << std::endl;
+        for (numSeqs_t p = 0; p < pools.numPools(); p++) {
 
             for (auto otuIter = otus[p].begin(); otuIter != otus[p].end(); otuIter++) {
 
@@ -945,7 +936,6 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
             }
 
         }
-        std::cout << std::endl;
         std::cout << "Heavy swarms: " << (numOtus - numLightOtus) << ", with " << (numAmplicons - numAmplLightOtus) << " amplicons" << std::endl;
         std::cout << "Light swarms: " << numLightOtus << ", with " << numAmplLightOtus << " amplicons" << std::endl << std::endl;
 
@@ -1003,13 +993,12 @@ void SwarmClustering::cluster(const AmpliconPools& pools, const SwarmConfig& sc)
     std::thread explorers[sc.numExplorers];
     auto fun = (sc.numThreadsPerExplorer == 1) ? &SegmentFilter::swarmFilterDirectly : &SegmentFilter::swarmFilter;
     unsigned long r = 0;
+
+    std::cout << "Clustering..." << std::endl;
     for (; r + sc.numExplorers <= pools.numPools(); r += sc.numExplorers) {
 
         for (unsigned long e = 0; e < sc.numExplorers; e++) {
-
-            std::cout << "Clustering: pool " << r + e + 1 << " / " << pools.numPools() << "\r" << std::flush;
             explorers[e] = std::thread(fun, std::ref(*(pools.get(r + e))), std::ref(otus[r + e]), std::ref(sc));
-
         }
         for (unsigned long e = 0; e < sc.numExplorers; e++) {
             explorers[e].join();
@@ -1018,15 +1007,12 @@ void SwarmClustering::cluster(const AmpliconPools& pools, const SwarmConfig& sc)
     }
 
     for (unsigned long e = 0; e < pools.numPools() % sc.numExplorers; e++) {
-
-        std::cout << "Clustering: pool " << r + e + 1 << " / " << pools.numPools() << "\r" << std::flush;
         explorers[e] = std::thread(fun, std::ref(*(pools.get(r + e))), std::ref(otus[r + e]), std::ref(sc));
-
     }
     for (unsigned long e = 0; e < pools.numPools() % sc.numExplorers; e++) {
         explorers[e].join();
     }
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl;
 
     processOtus(pools, otus, sc);
 
@@ -1043,9 +1029,8 @@ void SwarmClustering::dereplicate(const AmpliconPools& pools, const SwarmConfig&
 
     std::vector<Otu*> otus;
 
+    std::cout << "Dereplicating..." << std::endl;
     for (numSeqs_t p = 0; p < pools.numPools(); p++) {
-
-        std::cout << "Dereplication: pool " << p + 1 << " / " << pools.numPools() << "\r" << std::flush;
 
         AmpliconCollection* ac = pools.get(p);
         std::map<const char*, std::vector<Amplicon*>, lessCharArray> groups;
@@ -1074,7 +1059,7 @@ void SwarmClustering::dereplicate(const AmpliconPools& pools, const SwarmConfig&
         }
 
     }
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl;
 
     std::cout << "Sorting OTUs by mass..." << std::endl;
     std::sort(otus.begin(), otus.end(), CompareOtusMass());
@@ -1085,7 +1070,6 @@ void SwarmClustering::dereplicate(const AmpliconPools& pools, const SwarmConfig&
         maxSize = std::max(maxSize, o->numMembers);
     }
 
-    std::cout << std::endl;
     std::cout << "Number of swarms: " << otus.size() << std::endl;
     std::cout << "Largest swarm: " << maxSize << std::endl;
     std::cout << "Max generations: 0" << std::endl << std::endl;
@@ -1112,9 +1096,8 @@ void SwarmClustering::outputInternalStructures(const std::string oFile, const Am
     Otu* otu = 0;
     numSeqs_t otuId = 0;
 
+    std::cout << "Creating internal structures output..." << std::endl;
     for (auto i = 0; i < otus.size(); i++) {
-
-        std::cout << "Creating internal structures output: OTU " << i + 1 << " / " << otus.size() << "\r" << std::flush;
 
         otu = otus[i];
 
@@ -1155,7 +1138,6 @@ void SwarmClustering::outputInternalStructures(const std::string oFile, const Am
         }
 
     }
-    std::cout << std::endl;
 
     oStream.close();
 
@@ -1168,9 +1150,8 @@ void SwarmClustering::outputOtus(const std::string oFile, const AmpliconPools& p
 
     Otu* otu = 0;
 
+    std::cout << "Creating OTU output..." << std::endl;
     for (auto i = 0; i < otus.size(); i++) {
-
-        std::cout << "Creating OTU output: OTU " << i + 1 << " / " << otus.size() << "\r" << std::flush;
 
         otu = otus[i];
 
@@ -1199,7 +1180,6 @@ void SwarmClustering::outputOtus(const std::string oFile, const AmpliconPools& p
         }
 
     }
-    std::cout << std::endl;
 
     oStream.close();
 
@@ -1215,9 +1195,8 @@ void SwarmClustering::outputOtusMothur(const std::string oFile, const AmpliconPo
 
     oStream << "swarm_" << threshold << "\t" << numOtusAdjusted;
 
+    std::cout << "Creating OTU output..." << std::endl;
     for (auto i = 0; i < otus.size(); i++) {
-
-        std::cout << "Creating OTU output: OTU " << i + 1 << " / " << otus.size() << "\r" << std::flush;
 
         otu = otus[i];
 
@@ -1239,7 +1218,6 @@ void SwarmClustering::outputOtusMothur(const std::string oFile, const AmpliconPo
         }
 
     }
-    std::cout << std::endl;
 
     oStream << std::endl;
 
@@ -1254,9 +1232,8 @@ void SwarmClustering::outputStatistics(const std::string oFile, const AmpliconPo
 
     Otu* otu = 0;
 
+    std::cout << "Creating statistics output..." << std::endl;
     for (auto i = 0; i < otus.size(); i++) {
-
-        std::cout << "Creating statistics output: OTU " << i + 1 << " / " << otus.size() << "\r" << std::flush;
 
         otu = otus[i];
 
@@ -1271,7 +1248,6 @@ void SwarmClustering::outputStatistics(const std::string oFile, const AmpliconPo
         }
 
     }
-    std::cout << std::endl;
 
     oStream.close();
 
@@ -1284,9 +1260,8 @@ void SwarmClustering::outputSeeds(const std::string oFile, const AmpliconPools& 
 
     Otu* otu = 0;
 
+    std::cout << "Creating seeds output..." << std::endl;
     for (auto i = 0; i < otus.size(); i++) {
-
-        std::cout << "Creating seeds output: OTU " << i + 1 << " / " << otus.size() << "\r" << std::flush;
 
         otu = otus[i];
 
@@ -1299,7 +1274,6 @@ void SwarmClustering::outputSeeds(const std::string oFile, const AmpliconPools& 
         }
 
     }
-    std::cout << std::endl;
 
     oStream.close();
 
@@ -1324,9 +1298,8 @@ void SwarmClustering::outputUclust(const std::string oFile, const AmpliconPools&
     val_t P[maxLen + 1];
     char BT[(maxLen + 1) * (maxLen + 1)];
 
+    std::cout << "Creating UCLUST output..." << std::endl;
     for (auto i = 0; i < otus.size(); i++) {
-
-        std::cout << "Creating UCLUST output: OTU " << i + 1 << " / " << otus.size() << "\r" << std::flush;
 
         otu = otus[i];
 
@@ -1367,7 +1340,6 @@ void SwarmClustering::outputUclust(const std::string oFile, const AmpliconPools&
         }
 
     }
-    std::cout << std::endl;
 
     oStream.close();
 
@@ -1387,9 +1359,8 @@ void SwarmClustering::outputDereplicate(const AmpliconPools& pools, const std::v
 
     if (sc.outOtus && sc.outMothur) oStreamOtus << "swarm_" << sc.threshold << "\t" << otus.size();
 
+    std::cout << "Creating outputs..." << std::endl;
     for (auto i = 0; i < otus.size(); i++) {
-
-        std::cout << "Creating outputs: OTU " << i + 1 << " / " << otus.size() << "\r" << std::flush;
 
         Otu& otu = *(otus[i]);
 

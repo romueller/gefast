@@ -42,7 +42,7 @@ namespace GeFaST {
  */
 void printInformation() {
 
-    std::cout << "##### GeFaST (0.9.0) #####" << std::endl;
+    std::cout << "##### GeFaST (1.0.0) #####" << std::endl;
     std::cout << "Copyright (C) 2016 - 2017 Robert Mueller" << std::endl;
     std::cout << "https://github.com/romueller/gefast" << std::endl << std::endl;
 

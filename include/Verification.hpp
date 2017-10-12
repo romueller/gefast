@@ -156,8 +156,10 @@ lenSeqs_t computeLengthAwareFullSlim(const char* s, const lenSeqs_t lenS, const 
 lenSeqs_t computeLengthAwareRowSlim(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, lenSeqs_t* M);
 
 
-// compute edit distance of all incoming candidates
-// verification lasts until everything in the buffer is worked off and it signals that no new candidates will be inserted
+/*
+ * Computes the edit distance of all incoming candidates.
+ * The verification lasts until everything in the buffer is worked off and it signals that no new candidates will be inserted.
+ */
 void verify(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t width, lenSeqs_t t);
 
 }

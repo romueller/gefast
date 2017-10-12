@@ -59,24 +59,24 @@ enum ConfigParameters {
     SEGMENT_FILTER,                     // mode of the segment filter (forward, backward, forward-backward, backward-forward)
     SEPARATOR_ABUNDANCE,                // seperator symbol (string) between ID and abundance in a FASTA header line
     SWARM_BOUNDARY,                     // minimum mass of a heavy OTU, used only during fastidious swarming
-    SWARM_DEREPLICATE,                  // boolean flag indicating demand for dereplication, corresponds to swarm with -d 0
-    SWARM_FASTIDIOUS,                   // boolean flag indicating demand for second, fastidious swarming phase, corresponds to swarm's -f
+    SWARM_DEREPLICATE,                  // boolean flag indicating demand for dereplication, corresponds to Swarm with -d 0
+    SWARM_FASTIDIOUS,                   // boolean flag indicating demand for second, fastidious swarming phase, corresponds to Swarm's -f
     SWARM_FASTIDIOUS_CHECKING_MODE,     // mode of checking for grafting candidates of one pool (affects degree of parallelism)
     SWARM_FASTIDIOUS_THRESHOLD,         // (edit distance) threshold for the fastidious clustering phase
     SWARM_GAP_EXTENSION_PENALTY,        // penalty for extending a gap
     SWARM_GAP_OPENING_PENALTY,          // penalty for opening a gap
     SWARM_MATCH_REWARD,                 // reward for a nucleotide match
     SWARM_MISMATCH_PENALTY,             // penalty for a nucleotide mismatch
-    SWARM_MOTHUR,                       // boolean flag indicating demand for output format compatible with mothur, corresponds to swarm's option -r
-    SWARM_NO_OTU_BREAKING,              // boolean flag indicating usage of OTU breaking, corresponds to swarm's option -n
-    SWARM_NUM_EXPLORERS,                // number of parallel explorers (first swarm clustering phase)
-    SWARM_NUM_GRAFTERS,                 // number of parallel grafters (second swarm clustering phase)
+    SWARM_MOTHUR,                       // boolean flag indicating demand for output format compatible with mothur, corresponds to Swarm's option -r
+    SWARM_NO_OTU_BREAKING,              // boolean flag indicating usage of OTU breaking, corresponds to Swarm's option -n
+    SWARM_NUM_EXPLORERS,                // number of parallel explorers (first Swarm clustering phase)
+    SWARM_NUM_GRAFTERS,                 // number of parallel grafters (second Swarm clustering phase)
     SWARM_NUM_THREADS_PER_CHECK,        // number of parallel threads employed by (one call of) checkAndVerify()
-    SWARM_OUTPUT_INTERNAL,              // name of the output file corresponding to swarm's output option -i (internal structures)
-    SWARM_OUTPUT_OTUS,                  // name of the output file corresponding to swarm's output option -o (OTUs)
-    SWARM_OUTPUT_STATISTICS,            // name of the output file corresponding to swarm's output option -s (statistics file)
-    SWARM_OUTPUT_SEEDS,                 // name of the output file corresponding to swarm's output option -w (seeds)
-    SWARM_OUTPUT_UCLUST,                // name of the output file corresponding to swarm's output option -u (uclust)
+    SWARM_OUTPUT_INTERNAL,              // name of the output file corresponding to Swarm's output option -i (internal structures)
+    SWARM_OUTPUT_OTUS,                  // name of the output file corresponding to Swarm's output option -o (OTUs)
+    SWARM_OUTPUT_STATISTICS,            // name of the output file corresponding to Swarm's output option -s (statistics file)
+    SWARM_OUTPUT_SEEDS,                 // name of the output file corresponding to Swarm's output option -w (seeds)
+    SWARM_OUTPUT_UCLUST,                // name of the output file corresponding to Swarm's output option -u (uclust)
     THRESHOLD,                          // (edit distance) threshold for the clustering
     USE_SCORE,                          // flag indicating whether to use an actual scoring function (not the edit distance)
     VERSION                             // version number of the program
@@ -91,7 +91,7 @@ struct EnumClassHash {
     }
 };
 
-/**
+/*
  * Manages the configuration parameters.
  * Every parameter consists of a key and an associated value.
  * All values are stored as the same type V (e.g. string) and have to be converted
@@ -107,7 +107,7 @@ public:
 
     }
 
-    /**
+    /*
      * Assumed syntax:
      *  - Line comments are allowed and start with #.
      *  - Every comment is written in its own line.

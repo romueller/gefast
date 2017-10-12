@@ -865,7 +865,7 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 
     numOtusAdjusted = numOtus;
 
-    /* (b) Optional (second) clustering phase of swarm */
+    /* (b) Optional (second) clustering phase of Swarm */
     if (sc.fastidious) {
 
         std::cout << "Results before fastidious processing: " << std::endl;
@@ -938,7 +938,7 @@ void SwarmClustering::processOtus(const AmpliconPools& pools, std::vector<std::v
 
 void SwarmClustering::cluster(const AmpliconPools& pools, const SwarmConfig& sc) {
 
-    /* (a) Mandatory (first) clustering phase of swarm */
+    /* (a) Mandatory (first) clustering phase of Swarm */
     // determine OTUs by exploring all pools
     std::vector<std::vector<Otu*>> otus(pools.numPools());
     std::thread explorers[sc.numExplorers];

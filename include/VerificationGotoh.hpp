@@ -34,7 +34,7 @@ namespace Verification {
 
 
 
-/**
+/*
  * Representation of scoring function with affine gap costs.
  * Converted towards minimisation with a fixed match reward of 0.
  * The conversion is based on the ideas presented by Smith et al.
@@ -89,14 +89,14 @@ const char IN_Q = 2;
 // Gotoh (1982), An improved algorithm for matching biological sequences, and
 // Rose (2012), Bioinformatics I (lecture), http://www.bioinf.uni-freiburg.de/Lehre/Courses/2013_SS/V_Bioinformatik_1/lecture4.pdf (accessed on 22 Sep 2016)
 
-/**
+/*
  * Classic dynamic-programming scheme for global alignment (score only) with affine gap costs.
  *  - full matrices
  *  - computes score of best alignment
  */
 val_t computeGotohScoreFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring);
 
-/**
+/*
  * Classic dynamic-programming scheme for global alignment with affine gap costs.
  *  - full matrices
  *  - computes best alignment and its score
@@ -104,21 +104,21 @@ val_t computeGotohScoreFull(const char* s, const lenSeqs_t lenS, const char* t, 
 std::pair<val_t, std::string> computeGotohAlignmentFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring);
 
 
-/**
+/*
  * Classic dynamic-programming scheme for global alignment (score only) with affine gap costs.
  *  - full matrices
  *  - computes number of differences (mismatches, insertions, deletions) in the best alignment
  */
 lenSeqs_t computeGotohFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring);
 
-/**
+/*
  * Space-reduced version of above classic dynamic-programming scheme.
  *  - keeps always only a single row of every matrix
  *  - computes number of differences (mismatches, insertions, deletions) in the best alignment
  */
 lenSeqs_t computeGotohRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
 
-/**
+/*
  * The same as computeGotohRow(...), but with early termination if detected that all paths imply too many differences (returns bound + 1 in this case).
  */
 lenSeqs_t computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
@@ -128,7 +128,7 @@ lenSeqs_t computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* 
 //===========================================================
 //                  Bounded computation
 //===========================================================
-/**
+/*
  * Space-reduced version of above classic dynamic-programming scheme with early termination and restricted to some diagonals (number depends on bound).
  * Uses ideas from Li et al. (2013), A partition-based method for string similarity joins with edit-distance constraints.
  *
@@ -144,8 +144,10 @@ lenSeqs_t computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* 
 lenSeqs_t computeGotohLengthAwareEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
 
-// compute differences in best alignments of all incoming candidates
-// verification lasts until everything in the buffer is worked off and it signals that no new candidates will be inserted
+/*
+ * Computes the number of differences in best alignments of all incoming candidates.
+ * The verification lasts until everything in the buffer is worked off and it signals that no new candidates will be inserted.
+ */
 void verifyGotoh(const AmpliconCollection& ac, Matches& mat, Buffer<Candidate>& buf, lenSeqs_t width, lenSeqs_t t, const Scoring& scoring);
 
 
@@ -172,14 +174,14 @@ struct AlignmentInformation {
 
 };
 
-/**
+/*
  * Computes one optimal global alignment with affine gap costs and returns that alignment in the CIGAR format,
  * its length and the number of differences (mismatches, insertions, deletions) in it.
  */
 AlignmentInformation computeGotohCigarFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring);
 AlignmentInformation computeGotohCigarFull1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT);
 
-/**
+/*
  * Computes one optimal global alignment with affine gap costs and returns that alignment in the CIGAR format,
  * its length and the number of differences (mismatches, insertions, deletions) in it.
  *

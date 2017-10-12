@@ -61,6 +61,7 @@ namespace Preprocessor {
     // splits description line into actual header, abundance value and additional information (if any)
     Defline parseDescriptionLine(const std::string& defline, const std::string sep);
 
+    // sets sequence in upper case
     void upperCase(std::string& s);
 
     // checks whether the given sequence satisfies the given filter criteria
@@ -89,7 +90,7 @@ namespace Preprocessor {
      * Second, the amplicon pools are initialised based on the results of above analysis (see the constructor of
      * AmpliconPools for important details).
      * Third, all input files are read a second time to get the actual amplicons and fill the amplicon pools.
-     * Finally, sort the amplicons within each pool lexicographically.
+     * Finally, sort the amplicons within each pool by abundance (using the lexicographical order of the headers as the tie-breaker).
      */
     AmpliconPools* run(const Config<std::string>& conf, const std::vector<std::string>& fileNames);
 

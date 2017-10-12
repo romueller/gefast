@@ -42,6 +42,11 @@ namespace SegmentFilter {
      * The methods with the suffix 'Directly' verify the candidates themselves directly when they occur and do not hand them over to verifier threads through a buffer.
      *
      * All filter methods assume that the amplicons are sorted by increasing sequence length.
+     *
+     * Based on:
+     * Li et al. (2013), A partition-based method for string similarity joins with edit-distance constraints
+     * Lin et al. (2014), Large-Scale Similarity Join with Edit-Distance Constraints
+     * Huang et al. (2015), A Partition-Based Bi-directional Filtering Method for String Similarity JOINs
      */
 
     // (forward) segment filter for the general pigeonhole principle (t + k segments, k segments must be matched)

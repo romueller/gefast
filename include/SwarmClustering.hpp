@@ -36,8 +36,8 @@
 namespace GeFaST {
 namespace SwarmClustering {
 
-/**
- * Configuration parameters of the swarm procedure.
+/*
+ * Configuration parameters of the Swarm procedure.
  */
 struct SwarmConfig {
 
@@ -93,13 +93,13 @@ struct SwarmConfig {
 };
 
 
-/**
+/*
  * Representation of a member (amplicon) of an OTU, also describing its "position" within the OTU.
  * Serves also as a "point" in the amplicon space during the exploration.
  *
  * Stored information:
- *  - id: integer id of the amplicon within its pool (AmpliconCollection)
- *  - parentId: integer id of the parent amplicon within its pool (AmpliconCollection) OR the pool id (only if gen = 0)
+ *  - member: the represented amplicon
+ *  - parent: parent amplicon of member OR member itself (only if gen = 0)
  *  - parentDist: (edit) distance between the amplicon and its parent
  *  - gen: generation number of the amplicon
  *  - rad: cumulated differences between the OTU seed and the amplicon (only in precursor)
@@ -174,19 +174,20 @@ struct OtuEntry {
 
 };
 
-/**
+/*
  * Representation of one OTU.
  *
  * Stored information:
- *  [- id: OTU number (positive integer; OTUs are labelled in the order of occurrence)]
- *  - numUniqueSequences: number of distinct actual sequences in the cluster
- *  - mass: total abundance of all sequences in the cluster
- *  - seedId: sequence identifier of the OTU seed
- *  - seedAbundance: abundance (copy number) of OTU seed
- *  - numSingletons: number of sequences with abundance one in the OTU
- *  - maxGen: maximum number of generations (i.e. number of iterations before the OTU reached its natural limit
- *  - maxRad: maximum radius of the OTU (i.e. accumulated differences between the seed the furthermost sequence in the OTU)
+ *  - numUniqueSequences: number of distinct amplicon sequences in the cluster
+ *  - mass: total abundance of all amplicons in the cluster
  *  - members: "structure" of the OTU
+ *  - numMembers: number of members in the OTU (not including grafted OTUs)
+ *  - maxRad: maximum radius of the OTU (i.e. accumulated differences between the seed the furthermost sequence in the OTU)
+ *
+ *  - nextGraftedOtu: pointer to the next OTU grafted onto this one
+ *  - lastGraftedOtu: pointer to the last OTU grafted onto this one
+ *  - graftParent: member of the OTU onto which this OTU is grafted (if any)
+ *  - graftChild: member of this OTU, which is part of the grafting link of this OTU (if any)
  */
 struct Otu {
 
@@ -222,6 +223,7 @@ struct Otu {
         delete[] members;
     }
 
+    // create the actual members of the OTU from their precursors
     void setMembers(const std::vector<OtuEntryPrecursor>& mems) {
 
         delete[] members;
@@ -238,14 +240,17 @@ struct Otu {
 
     }
 
+    // returns the seed amplicon of the OTU
     const Amplicon* seed() const {
         return members[0].member;
     }
 
+    // returns the abundance of the seed amplicon
     numSeqs_t seedAbundance() const {
         return members[0].member->abundance;
     }
 
+    // attach another OTU to this one via the specified members
     void attach(Otu* childOtu, OtuEntry* parentMember, const Amplicon* childMember) {
 
         if (lastGraftedOtu == 0) {
@@ -265,10 +270,12 @@ struct Otu {
 
     }
 
+    // returns whether the OTU is attached to another one
     bool attached() const {
         return mass == 0;
     }
 
+    // returns the number of members (including grafted OTUs)
     numSeqs_t numTotalMembers() const {
 
         numSeqs_t cnt = numMembers;
@@ -280,6 +287,7 @@ struct Otu {
 
     }
 
+    // returns the number of amplicons with abundance one in the OTU (before grafting)
     numSeqs_t numSingletons() const {
 
         numSeqs_t cnt = 0;
@@ -291,6 +299,7 @@ struct Otu {
 
     }
 
+    // returns the number of amplicons with abundance one in the OTU (including grafted OTUs)
     numSeqs_t numTotalSingletons() const {
 
         numSeqs_t cnt = numSingletons();
@@ -302,6 +311,7 @@ struct Otu {
 
     }
 
+    // returns the maximum generation and radius of the OTU
     std::pair<lenSeqs_t, lenSeqs_t> maxGenRad() {
 
         lenSeqs_t mg = 0;
@@ -313,6 +323,7 @@ struct Otu {
 
     };
 
+    // returns the maximum generation of the OTU (i.e. number of iterations before the OTU reached its natural limit)
     lenSeqs_t maxGen() {
 
         lenSeqs_t max = 0;
@@ -326,7 +337,7 @@ struct Otu {
 
 };
 
-/**
+/*
  * Inverted indices for applying the segment filter in the fastidious clustering phase
  * Maps sequence substrings onto OTU members.
  */
@@ -344,7 +355,7 @@ typedef RollingIndices<InvertedIndexFastidious> IndicesFastidious;
 
 #endif
 
-/**
+/*
  * Representation of a grafting candidate.
  * Parent and (potential) child amplicon are represented by the OTU member of their respective OTU.
  * If the grafting takes place, the OTU of the child is supposed to be grafted upon the parent's OTU.
@@ -376,7 +387,7 @@ struct GraftCandidate {
 
 };
 
-/**
+/*
  * Representation of several pairs of potentially similar amplicons.
  * The first component of each pair of amplicon 'ids' (like the candidate pairs during matching) is 'parent',
  * while each entry in the 'children' vector is the second component of one pair.
@@ -408,8 +419,9 @@ struct CandidateFastidious {
 };
 
 /*
- * Diverse comparer structures for the two swarm clustering phases.
+ * Diverse comparer structures for the two Swarm clustering phases.
  */
+
 // Sort indices [1:n] according to the respective abundances (descending) of the amplicons in the referenced AmpliconCollection
 // Use the "rank" of the associated amplicons as the tie-breaker
 struct CompareIndicesAbund {
@@ -465,29 +477,32 @@ struct CompareGraftCandidatesAbund {
 
 
 
-/**
+/*
  * Determine all OTUs for the given amplicons by exploring the possible links (matches).
  * The found OTUs are returned via the referenced OTU vector.
  */
 void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu*>& otus, const SwarmConfig& sc);
 
 
-/* Implementation of fastidious clustering */
+/*
+ * Implementation of the fastidious clustering technique proposed in:
+ * Mahé et al. (2015), Swarm v2: highly-scalable and high-resolution amplicon clustering
+ */
 
-/**
+/*
  * Index the amplicons of the given (light) OTU and prepares the child information of grafting candidate entries.
  * Potentially reuses already computed information on segment positions through segmentsArchive.
  */
 void fastidiousIndexOtu(PrecursorIndices& indices, std::vector<std::pair<lenSeqs_t, Segments>>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
 
-/**
+/*
  * Verify the potentially similar amplicons arriving at a candidate buffer and,
  * if appropriate, change the grafting candidate information of the child amplicons.
  * Amplicons are similar if their edit distance is below the given threshold.
  */
 void verifyFastidious(const AmpliconPools& pools, const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t, std::mutex& mtx);
 
-/**
+/*
  * Verify the potentially similar amplicons arriving at a candidate buffer and,
  * if appropriate, change the grafting candidate information of the child amplicons.
  * Amplicons are similar if the number of differences (mismatches, insertions, deletions)
@@ -495,7 +510,7 @@ void verifyFastidious(const AmpliconPools& pools, const AmpliconCollection& acOt
  */
 void verifyGotohFastidious(const AmpliconPools& pools, const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t, const Verification::Scoring& scoring, std::mutex& mtx);
 
-/**
+/*
  * Apply a (forward) segment filter on the amplicons from the heavy OTUs of the current pool using the indexed amplicons of light OTUs.
  * Determines the parent information of the grafting candidates.
  *
@@ -504,18 +519,18 @@ void verifyGotohFastidious(const AmpliconPools& pools, const AmpliconCollection&
 void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
 void fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc);
 
-/**
+/*
  * Check for grafting candidates using a segment filter and multiple verifier threads.
  * Looks for grafting candidates for amplicons from 'acIndices' among the amplicons from 'acOtus'.
  */
 void checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& mtx, const SwarmConfig& sc);
 
-/**
+/*
  * Determine the grafting candidates of the amplicons from all pools.
  */
 void determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, std::vector<GraftCandidate>& allGraftCands, const numSeqs_t p, std::mutex& allGraftCandsMtx, const SwarmConfig& sc);
 
-/**
+/*
  *  Graft light OTUs onto heavy OTUs by "simulating virtual amplicons".
  *  To this end, index the amplicons from the light OTUs for the segment filter with a doubled threshold.
  *  Then, search for matches of the amplicons from the heavy OTUs among the indexed amplicons.
@@ -524,29 +539,29 @@ void determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<O
  *   - Each light OTU can be grafted upon at most one heavy OTU (even though there can be grafting candidates for several amplicons of the light OTU).
  *   - Grafting candidates with a higher parent amplicon abundance (and, for ties, higher child amplicon abundance) have a higher priority.
  */
-void graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc); //TODO? other segment filters (forward-backward etc.)
+void graftOtus(numSeqs_t& maxSize, numSeqs_t& numOtus, const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc);
 
 
-/**
+/*
  * Determine overall statistics, start fastidious clustering phase (if requested) and output the results.
  */
 void processOtus(const AmpliconPools& pools, std::vector<std::vector<Otu*>>& otus, const SwarmConfig& sc);
 
-/**
- * Cluster amplicons according to swarm's iterative strategy (based on the provided matching information) and generates the requested outputs.
- * Supports also swarm's fastidious clustering options.
+/*
+ * Cluster amplicons according to Swarm's iterative strategy and generates the requested outputs.
+ * Supports also Swarm's fastidious clustering options.
  *
- * Uses a "full index" version of the segment filter and directly determines the OTUs (like swarm).
+ * Uses a "full index" version of the segment filter and directly determines the OTUs (like Swarm).
  */
 void cluster(const AmpliconPools& pools, const SwarmConfig& sc);
 
-/**
+/*
  * Dereplicates the amplicons and generates the requested outputs.
  */
 void dereplicate(const AmpliconPools& pools, const SwarmConfig& sc);
 
-/**
- * Write the links of the given OTUs to file (corresponds to output of swarm's option -i).
+/*
+ * Write the links of the given OTUs to file (corresponds to output of Swarm's option -i).
  * Each line contains one link represented through the
  * (1) amplicon id of the parent,
  * (2) amplicon id of the child,
@@ -557,22 +572,22 @@ void dereplicate(const AmpliconPools& pools, const SwarmConfig& sc);
  */
 void outputInternalStructures(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc);
 
-/**
- * Writes the members of the given OTUs to file (corresponds to output of swarm's option -o).
+/*
+ * Writes the members of the given OTUs to file (corresponds to output of Swarm's option -o).
  * Each line contains the members of one OTU represented through amplicon id and abundance.
  * The members are separated via sep, while id and abundance are separated via sepAbundance.
  */
 void outputOtus(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep, const std::string sepAbundance);
 
-/**
- * Writes the members of the given OTUs to file (corresponds to output of swarm's option -o with -r).
+/*
+ * Writes the members of the given OTUs to file (corresponds to output of Swarm's option -o with -r).
  * On a single line, the members of all OTUs are represented through amplicon id and abundance.
  * The members of one OTU and the OTUs themselves are separated via sep resp. sepOtu, while id and abundance are separated via sepAbundance.
  */
 void outputOtusMothur(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const lenSeqs_t threshold, const numSeqs_t numOtusAdjusted, const char sep, const std::string sepOtu, const std::string sepAbundance);
 
-/**
- * Write the statistics of the given OTUs to file (corresponds to output of swarm's option -s).
+/*
+ * Write the statistics of the given OTUs to file (corresponds to output of Swarm's option -s).
  * Each line contains the statistics of one OTU represented through the
  * (1) number of unique sequences,
  * (2) mass of the OTU,
@@ -585,22 +600,22 @@ void outputOtusMothur(const std::string oFile, const AmpliconPools& pools, const
  */
 void outputStatistics(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const char sep);
 
-/**
- * Write the seeds of the given OTUs to file (corresponds to output of swarm's option -w).
+/*
+ * Write the seeds of the given OTUs to file (corresponds to output of Swarm's option -w).
  * Each seed comprises two lines.
  * The first line contains the amplicon id of the seed preceded by '>' and followed by a separator and the mass of the OTU.
  * The second line describes the sequence of the seed amplicon.
  */
 void outputSeeds(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const std::string sepAbundance);
 
-/**
- * Writes the clustering results in a uclust-like format to file (corresponds to output of swarm's option -u).
+/*
+ * Writes the clustering results in a uclust-like format to file (corresponds to output of Swarm's option -u).
  */
 void outputUclust(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const SwarmConfig& sc);
 
-/**
+/*
  * Write the requested dereplication outputs to file (SwarmConfig stores information on which are requested).
- * The outputs correspond to swarm's outputs (-i, -o, -s, -w, -u) when running it with -d 0.
+ * The outputs correspond to Swarm's outputs (-i, -o, -s, -w, -u) when running it with -d 0.
  *
  * Minor differences to non-dereplicating output options:
  * -i: generation of child amplicons is also (always) 0

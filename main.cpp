@@ -23,8 +23,8 @@
 
 #include <ctime>
 #include <iostream>
-#include <vector>
 #include <thread>
+#include <vector>
 
 #include "include/Base.hpp"
 #include "include/Preprocessor.hpp"
@@ -35,12 +35,11 @@
 
 
 
-
-
-
-
 namespace GeFaST {
 
+/*
+ * Prints general information on the tool as a header.
+ */
 void printInformation() {
 
     std::cout << "##### GeFaST (0.9.0) #####" << std::endl;
@@ -49,18 +48,25 @@ void printInformation() {
 
 }
 
+/*
+ * Controls the overall workflow of GeFaST: read / set up configuration,
+ * read data, cluster and output results.
+ */
 int run(int argc, const char* argv[]) {
 
     printInformation();
 
-    /* Bootstrapping */
+
+    /* ===== Bootstrapping ===== */
+
     Config<std::string> c = getConfiguration(argc, argv);
 #if QGRAM_FILTER
     cpu_features_detect();
 #endif
 
 
-    // if no list file is specified with -f / --files, then the first arguments not starting with a dash are assumed to be the input files
+    // if no list file is specified with -f / --files, then the first arguments
+    // not starting with a dash are assumed to be the input files
     std::vector<std::string> files;
     if (!c.peek(FILE_LIST)) {
 
@@ -121,7 +127,7 @@ int run(int argc, const char* argv[]) {
 
     }
 
-    if (c.get(SWARM_FASTIDIOUS_THRESHOLD) == "0") { // "default" corresponds to swarm postulating one virtual linking amplicon
+    if (c.get(SWARM_FASTIDIOUS_THRESHOLD) == "0") { // "default" corresponds to Swarm postulating one virtual linking amplicon
 
         c.set(SWARM_FASTIDIOUS_THRESHOLD, std::to_string(2 * sc.threshold));
         sc.fastidiousThreshold = 2 * sc.threshold;
@@ -154,7 +160,8 @@ int run(int argc, const char* argv[]) {
     if (c.peek(INFO_FOLDER)) writeJobParameters(c.get(INFO_FOLDER) + jobName + ".txt", c, files);
 
 
-    /* Preprocessing */
+    /* ===== Preprocessing ===== */
+
     auto pools = Preprocessor::run(c, files);
 
     if (c.get(PREPROCESSING_ONLY) == "1") {
@@ -167,16 +174,18 @@ int run(int argc, const char* argv[]) {
 
     }
 
-    if (sc.dereplicate) { /* Dereplication */
+
+    /* ===== Clustering resp. dereplication ===== */
+
+    if (sc.dereplicate) {
         SwarmClustering::dereplicate(*pools, sc);
-    } else { /* Swarming */
-
-        // (parallel) computation of swarm clusters & subsequent generation of outputs
+    } else {
         SwarmClustering::cluster(*pools, sc);
-
     }
 
-    /* Cleaning up */
+
+    /* ===== Cleaning up ===== */
+
     std::cout << "Cleaning up..." << std::endl;
     delete pools;
     std::cout << "Computation finished." << std::endl;

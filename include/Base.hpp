@@ -31,6 +31,9 @@
 #include <unordered_map>
 #include <vector>
 
+
+/* Preprocessor directives with program-wide effects */
+
 #define QGRAM_FILTER 1
 #define SUCCINCT 0
 #define SUCCINCT_FASTIDIOUS 0
@@ -40,6 +43,8 @@
 #define QGRAMVECTORBITS (1<<(2*QGRAMLENGTH))
 #define QGRAMVECTORBYTES (QGRAMVECTORBITS/8)
 #endif
+
+
 
 namespace GeFaST {
 
@@ -65,14 +70,24 @@ extern char acgtuMap[256];
 //              Data type for single amplicons
 // =====================================================
 
-// q-gram vector handling adapted from Swarm (findqgrams(...) in qgram.cc)
+/*
+ * Representation of a single amplicon comprising the identifier, the sequence
+ * and its length and the abundance of the amplicon.
+ *
+ * A q-gram vector can be added in order to speed up the candidate filtering step.
+ * The handling of the q-gram vector is adapted from Swarm's findqgrams(...).
+ *
+ * The amplicon does NOT own the identifier and sequence strings.
+ */
 struct Amplicon {
 
-    char* id;
-    char* seq;
-    lenSeqs_t len;
-    numSeqs_t abundance;
+    char* id; // amplicon identifier (e.g. first part of FASTA defline)
+    char* seq; // amplicon sequence
+    lenSeqs_t len; // length of amplicon sequence
+    numSeqs_t abundance; // abundance of amplicon
 #if QGRAM_FILTER
+    // one bit per possible q-gram:
+    // 0 (absence or even number of occurrences) and 1 (odd number of occurrences)
     unsigned char qGramVector[QGRAMVECTORBYTES];
 #endif
 
@@ -141,7 +156,7 @@ struct Amplicon {
 };
 
 // comparer structures for Amplicon structures
-struct AmpliconCompareAlph { // lexicographic, ascending
+struct AmpliconCompareAlph { // lexicographical, ascending
     bool operator()(const Amplicon& amplA, const Amplicon& amplB);
 };
 
@@ -198,7 +213,12 @@ void selectSegments(Segments& segments, const lenSeqs_t seqLen, const lenSeqs_t 
 //           Data types for multiple amplicons
 // =====================================================
 
-// multiple amplicons + counts of different sequence lengths (given by the user before adding the amplicons)
+/*
+ * Collection of amplicons with counts of the different occurring sequence lengths.
+ *
+ * The capacity of the collection and the counts are set before amplicons are added
+ * and are not affected when new amplicons are added.
+ */
 class AmpliconCollection {
 
 public:
@@ -231,16 +251,21 @@ public:
     std::vector<lenSeqs_t> allLengths() const;
 
 private:
-    Amplicon* amplicons_;
-    numSeqs_t size_;
-    numSeqs_t capacity_;
+    Amplicon* amplicons_; // amplicon array
+    numSeqs_t size_; // number of amplicons
+    numSeqs_t capacity_; // capacity of the amplicon array
 
-    std::pair<lenSeqs_t, numSeqs_t>* counts_;
-    lenSeqs_t numLengths_;
+    std::pair<lenSeqs_t, numSeqs_t>* counts_; // number of amplicons per (occurring) length
+    lenSeqs_t numLengths_; // number of different lengths in the amplicon collection
 
 };
 
-// multiple amplicon collections
+/*
+ * Collection of multiple amplicon collections.
+ *
+ * Manages a single array storing all identifier and sequence strings
+ * of the comprised amplicon collections.
+ */
 class AmpliconPools {
 
 public:
@@ -248,21 +273,24 @@ public:
 
     ~AmpliconPools();
 
+    // adds a new amplicon to pool / amplicon collection i by storing header and sequence information
+    // in the overall strings array and letting the amplicon members point there
     void add(const lenSeqs_t i, const std::string& header, const std::string& sequence, const numSeqs_t abundance);
 
     // return pointer to pool with the specified index (or null pointer if i is too large)
     AmpliconCollection* get(const lenSeqs_t i) const;
 
+    // return number of pools / amplicon collections
     lenSeqs_t numPools() const;
 
     // return total number of amplicons in all pools
     numSeqs_t numAmplicons() const;
 
 private:
-    char* strings_;
-    char* nextPos_;
-    unsigned long long capacity_;
-    std::vector<AmpliconCollection*> pools_;
+    char* strings_; // overall strings (headers, sequences) array, each string ends with a \0
+    char* nextPos_; // position at which the next string would be inserted
+    unsigned long long capacity_; // capacity of strings_
+    std::vector<AmpliconCollection*> pools_; // pointers to the comprised amplicon collections
 
 };
 
@@ -321,14 +349,17 @@ typedef std::pair<numSeqs_t, numSeqs_t> Candidate;
 // pair of pointers (first, second) describing the string [first, last) + custom operators
 typedef std::pair<const char*, const char*> StringIteratorPair;
 
+// hash function for StringIteratorPair
 struct hashStringIteratorPair {
     size_t operator()(const StringIteratorPair& p) const;
 };
 
+// comparison function for string equality
 struct equalStringIteratorPair {
     bool operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const;
 };
 
+// comparison function for lexicographical order
 struct lessStringIteratorPair {
     bool operator()(const StringIteratorPair& a, const StringIteratorPair& b) const;
 };

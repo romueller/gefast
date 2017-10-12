@@ -64,6 +64,8 @@ namespace GeFaST {
     Contact: Torbjorn Rognes <torognes@ifi.uio.no>,
     Department of Informatics, University of Oslo,
     PO Box 1080 Blindern, NO-0316 Oslo, Norway
+
+    https://github.com/torognes/swarm/
 */
 
 // =====================================================

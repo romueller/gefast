@@ -69,6 +69,10 @@ bool AmpliconSeqEqual::operator()(const Amplicon& amplA, const Amplicon& amplB) 
 }
 
 // ===== substrings & segments =====
+// Based on a combination of:
+// Li et al. (2013), A partition-based method for string similarity joins with edit-distance constraints
+// Lin et al. (2014), Large-Scale Similarity Join with Edit-Distance Constraints
+// Huang et al. (2015), A Partition-Based Bi-directional Filtering Method for String Similarity JOINs
 
 Substrings selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex, const lenSeqs_t t, const lenSeqs_t k) {
 

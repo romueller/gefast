@@ -243,12 +243,12 @@ public:
 
 
 private:
-    std::unordered_map<O, std::vector<L>, H, P> binRel_;
+    std::unordered_map<O, std::vector<L>, H, P> binRel_; // binary relation between objects of type O and labels of type L
 
 };
 
 
-/**
+/*
  * Variant of SimpleBinaryRelation tailored to the case when there is only one object per label.
  * Instead of iterating over all rows, each column (label) can be processed by following the vertical link
  * pointing to the row containing the label.
@@ -390,8 +390,8 @@ public:
     }
 
 private:
-    std::vector<std::pair<L, std::pair<const O, std::vector<L>>*>> labels_;
-    std::unordered_map<O, std::vector<L>, H, P> binRel_;
+    std::vector<std::pair<L, std::pair<const O, std::vector<L>>*>> labels_; // contained labels with pointer to row of occurrence
+    std::unordered_map<O, std::vector<L>, H, P> binRel_; // binary relation between objects of type O and labels of type L
 
     struct CompareLabels {
 
@@ -404,7 +404,7 @@ private:
 };
 
 
-/**
+/*
  * Variant of SimpleBinaryRelation with an optimisations for column-based queries.
  * Instead of iterating over all rows, each column (label) can be processed by following vertical links
  * pointing to the next row containing the label.
@@ -685,8 +685,8 @@ public:
     }
 
 private:
-    std::vector<std::pair<L, std::pair<const O, LinkedRow>*>> labels_;
-    std::unordered_map<O, LinkedRow, H, P> binRel_;
+    std::vector<std::pair<L, std::pair<const O, LinkedRow>*>> labels_; // contained labels with pointer to first row of occurrence
+    std::unordered_map<O, LinkedRow, H, P> binRel_; // binary relation between objects of type O and labels of type L
 
     struct CompareLabels {
 

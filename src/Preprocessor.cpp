@@ -49,7 +49,7 @@ Preprocessor::Defline Preprocessor::parseDescriptionLine(const std::string& defl
 
 
 namespace Preprocessor {
-    char convert[128] = { // upper-case for A-Z, everything else remains the same
+    char convert[128] = { // upper-case for a-z, everything else remains the same
             0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,
             16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,
             32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
@@ -211,9 +211,9 @@ unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, s
 
 }
 
-// adds contents of specified file (if readable) to the given AmpliconPools object
-// amplicons are assigned to the respective pools established by prior calls of analyseInput()
-// "normalises" to lower-case letters, filters according to configuration
+// adds contents of specified file (if readable) to the given AmpliconPools object,
+// amplicons are assigned to the respective pools established by prior calls of analyseInput(),
+// "normalises" to upper-case letters, filters according to configuration
 void Preprocessor::appendInput(const Config<std::string>& conf, AmpliconPools& pools, std::map<lenSeqs_t, numSeqs_t>& poolMap, const std::string fileName, const std::string sep) {
 
     std::ifstream iStream(fileName);

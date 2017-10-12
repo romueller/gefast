@@ -74,7 +74,8 @@ bool AmpliconSeqEqual::operator()(const Amplicon& amplA, const Amplicon& amplB) 
 // Lin et al. (2014), Large-Scale Similarity Join with Edit-Distance Constraints
 // Huang et al. (2015), A Partition-Based Bi-directional Filtering Method for String Similarity JOINs
 
-Substrings selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex, const lenSeqs_t t, const lenSeqs_t k) {
+Substrings selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex,
+                         const lenSeqs_t t, const lenSeqs_t k) {
 
     lenSeqs_t p = 0;
     lenSeqs_t l = 0;
@@ -122,7 +123,8 @@ Substrings selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, co
 
 }
 
-Substrings selectSubstrsBackward(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex, const lenSeqs_t t, const lenSeqs_t k) {
+Substrings selectSubstrsBackward(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex,
+                                 const lenSeqs_t t, const lenSeqs_t k) {
 
     lenSeqs_t p = 0;
     lenSeqs_t l = 0;

@@ -136,7 +136,7 @@ Config<std::string> getConfiguration(int argc, const char* argv[]) {
 //    config.set(NUM_THREADS_PER_WORKER, "1");
 //    config.set(NUM_WORKERS, "1");
     config.set(PREPROCESSING_ONLY, "0");
-    config.set(SEGMENT_FILTER, "0"); //TODO set "best" version of segment filter as default
+    config.set(SEGMENT_FILTER, "0");
     config.set(SEPARATOR_ABUNDANCE, "_");
     config.set(THRESHOLD, "1");
     config.set(USE_SCORE, "0");

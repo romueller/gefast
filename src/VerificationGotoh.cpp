@@ -375,7 +375,8 @@ lenSeqs_t Verification::computeGotohFull(const char* s, const lenSeqs_t lenS, co
 
 }
 
-lenSeqs_t Verification::computeGotohRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring,
+                                        val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // initialise first row
     D[0] = scoring.penOpen;
@@ -477,7 +478,8 @@ lenSeqs_t Verification::computeGotohRow(const char* s, const lenSeqs_t lenS, con
 
 }
 
-lenSeqs_t Verification::computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
+lenSeqs_t Verification::computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring,
+                                             val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ) {
 
     // initialise first row
     D[0] = scoring.penOpen;
@@ -589,7 +591,8 @@ lenSeqs_t Verification::computeGotohEarlyRow(const char* s, const lenSeqs_t lenS
 }
 
 
-lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
+lenSeqs_t Verification::computeGotohLengthAwareEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound,
+                                                        const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP) {
 
     // long computation not necessary if lengths differ too much
     if (((lenS > lenT) ? (lenS - lenT) : (lenT - lenS)) > bound) {
@@ -953,7 +956,8 @@ Verification::AlignmentInformation Verification::computeGotohCigarFull(const cha
 
 }
 
-Verification::AlignmentInformation Verification::computeGotohCigarFull1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT) {
+Verification::AlignmentInformation Verification::computeGotohCigarFull1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT,
+                                                                        const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT) {
 
     lenSeqs_t width = lenT + 1;
 
@@ -1341,7 +1345,8 @@ Verification::AlignmentInformation Verification::computeGotohCigarRow(const char
 
 }
 
-Verification::AlignmentInformation Verification::computeGotohCigarRow1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, char* BT) {
+Verification::AlignmentInformation Verification::computeGotohCigarRow1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT,
+                                                                       const Scoring& scoring, val_t* D, val_t* P, char* BT) {
 
     lenSeqs_t width = lenT + 1;
 

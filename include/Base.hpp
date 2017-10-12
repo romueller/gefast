@@ -202,8 +202,10 @@ typedef std::vector<std::pair<lenSeqs_t, lenSeqs_t>> Segments;
 
 
 // select 'substrings' (MMASS) for segment filter
-Substrings selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex, const lenSeqs_t t, const lenSeqs_t k);
-Substrings selectSubstrsBackward(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex, const lenSeqs_t t, const lenSeqs_t k);
+Substrings selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex,
+                         const lenSeqs_t t, const lenSeqs_t k);
+Substrings selectSubstrsBackward(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex,
+                                 const lenSeqs_t t, const lenSeqs_t k);
 
 // select 'segments' (to be stored in a parameter) for indexing step
 void selectSegments(Segments& segments, const lenSeqs_t seqLen, const lenSeqs_t t, const lenSeqs_t k);

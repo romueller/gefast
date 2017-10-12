@@ -89,7 +89,9 @@ int run(int argc, const char* argv[]) {
         return 1;
 
     }
-    if (!((c.get(PREPROCESSING_ONLY) == "1") || c.peek(MATCHES_OUTPUT_FILE) || c.peek(SWARM_OUTPUT_INTERNAL) || c.peek(SWARM_OUTPUT_OTUS) || c.peek(SWARM_OUTPUT_STATISTICS) || c.peek(SWARM_OUTPUT_SEEDS) || c.peek(SWARM_OUTPUT_UCLUST))) {
+    if (!((c.get(PREPROCESSING_ONLY) == "1") || c.peek(MATCHES_OUTPUT_FILE) || c.peek(SWARM_OUTPUT_INTERNAL) ||
+            c.peek(SWARM_OUTPUT_OTUS) || c.peek(SWARM_OUTPUT_STATISTICS) || c.peek(SWARM_OUTPUT_SEEDS) ||
+            c.peek(SWARM_OUTPUT_UCLUST))) {
 
         std::cerr << "ERROR: No output file specified." << std::endl;
         return 1;
@@ -150,7 +152,8 @@ int run(int argc, const char* argv[]) {
     sc.boundary = std::stoul(c.get(SWARM_BOUNDARY));
 
     sc.useScore = (c.get(USE_SCORE) == "1");
-    sc.scoring = Verification::Scoring(std::stoull(c.get(SWARM_MATCH_REWARD)), std::stoll(c.get(SWARM_MISMATCH_PENALTY)), std::stoll(c.get(SWARM_GAP_OPENING_PENALTY)), std::stoll(c.get(SWARM_GAP_EXTENSION_PENALTY)));
+    sc.scoring = Verification::Scoring(std::stoull(c.get(SWARM_MATCH_REWARD)), std::stoll(c.get(SWARM_MISMATCH_PENALTY)),
+                                       std::stoll(c.get(SWARM_GAP_OPENING_PENALTY)), std::stoll(c.get(SWARM_GAP_EXTENSION_PENALTY)));
 
     std::cout << "===== Configuration =====" << std::endl;
     c.print(std::cout);

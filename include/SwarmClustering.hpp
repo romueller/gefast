@@ -442,7 +442,8 @@ struct CompareIndicesAbund {
 // Use the "rank" of the amplicons as the tie-breaker
 struct CompareOtuEntryPrecursorsAbund {
     bool operator()(const OtuEntryPrecursor& a, const OtuEntryPrecursor& b) {
-        return (a.member->abundance > b.member->abundance) || ((a.member->abundance == b.member->abundance) && (strcmp(a.member->id, b.member->id) < 0));
+        return (a.member->abundance > b.member->abundance) ||
+                ((a.member->abundance == b.member->abundance) && (strcmp(a.member->id, b.member->id) < 0));
     }
 };
 
@@ -450,14 +451,17 @@ struct CompareOtuEntryPrecursorsAbund {
 // Use the rank of the seeds as the tie-breaker
 struct CompareOtusMass {
     bool operator()(const Otu* a, const Otu* b) {
-        return (a->mass > b->mass) || ((a->mass == b->mass) && ((a->seed()->abundance > b->seed()->abundance) || ((a->seed()->abundance == b->seed()->abundance) && (strcmp(a->seed()->id, b->seed()->id) < 0))));
+        return (a->mass > b->mass) ||
+                ((a->mass == b->mass) && ((a->seed()->abundance > b->seed()->abundance) ||
+                        ((a->seed()->abundance == b->seed()->abundance) && (strcmp(a->seed()->id, b->seed()->id) < 0))));
     }
 };
 
 // Sort OTUs by the abundance of their seeds (descending)
 struct CompareOtusSeedAbund {
     bool operator()(const Otu* a, const Otu* b) {
-        return (a->seedAbundance() > b->seedAbundance()) || ((a->seedAbundance() == b->seedAbundance()) && (strcmp(a->seed()->id, b->seed()->id) < 0));
+        return (a->seedAbundance() > b->seedAbundance()) ||
+                ((a->seedAbundance() == b->seedAbundance()) && (strcmp(a->seed()->id, b->seed()->id) < 0));
     }
 };
 
@@ -470,7 +474,8 @@ struct CompareGraftCandidatesAbund {
     }
 
     bool operator()(const GraftCandidate& a, const GraftCandidate& b) {
-        return compareMember(*a.parentMember->member, *b.parentMember->member) || ((a.parentMember->member->id == b.parentMember->member->id) && compareMember(*a.childMember, *b.childMember));
+        return compareMember(*a.parentMember->member, *b.parentMember->member) ||
+                ((a.parentMember->member->id == b.parentMember->member->id) && compareMember(*a.childMember, *b.childMember));
     }
 
 };
@@ -493,14 +498,17 @@ void explorePool(const AmpliconCollection& ac, Matches& matches, std::vector<Otu
  * Index the amplicons of the given (light) OTU and prepares the child information of grafting candidate entries.
  * Potentially reuses already computed information on segment positions through segmentsArchive.
  */
-void fastidiousIndexOtu(PrecursorIndices& indices, std::vector<std::pair<lenSeqs_t, Segments>>& segmentsArchive, const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
+void fastidiousIndexOtu(PrecursorIndices& indices, std::vector<std::pair<lenSeqs_t, Segments>>& segmentsArchive,
+                        const AmpliconCollection& ac, Otu& otu, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
 
 /*
  * Verify the potentially similar amplicons arriving at a candidate buffer and,
  * if appropriate, change the grafting candidate information of the child amplicons.
  * Amplicons are similar if their edit distance is below the given threshold.
  */
-void verifyFastidious(const AmpliconPools& pools, const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t, std::mutex& mtx);
+void verifyFastidious(const AmpliconPools& pools, const AmpliconCollection& acOtus, const AmpliconCollection& acIndices,
+                      std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t,
+                      std::mutex& mtx);
 
 /*
  * Verify the potentially similar amplicons arriving at a candidate buffer and,
@@ -508,7 +516,9 @@ void verifyFastidious(const AmpliconPools& pools, const AmpliconCollection& acOt
  * Amplicons are similar if the number of differences (mismatches, insertions, deletions)
  * in the optimal alignment for the given scoring function is below the given threshold.
  */
-void verifyGotohFastidious(const AmpliconPools& pools, const AmpliconCollection& acOtus, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t, const Verification::Scoring& scoring, std::mutex& mtx);
+void verifyGotohFastidious(const AmpliconPools& pools, const AmpliconCollection& acOtus, const AmpliconCollection& acIndices,
+                           std::vector<GraftCandidate>& graftCands, Buffer<CandidateFastidious>& buf, const lenSeqs_t width, const lenSeqs_t t,
+                           const Verification::Scoring& scoring, std::mutex& mtx);
 
 /*
  * Apply a (forward) segment filter on the amplicons from the heavy OTUs of the current pool using the indexed amplicons of light OTUs.
@@ -516,19 +526,26 @@ void verifyGotohFastidious(const AmpliconPools& pools, const AmpliconCollection&
  *
  * The method with the suffix 'Directly' verifies the candidates itself directly when they occur and does not hand them over to verifier threads through a buffer.
  */
-void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const SwarmConfig& sc);
-void fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc);
+void fastidiousCheckOtus(RotatingBuffers<CandidateFastidious>& cbs, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus,
+                         IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands,
+                         const SwarmConfig& sc);
+void fastidiousCheckOtusDirectly(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus,
+                                 IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands,
+                                 const lenSeqs_t width, std::mutex& graftCandsMtx, const SwarmConfig& sc);
 
 /*
  * Check for grafting candidates using a segment filter and multiple verifier threads.
  * Looks for grafting candidates for amplicons from 'acIndices' among the amplicons from 'acOtus'.
  */
-void checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus, IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands, const lenSeqs_t width, std::mutex& mtx, const SwarmConfig& sc);
+void checkAndVerify(const AmpliconPools& pools, const std::vector<Otu*>& otus, const AmpliconCollection& acOtus,
+                    IndicesFastidious& indices, const AmpliconCollection& acIndices, std::vector<GraftCandidate>& graftCands,
+                    const lenSeqs_t width, std::mutex& mtx, const SwarmConfig& sc);
 
 /*
  * Determine the grafting candidates of the amplicons from all pools.
  */
-void determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, std::vector<GraftCandidate>& allGraftCands, const numSeqs_t p, std::mutex& allGraftCandsMtx, const SwarmConfig& sc);
+void determineGrafts(const AmpliconPools& pools, const std::vector<std::vector<Otu*>>& otus, std::vector<GraftCandidate>& allGraftCands,
+                     const numSeqs_t p, std::mutex& allGraftCandsMtx, const SwarmConfig& sc);
 
 /*
  *  Graft light OTUs onto heavy OTUs by "simulating virtual amplicons".
@@ -584,7 +601,8 @@ void outputOtus(const std::string oFile, const AmpliconPools& pools, const std::
  * On a single line, the members of all OTUs are represented through amplicon id and abundance.
  * The members of one OTU and the OTUs themselves are separated via sep resp. sepOtu, while id and abundance are separated via sepAbundance.
  */
-void outputOtusMothur(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const lenSeqs_t threshold, const numSeqs_t numOtusAdjusted, const char sep, const std::string sepOtu, const std::string sepAbundance);
+void outputOtusMothur(const std::string oFile, const AmpliconPools& pools, const std::vector<Otu*>& otus, const lenSeqs_t threshold,
+                      const numSeqs_t numOtusAdjusted, const char sep, const std::string sepOtu, const std::string sepAbundance);
 
 /*
  * Write the statistics of the given OTUs to file (corresponds to output of Swarm's option -s).

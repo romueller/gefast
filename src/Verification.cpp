@@ -102,7 +102,8 @@ lenSeqs_t Verification::mapColIndex(const lenSeqs_t j, const lenSeqs_t i, const 
 }
 
 
-// rationale for condition of the first case of the entry calculation: avoid underflow (due to unsigned integer type) by basically "disabling" this case for rows where it should not occur
+// rationale for condition of the first case of the entry calculation:
+// avoid underflow (due to unsigned integer type) by basically "disabling" this case for rows where it should not occur
 
 lenSeqs_t Verification::computeBoundedFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound) {
 

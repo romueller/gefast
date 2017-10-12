@@ -116,12 +116,14 @@ lenSeqs_t computeGotohFull(const char* s, const lenSeqs_t lenS, const char* t, c
  *  - keeps always only a single row of every matrix
  *  - computes number of differences (mismatches, insertions, deletions) in the best alignment
  */
-lenSeqs_t computeGotohRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
+lenSeqs_t computeGotohRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring,
+                          val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
 
 /*
  * The same as computeGotohRow(...), but with early termination if detected that all paths imply too many differences (returns bound + 1 in this case).
  */
-lenSeqs_t computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
+lenSeqs_t computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring,
+                               val_t* D, val_t* P, val_t* Q, char* BT, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, lenSeqs_t* cntDiffsQ);
 
 
 
@@ -141,7 +143,8 @@ lenSeqs_t computeGotohEarlyRow(const char* s, const lenSeqs_t lenS, const char* 
  *  - Substitutes the arrays Q and cntDiffsQ with two integer variables.
  *  - Avoids some recomputations by using a few additional integer variables.
  */
-lenSeqs_t computeGotohLengthAwareEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound, const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+lenSeqs_t computeGotohLengthAwareEarlyRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const lenSeqs_t bound,
+                                          const Scoring& scoring, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
 
 /*
@@ -179,7 +182,8 @@ struct AlignmentInformation {
  * its length and the number of differences (mismatches, insertions, deletions) in it.
  */
 AlignmentInformation computeGotohCigarFull(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring);
-AlignmentInformation computeGotohCigarFull1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, val_t* Q, char* BT);
+AlignmentInformation computeGotohCigarFull1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring,
+                                            val_t* D, val_t* P, val_t* Q, char* BT);
 
 /*
  * Computes one optimal global alignment with affine gap costs and returns that alignment in the CIGAR format,
@@ -188,7 +192,8 @@ AlignmentInformation computeGotohCigarFull1(const char* s, const lenSeqs_t lenS,
  * Only one row of each matrix (except the one for backtracking) is kept in memory.
  */
 AlignmentInformation computeGotohCigarRow(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring);
-AlignmentInformation computeGotohCigarRow1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring, val_t* D, val_t* P, char* BT);
+AlignmentInformation computeGotohCigarRow1(const char* s, const lenSeqs_t lenS, const char* t, const lenSeqs_t lenT, const Scoring& scoring,
+                                           val_t* D, val_t* P, char* BT);
 
 }
 }

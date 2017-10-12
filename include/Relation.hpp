@@ -520,7 +520,9 @@ public:
 
         std::vector<O> objects;
         auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
-        auto entry = ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) ? Entry(lab, labIter->second) : Entry(lab);
+        auto entry = ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) ?
+                     Entry(lab, labIter->second)
+                   : Entry(lab);
 
         while (entry.next != 0) {
 
@@ -564,7 +566,9 @@ public:
 
         unsigned long sum = 0;
         auto labIter = std::lower_bound(labels_.begin(), labels_.end(), lab, cmp_);
-        auto entry = ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) ? Entry(lab, labIter->second) : Entry(lab);
+        auto entry = ((labIter != labels_.end()) && (labIter->first == lab) && (labIter->second != 0)) ?
+                     Entry(lab, labIter->second)
+                   : Entry(lab);
 
         while (entry.next != 0) {
 

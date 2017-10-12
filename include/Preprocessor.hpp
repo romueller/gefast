@@ -65,7 +65,8 @@ namespace Preprocessor {
     void upperCase(std::string& s);
 
     // checks whether the given sequence satisfies the given filter criteria
-    bool checkSequence(const std::string& seq, const std::string& alphabet, lenSeqs_t minLen, lenSeqs_t maxLen, bool flagAlph, int flagLen);
+    bool checkSequence(const std::string& seq, const std::string& alphabet, lenSeqs_t minLen, lenSeqs_t maxLen,
+                       bool flagAlph, int flagLen);
 
     /*
      * Scans the given input file for sequences that satisfy the preprocessor's filters.
@@ -73,13 +74,15 @@ namespace Preprocessor {
      * For passing sequences, also the combined length of identifier and sequence (+2 for terminating \0's) is summed up
      * and finally returned.
      */
-    unsigned long long analyseInput(const Config<std::string>& conf, std::map<lenSeqs_t, numSeqs_t>& counts, const std::string fileName, const std::string sep);
+    unsigned long long analyseInput(const Config<std::string>& conf, std::map<lenSeqs_t, numSeqs_t>& counts,
+                                    const std::string fileName, const std::string sep);
 
     /*
      * Rereads the analysed input and inserts the suitable amplicons into the pools.
      * poolMap assigns each sequence length the index of the pool into which it is to be inserted.
      */
-    void appendInput(const Config<std::string>& conf, AmpliconPools& pools, std::map<lenSeqs_t, numSeqs_t>& poolMap, const std::string fileName, const std::string sep);
+    void appendInput(const Config<std::string>& conf, AmpliconPools& pools, std::map<lenSeqs_t, numSeqs_t>& poolMap,
+                     const std::string fileName, const std::string sep);
 
     /*
      * Manages the overall preprocessing step.

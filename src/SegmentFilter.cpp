@@ -31,7 +31,8 @@
 
 namespace GeFaST {
 
-void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k) {
+void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands,
+                                  const lenSeqs_t t, const lenSeqs_t k) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
@@ -58,7 +59,9 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -133,7 +136,9 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
         cands.push(candColl);
@@ -144,7 +149,8 @@ void SegmentFilter::filterForward(const AmpliconCollection& ac, const Subpool& s
 }
 
 
-void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
+void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches,
+                                          const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
@@ -176,7 +182,9 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -233,8 +241,12 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
                     if (cnt >= k) {
 
                         lenSeqs_t dist = useScore ?
-                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                               ac[prevCand].seq, ac[prevCand].len,
+                                                                               t, scoring, D, P, cntDiffs, cntDiffsP)
+                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                     ac[prevCand].seq, ac[prevCand].len,
+                                                                     t, M);
 
                         if (dist <= t){
                             matches.add(curIntId, prevCand, dist);
@@ -254,8 +266,12 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
             if (cnt >= k) {
 
                 lenSeqs_t dist = useScore ?
-                         Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                       : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+                         Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                       ac[prevCand].seq, ac[prevCand].len,
+                                                                       t, scoring, D, P, cntDiffs, cntDiffsP)
+                       : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len,
+                                                             ac[prevCand].seq, ac[prevCand].len,
+                                                             t, M);
 
                 if (dist <= t){
                     matches.add(curIntId, prevCand, dist);
@@ -267,7 +283,9 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -276,7 +294,8 @@ void SegmentFilter::filterForwardDirectly(const AmpliconCollection& ac, const Su
 
 
 
-void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k) {
+void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands,
+                                   const lenSeqs_t t, const lenSeqs_t k) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
@@ -303,7 +322,9 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -381,7 +402,9 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
         cands.push(candColl);
@@ -392,7 +415,8 @@ void SegmentFilter::filterBackward(const AmpliconCollection& ac, const Subpool& 
 }
 
 
-void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
+void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches,
+                                           const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
@@ -424,7 +448,9 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -484,8 +510,12 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
                     if (cnt >= k) {
 
                         lenSeqs_t dist = useScore ?
-                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+                                 Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                               ac[prevCand].seq, ac[prevCand].len,
+                                                                               t, scoring, D, P, cntDiffs, cntDiffsP)
+                               : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                     ac[prevCand].seq, ac[prevCand].len,
+                                                                     t, M);
 
                         if (dist <= t) {
                             matches.add(curIntId, prevCand, dist);
@@ -505,8 +535,12 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
             if (cnt >= k) {
 
                 lenSeqs_t dist = useScore ?
-                         Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                       : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+                         Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                       ac[prevCand].seq, ac[prevCand].len,
+                                                                       t, scoring, D, P, cntDiffs, cntDiffsP)
+                       : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len,
+                                                             ac[prevCand].seq, ac[prevCand].len,
+                                                             t, M);
 
                 if (dist <= t) {
                     matches.add(curIntId, prevCand, dist);
@@ -518,7 +552,9 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     } while (curIntId != sp.beginMatch);
@@ -527,7 +563,8 @@ void SegmentFilter::filterBackwardDirectly(const AmpliconCollection& ac, const S
 
 
 
-void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k) {
+void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands,
+                                          const lenSeqs_t t, const lenSeqs_t k) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
@@ -555,7 +592,9 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -631,7 +670,10 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
                         candStr = ac[prevCand].seq;
 
                         for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                            cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                            cnt += candStr.substr(
+                                        candSubs[i].first,
+                                        (candSubs[i].last - candSubs[i].first) + candSubs[i].len
+                                    ).find(segmentStrs[i]) < std::string::npos;
                         }
 
                         if (cnt == k) {
@@ -655,7 +697,10 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
                 candStr = ac[prevCand].seq;
 
                 for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                    cnt += candStr.substr(
+                                candSubs[i].first,
+                                (candSubs[i].last - candSubs[i].first) + candSubs[i].len
+                            ).find(segmentStrs[i]) < std::string::npos;
                 }
 
                 if (cnt == k) {
@@ -668,7 +713,9 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
         cands.push(candColl);
@@ -679,7 +726,8 @@ void SegmentFilter::filterForwardBackward(const AmpliconCollection& ac, const Su
 }
 
 
-void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
+void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches,
+                                                  const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, true);
 
@@ -712,7 +760,9 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -788,14 +838,21 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
                         candStr = ac[prevCand].seq;
 
                         for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                            cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                            cnt += candStr.substr(
+                                        candSubs[i].first,
+                                        (candSubs[i].last - candSubs[i].first) + candSubs[i].len
+                                    ).find(segmentStrs[i]) < std::string::npos;
                         }
 
                         if (cnt == k) {
 
                             lenSeqs_t dist = useScore ?
-                                     Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                                   : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+                                     Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                                   ac[prevCand].seq, ac[prevCand].len,
+                                                                                   t, scoring, D, P, cntDiffs, cntDiffsP)
+                                   : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                         ac[prevCand].seq, ac[prevCand].len,
+                                                                         t, M);
 
                             if (dist <= t){
                                 matches.add(curIntId, prevCand, dist);
@@ -820,14 +877,21 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
                 candStr = ac[prevCand].seq;
 
                 for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                    cnt += candStr.substr(
+                                candSubs[i].first,
+                                (candSubs[i].last - candSubs[i].first) + candSubs[i].len
+                            ).find(segmentStrs[i]) < std::string::npos;
                 }
 
                 if (cnt == k) {
 
                     lenSeqs_t dist = useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                           ac[prevCand].seq, ac[prevCand].len,
+                                                                           t, scoring, D, P, cntDiffs, cntDiffsP)
+                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                 ac[prevCand].seq, ac[prevCand].len,
+                                                                 t, M);
 
                     if (dist <= t){
                         matches.add(curIntId, prevCand, dist);
@@ -841,7 +905,9 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -850,7 +916,8 @@ void SegmentFilter::filterForwardBackwardDirectly(const AmpliconCollection& ac, 
 
 
 
-void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k) {
+void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands,
+                                          const lenSeqs_t t, const lenSeqs_t k) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
@@ -878,7 +945,9 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -957,7 +1026,10 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
                         candStr = ac[prevCand].seq;
 
                         for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                            cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                            cnt += candStr.substr(
+                                        candSubs[i].first,
+                                        (candSubs[i].last - candSubs[i].first) + candSubs[i].len
+                                    ).find(segmentStrs[i]) < std::string::npos;
                         }
 
                         if (cnt == k) {
@@ -981,7 +1053,10 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
                 candStr = ac[prevCand].seq;
 
                 for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                    cnt += candStr.substr(
+                                candSubs[i].first,
+                                (candSubs[i].last - candSubs[i].first) + candSubs[i].len
+                            ).find(segmentStrs[i]) < std::string::npos;
                 }
 
                 if (cnt == k) {
@@ -994,7 +1069,9 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
         cands.push(candColl);
@@ -1005,7 +1082,8 @@ void SegmentFilter::filterBackwardForward(const AmpliconCollection& ac, const Su
 }
 
 
-void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
+void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches,
+                                                  const lenSeqs_t t, const lenSeqs_t k, const bool useScore, const Verification::Scoring& scoring) {
 
     RollingIndices<InvertedIndex> indices(t + 1, t + k, false);
 
@@ -1038,7 +1116,9 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
         }
 
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     }
@@ -1117,14 +1197,21 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
                         candStr = ac[prevCand].seq;
 
                         for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                            cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                            cnt += candStr.substr(
+                                        candSubs[i].first,
+                                        (candSubs[i].last - candSubs[i].first) + candSubs[i].len
+                                    ).find(segmentStrs[i]) < std::string::npos;
                         }
 
                         if (cnt == k) {
 
                             lenSeqs_t dist = useScore ?
-                                     Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                                   : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+                                     Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                                   ac[prevCand].seq, ac[prevCand].len,
+                                                                                   t, scoring, D, P, cntDiffs, cntDiffsP)
+                                   : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                         ac[prevCand].seq, ac[prevCand].len,
+                                                                         t, M);
 
                             if (dist <= t){
                                 matches.add(curIntId, prevCand, dist);
@@ -1149,14 +1236,21 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
                 candStr = ac[prevCand].seq;
 
                 for (lenSeqs_t i = 0; i < t + k && cnt < k; i++) {
-                    cnt += (candStr.substr(candSubs[i].first, (candSubs[i].last - candSubs[i].first) + candSubs[i].len).find(segmentStrs[i]) < std::string::npos);
+                    cnt += candStr.substr(
+                                candSubs[i].first,
+                                (candSubs[i].last - candSubs[i].first) + candSubs[i].len
+                            ).find(segmentStrs[i]) < std::string::npos;
                 }
 
                 if (cnt == k) {
 
                     lenSeqs_t dist = useScore ?
-                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, scoring, D, P, cntDiffs, cntDiffsP)
-                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len, ac[prevCand].seq, ac[prevCand].len, t, M);
+                             Verification::computeGotohLengthAwareEarlyRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                           ac[prevCand].seq, ac[prevCand].len,
+                                                                           t, scoring, D, P, cntDiffs, cntDiffsP)
+                           : Verification::computeLengthAwareRow(ac[curIntId].seq, ac[curIntId].len,
+                                                                 ac[prevCand].seq, ac[prevCand].len,
+                                                                 t, M);
 
                     if (dist <= t){
                         matches.add(curIntId, prevCand, dist);
@@ -1170,7 +1264,9 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 
         // index sequence
         for (lenSeqs_t i = 0; i < t + k; i++) {
-            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first, ac[curIntId].seq + segments[i].first + segments[i].second), curIntId);
+            indices.getIndex(seqLen,i).add(StringIteratorPair(ac[curIntId].seq + segments[i].first,
+                                                              ac[curIntId].seq + segments[i].first + segments[i].second),
+                                           curIntId);
         }
 
     } while (curIntId != sp.beginMatch);
@@ -1178,7 +1274,8 @@ void SegmentFilter::filterBackwardForwardDirectly(const AmpliconCollection& ac, 
 }
 
 
-void SegmentFilter::filter(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands, const lenSeqs_t t, const lenSeqs_t k, const int mode) { //TODO set "best" default (see also config creation)
+void SegmentFilter::filter(const AmpliconCollection& ac, const Subpool& sp, RotatingBuffers<Candidate>& cands,
+                           const lenSeqs_t t, const lenSeqs_t k, const int mode) {
 
     switch (mode) {
 
@@ -1205,7 +1302,8 @@ void SegmentFilter::filter(const AmpliconCollection& ac, const Subpool& sp, Rota
 
 }
 
-void SegmentFilter::filterDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches, const lenSeqs_t t, const lenSeqs_t k, const int mode, const bool useScore, const Verification::Scoring& scoring) { //TODO set "best" default (see also config creation)
+void SegmentFilter::filterDirectly(const AmpliconCollection& ac, const Subpool& sp, Matches& matches,
+                                   const lenSeqs_t t, const lenSeqs_t k, const int mode, const bool useScore, const Verification::Scoring& scoring) {
 
     switch (mode) {
 

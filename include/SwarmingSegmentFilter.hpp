@@ -53,17 +53,23 @@ typedef RollingIndices<SwarmingInvertedIndex> SwarmingIndices;
 /*
  * Looks up the segments of the amplicon in the inverted indices and makes a tally of the found candidates.
  */
-void addCandCnts(const Amplicon& amplicon, lenSeqs_t childLen, lenSeqs_t numSegments, std::vector<numSeqs_t>& candCnts, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive);
+void addCandCnts(const Amplicon& amplicon, lenSeqs_t childLen, lenSeqs_t numSegments, std::vector<numSeqs_t>& candCnts, SwarmingIndices& indices,
+                 std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive);
 
 /*
  * Applies forward filter and verifies candidates by computing the bounded edit distance.
  */
-void verifyCands(const Amplicon& amplicon, const AmpliconCollection& ac, std::vector<numSeqs_t>& candCnts, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+void verifyCands(const Amplicon& amplicon, const AmpliconCollection& ac, std::vector<numSeqs_t>& candCnts,
+                 std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc,
+                 lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
 /*
  * Applies forward + pipelined backward filtering and verifies candidates by computing the bounded edit distance.
  */
-void verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std::string>& segmentStrs, const AmpliconCollection& ac, std::vector<numSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+void verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std::string>& segmentStrs, const AmpliconCollection& ac,
+                       std::vector<numSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs,
+                       std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, const SwarmClustering::SwarmConfig& sc,
+                       lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
 
 
@@ -73,7 +79,9 @@ void verifyCandsTwoWay(const Amplicon& amplicon, std::vector<std::string>& segme
 class ChildrenFinder {
 
 public:
-    ChildrenFinder(const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
+    ChildrenFinder(const AmpliconCollection& ac, SwarmingIndices& indices,
+                   std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive,
+                   const SwarmClustering::SwarmConfig& sc, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP);
 
     std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id);
 
@@ -104,7 +112,9 @@ private:
 class ParallelChildrenFinder {
 
 public:
-    ParallelChildrenFinder(const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc);
+    ParallelChildrenFinder(const AmpliconCollection& ac, SwarmingIndices& indices,
+                           std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive,
+                           const lenSeqs_t width, const SwarmClustering::SwarmConfig& sc);
 
     ~ParallelChildrenFinder();
 
@@ -118,7 +128,8 @@ public:
 
 private:
     numSeqs_t sendCandsToVerification(const numSeqs_t id, const Amplicon& amplicon, std::vector<numSeqs_t>& candCnts);
-    numSeqs_t sendCandsToVerificationTwoWay(const numSeqs_t id, const Amplicon& amplicon, std::vector<std::string>& segmentStrs, std::vector<numSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs);
+    numSeqs_t sendCandsToVerificationTwoWay(const numSeqs_t id, const Amplicon& amplicon, std::vector<std::string>& segmentStrs,
+                                            std::vector<numSeqs_t>& candCnts, std::vector<Substrings>& candSubstrs);
 
     void verify(std::vector<std::pair<numSeqs_t, lenSeqs_t>>& matches, Buffer<Candidate>& buf, lenSeqs_t width);
 
@@ -144,21 +155,35 @@ private:
  * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a one-way filter.
  * Employs forward resp. backward filtering depending on the relative lengths of the amplicons.
  */
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildren(const numSeqs_t id, const AmpliconCollection& ac, SwarmingIndices& indices,
+                                                         std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive,
+                                                         lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP,
+                                                         const SwarmClustering::SwarmConfig& sc);
+void getChildren(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SwarmingIndices& indices,
+                 std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive,
+                 lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP,
+                 const SwarmClustering::SwarmConfig& sc);
 
 /*
  * Determine the children (= similar amplicons belonging to the next generation) of the given amplicon using a two-way filter.
  * Employs forward-backward resp. backward-forward filtering depending on the relative lengths of the amplicons.
  */
-std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
-void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP, const SwarmClustering::SwarmConfig& sc);
+std::vector<std::pair<numSeqs_t, lenSeqs_t>> getChildrenTwoWay(const numSeqs_t id, const AmpliconCollection& ac, SwarmingIndices& indices,
+                                                               std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive,
+                                                               lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP,
+                                                               const SwarmClustering::SwarmConfig& sc);
+void getChildrenTwoWay(const numSeqs_t id, std::vector<std::pair<numSeqs_t, lenSeqs_t>>& children, const AmpliconCollection& ac, SwarmingIndices& indices,
+                       std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive,
+                       lenSeqs_t* M, val_t* D, val_t* P, lenSeqs_t* cntDiffs, lenSeqs_t* cntDiffsP,
+                       const SwarmClustering::SwarmConfig& sc);
 
 
 /*
  * Fill the inverted indices and the substrings archive.
  */
-void prepareIndices(const AmpliconCollection& ac, SwarmingIndices& indices, std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive, const SwarmClustering::SwarmConfig& sc);
+void prepareIndices(const AmpliconCollection& ac, SwarmingIndices& indices,
+                    std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>>& substrsArchive,
+                    const SwarmClustering::SwarmConfig& sc);
 
 /*
  * Determine OTUs (swarms) like Swarm by using a segment filter.

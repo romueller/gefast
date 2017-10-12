@@ -70,7 +70,8 @@ void Preprocessor::upperCase(std::string& s) {
 
 }
 
-bool Preprocessor::checkSequence(const std::string& seq, const std::string& alphabet, lenSeqs_t minLen, lenSeqs_t maxLen, bool flagAlph, int flagLen) {
+bool Preprocessor::checkSequence(const std::string& seq, const std::string& alphabet, lenSeqs_t minLen, lenSeqs_t maxLen,
+                                 bool flagAlph, int flagLen) {
 
     bool valid = true;
 
@@ -103,7 +104,8 @@ bool Preprocessor::checkSequence(const std::string& seq, const std::string& alph
 
 }
 
-unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, std::map<lenSeqs_t, numSeqs_t>& counts, const std::string fileName, const std::string sep) {
+unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, std::map<lenSeqs_t, numSeqs_t>& counts,
+                                              const std::string fileName, const std::string sep) {
 
     std::ifstream iStream(fileName);
     if (!iStream.good()) {
@@ -214,7 +216,8 @@ unsigned long long Preprocessor::analyseInput(const Config<std::string>& conf, s
 // adds contents of specified file (if readable) to the given AmpliconPools object,
 // amplicons are assigned to the respective pools established by prior calls of analyseInput(),
 // "normalises" to upper-case letters, filters according to configuration
-void Preprocessor::appendInput(const Config<std::string>& conf, AmpliconPools& pools, std::map<lenSeqs_t, numSeqs_t>& poolMap, const std::string fileName, const std::string sep) {
+void Preprocessor::appendInput(const Config<std::string>& conf, AmpliconPools& pools, std::map<lenSeqs_t, numSeqs_t>& poolMap,
+                               const std::string fileName, const std::string sep) {
 
     std::ifstream iStream(fileName);
     if (!iStream.good()) {

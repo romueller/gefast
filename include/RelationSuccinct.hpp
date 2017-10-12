@@ -1,6 +1,6 @@
 #ifndef GEFAST_RELATIONSUCCINCT_HPP
 #define GEFAST_RELATIONSUCCINCT_HPP
-
+#if 0
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -902,5 +902,5 @@ private:
 };
 
 }
-
+#endif
 #endif //GEFAST_RELATIONSUCCINCT_HPP

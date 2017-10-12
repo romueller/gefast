@@ -1,10 +1,10 @@
 CXX=g++
 CXXFLAGS=-std=c++11 -pthread -O3 -msse4.1
-LDFLAGS=-lsdsl ../k2trees-lib/libk2trees.a
+LDFLAGS=
 BUILD=build
 OBJ_DIR=$(BUILD)/objects
 TARGET=GeFaST
-INCLUDE=-I../k2trees-lib/
+INCLUDE=
 SRC=main.cpp $(wildcard src/*.cpp)
 
 OBJECTS=$(SRC:%.cpp=$(OBJ_DIR)/%.o)

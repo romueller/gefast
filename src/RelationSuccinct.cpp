@@ -1,5 +1,5 @@
 #include "../include/RelationSuccinct.hpp"
-
+#if 0
 namespace GeFaST {
 
 void RelationPrecursor::add(const StringIteratorPair seg, const numSeqs_t id) {
@@ -141,3 +141,4 @@ numSeqs_t RankedAscendingLabels::size() {
 }
 
 }
+#endif

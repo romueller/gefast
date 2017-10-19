@@ -1,22 +1,26 @@
 #ifndef GEFAST_RELATIONSUCCINCT_HPP
 #define GEFAST_RELATIONSUCCINCT_HPP
 
+#include "Base.hpp"
+
+#if SUCCINCT || SUCCINCT_FASTIDIOUS
+
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <set>
 #include <unordered_map>
+
+#include <StaticBasicTree.hpp>
 #include <StaticHybridTree.hpp>
 #include <StaticBasicRectangularTree.hpp>
 #include <StaticUnevenRectangularTree.hpp>
+#include <StaticUnevenRectangularOrMiniTree.hpp>
+#include <StaticMiniK2Tree.hpp>
 
-#include "Base.hpp"
-#include "StaticBasicTree.hpp"
-#include "StaticRowTree.hpp"
-#include "StaticHybridRowTree.hpp"
-#include "StaticMiniRowTree.hpp"
-#include "StaticMiniK2Tree.hpp"
-#include "StaticUnevenRectangularOrMiniTree.hpp"
+#include <StaticRowTree.hpp>
+#include <StaticHybridRowTree.hpp>
+#include <StaticMiniRowTree.hpp>
 
 namespace GeFaST {
 
@@ -238,92 +242,6 @@ private:
 };
 
 
-template<typename O, typename S>
-class AddingTree : public KrKcTree<bool> {
-
-public:
-    using KrKcTree<bool>::KrKcTree; // adds ctors
-
-    void addSuccessorCountsOf(const O& p, std::unordered_map<numSeqs_t, lenSeqs_t>& candCnts, S& labels) {
-
-        if (L_.empty()) return;
-
-        std::queue<SubrowInfo> queue, nextLevelQueue;
-        size_type lenT = T_.size();
-
-        if (lenT == 0) {
-
-            size_type offset = p * numCols_;
-            for (size_type i = 0; i < numCols_; i++) {
-                if (L_[offset + i] && labels.containsRank(i)) {
-                    candCnts[labels.unrank(i)]++;
-                }
-            }
-
-        } else {
-
-            // successorsPosInit
-            size_type nr = numRows_/ kr_;
-            size_type nc = numCols_/ kc_;
-            size_type relP = p;
-            for (size_type j = 0, dq = 0, z = kc_ * (relP / nr); j < kc_; j++, dq += nc, z++) {
-                queue.push(SubrowInfo(dq, z));
-            }
-
-            // successorsPos
-            relP %= nr;
-            nr /= kr_;
-            nc /= kc_;
-            for (; nr > 1; relP %= nr, nr /= kr_, nc /= kc_) {
-
-                while (!queue.empty()) {
-
-                    auto& cur = queue.front();
-
-                    if (T_[cur.z]) {
-
-                        auto y = R_.rank(cur.z + 1) * kr_ * kc_ + kc_ * (relP / nr);
-
-                        for (size_type j = 0, newDq = cur.dq; j < kc_; j++, newDq += nc, y++) {
-                            nextLevelQueue.push(SubrowInfo(newDq, y));
-                        }
-
-                    }
-
-                    queue.pop();
-
-                }
-
-                queue.swap(nextLevelQueue);
-
-            }
-
-
-            while (!queue.empty()) {
-
-                auto& cur = queue.front();
-
-                if (T_[cur.z]) {
-
-                    auto y = R_.rank(cur.z + 1) * kr_ * kc_ + kc_ * (relP / nr) - lenT;
-
-                    for (size_type j = 0, newDq = cur.dq; j < kc_; j++, newDq += nc, y++) {
-                        if (L_[y] && labels.containsRank(newDq)) {
-                            candCnts[labels.unrank(newDq)]++;
-                        }
-                    }
-
-                }
-
-                queue.pop();
-
-            }
-
-        }
-
-    }
-
-};
 
 template<typename S>
 class K2TreeBinaryRelation {
@@ -902,5 +820,7 @@ private:
 };
 
 }
+
+#endif //SUCCINCT || SUCCINCT_FASTIDIOUS
 
 #endif //GEFAST_RELATIONSUCCINCT_HPP

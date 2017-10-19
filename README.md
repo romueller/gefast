@@ -1,4 +1,4 @@
-# GeFaSt
+# GeFaST
 
 Clustering tool using [Swarm](https://github.com/torognes/swarm)'s clustering strategy and [Pass-Join](http://dx.doi.org/10.1145/2487259.2487261)'s segment filter. 
 It extends and generalises the fastidious clustering capabilities - hence the name **GeFaST** (**Ge**neralised **Fa**stidious **S**warming **T**ool).

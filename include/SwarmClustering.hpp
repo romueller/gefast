@@ -30,6 +30,10 @@
 #include "Verification.hpp"
 #include "VerificationGotoh.hpp"
 
+#if SUCCINCT_FASTIDIOUS
+#include "RelationSuccinct.hpp"
+#endif
+
 #define FASTIDIOUS_PARALLEL_POOL 1
 #define FASTIDIOUS_PARALLEL_CHECK 1
 

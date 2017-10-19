@@ -32,6 +32,10 @@
 #include "VerificationGotoh.hpp"
 #include "SwarmClustering.hpp"
 
+#if SUCCINCT
+#include "RelationSuccinct.hpp"
+#endif
+
 #define CHILDREN_FINDER 1
 
 namespace GeFaST {
@@ -39,7 +43,6 @@ namespace SegmentFilter {
 
 #if SUCCINCT
 
-#include "RelationSuccinct.hpp"
 typedef K2TreeBinaryRelation<RankedAscendingLabels> SwarmingInvertedIndex;
 typedef SharingRollingIndices<RankedAscendingLabels, SwarmingInvertedIndex> SwarmingIndices;
 

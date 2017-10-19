@@ -34,10 +34,17 @@
 
 /* Preprocessor directives with program-wide effects */
 
-#define QGRAM_FILTER 1
+#ifndef SUCCINCT
 #define SUCCINCT 0
-#define SUCCINCT_FASTIDIOUS 0
+#endif
 
+#ifndef SUCCINCT_FASTIDIOUS
+#define SUCCINCT_FASTIDIOUS 0
+#endif
+
+#ifndef QGRAM_FILTER
+#define QGRAM_FILTER 1
+#endif
 #if QGRAM_FILTER
 #define QGRAMLENGTH 5
 #define QGRAMVECTORBITS (1<<(2*QGRAMLENGTH))

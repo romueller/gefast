@@ -31,7 +31,6 @@
 #include <unordered_set>
 
 #include "Base.hpp"
-#include "RelationSuccinct.hpp"
 
 
 namespace GeFaST {

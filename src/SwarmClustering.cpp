@@ -31,6 +31,7 @@
 #include <sstream>
 #include <thread>
 #include <unordered_set>
+#include <numeric>
 
 namespace GeFaST {
 

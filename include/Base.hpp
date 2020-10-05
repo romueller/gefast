@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2017 Robert Mueller
+ * Copyright (C) 2016 - 2020 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,495 +26,1144 @@
 
 #include <algorithm>
 #include <cstring>
-#include <map>
-#include <string>
-#include <unordered_map>
 #include <vector>
+#include <set>
+#include <emmintrin.h>
 
-
-/* Preprocessor directives with program-wide effects */
-
-#ifndef SUCCINCT
-#define SUCCINCT 0
-#endif
-
-#ifndef SUCCINCT_FASTIDIOUS
-#define SUCCINCT_FASTIDIOUS 0
-#endif
-
-#ifndef QGRAM_FILTER
-#define QGRAM_FILTER 1
-#endif
-#if QGRAM_FILTER
-#define QGRAMLENGTH 5
-#define QGRAMVECTORBITS (1<<(2*QGRAMLENGTH))
-#define QGRAMVECTORBYTES (QGRAMVECTORBITS/8)
-#endif
-
-
+#include "Utility.hpp"
 
 namespace GeFaST {
 
-// type for everything related to counts of amplicons / sequences
-typedef unsigned long numSeqs_t;
+    /* === Base classes of main data structures === */
 
-// type for everything related to the length of the sequence of an amplicon
-typedef unsigned long lenSeqs_t;
+    class Preprocessor;
+    class Clusterer;
+    class ClusterRefiner;
+    class OutputGenerator;
 
-// type for values in the DP-matrix of (Gotoh) verification methods
-typedef lenSeqs_t val_t;
-//const val_t NEG_INF = INT16_MIN;
-const val_t POS_INF = INT16_MAX;
+    class AmpliconStorage;
+    class Swarm;
+    class SwarmStorage;
+    class Distance;
+    class AuxiliaryData;
 
-#if QGRAM_FILTER
-// mapping of nucleotides onto integers (a/A -> 1, c/C -> 2, g/G -> 3, t/T/u/U -> 4)
-extern char acgtuMap[256];
+
+    /*
+     * Abstract configuration class.
+     *
+     * Manages the mode-independent configuration parameters like input / output files and thresholds.
+     *
+     * The configuration is the central structure governing the execution of GeFaST and stores all the necessary
+     * configuration parameters. In addition, a specific configuration also serves as an intermediary factory
+     * for the key components (e.g. Preprocessor, Clusterer) that are configured appropriately
+     * and injected into the clustering framework in order to run it in a specific mode.
+     */
+    struct Configuration {
+
+        virtual ~Configuration() = default;
+
+        virtual Configuration* clone() const = 0; // deep-copy clone method
+
+
+        /*
+         * Build specific preprocessor based on the configuration.
+         */
+        virtual Preprocessor* build_preprocessor() const = 0;
+
+        /*
+         * Build specific quality encoding based on the configuration.
+         */
+        virtual QualityEncoding<>* build_quality_encoding() const = 0;
+
+        /*
+         * Build specific clusterer (clustering phase) based on the configuration.
+         */
+        virtual Clusterer* build_clusterer() const = 0;
+
+        /*
+        * Build specific cluster refiner (refinement phase) based on the configuration.
+        */
+        virtual ClusterRefiner* build_cluster_refiner() const = 0;
+
+        /*
+         * Build specific output generator based on the configuration.
+         */
+        virtual OutputGenerator* build_output_generator() const = 0;
+
+
+        /*
+         * Build specific storage data structure for the amplicons based on the configuration and data statistics.
+         */
+        virtual AmpliconStorage* build_amplicon_storage(const DataStatistics<>& ds) const = 0;
+
+        /*
+         * Build specific storage data structure for the swarms.
+         */
+        virtual SwarmStorage* build_swarm_storage(const AmpliconStorage& amplicon_storage) const = 0;
+
+        /*
+         * Build specific distance function based on the configuration and, potentially, the amplicons.
+         */
+        virtual Distance* build_distance_function(const AmpliconStorage &amplicon_storage, const dist_t threshold) const = 0;
+
+        /*
+         * Build specific auxiliary data structures for a pool based on the configuration and the pool.
+         */
+        virtual AuxiliaryData* build_auxiliary_data(const AmpliconStorage& amplicon_storage, const numSeqs_t pool_id,
+                const dist_t threshold) const = 0;
+
+        /*
+         * Build specific auxiliary data structures for a pool during refinement phase
+         * based on the configuration and the pool.
+         */
+        virtual AuxiliaryData* build_auxiliary_data(const AmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage,
+                const numSeqs_t pool_id, const dist_t threshold) const = 0;
+
+
+        /*
+         * Print configuration on given output stream.
+         */
+        virtual void print(std::ostream& stream) const;
+
+
+        /* Configuration parameters */
+
+        std::string version = VERSION; // version number of the program
+
+        // input & output files
+        std::vector<std::string> input_files; // names of all input files
+        std::string configuration_file; // config file used to load (parts of) the configuration
+
+        std::string output_internal; // name of the output file corresponding to Swarm's output option -i (internal structures)
+        std::string output_otus; // name of the output file corresponding to Swarm's output option -o (OTUs / clusters / swarms)
+        std::string output_statistics; // name of the output file corresponding to Swarm's output option -s (statistics file)
+        std::string output_seeds; // name of the output file corresponding to Swarm's output option -w (seeds)
+        std::string output_uclust; // name of the output file corresponding to Swarm's output option -u (uclust)
+
+        std::string separator; // separator symbol (string) between ID and abundance in a FASTA header line
+        bool mothur; // Boolean flag indicating demand for output format compatible with mothur, corresponds to Swarm's option -r
+
+        char sep_internals = SEP_INTERNALS; // separator between columns in output_internal
+        char sep_otus = SEP_OTUS; // separator between amplicon identifiers in output_otus
+        char sep_statistics = SEP_STATISTICS; // separator between columns in output_statistics
+        char sep_uclust = SEP_UCLUST; // separator between columns in output_uclust
+        char sep_mothur = SEP_MOTHUR; // for mothur-compatible output
+        char sep_mothur_otu = SEP_MOTHUR_OTU; // for mothur-compatible output
+
+        // preprocessing
+        bool filter_alphabet; // flag for the alphabet filter
+        int filter_length; // flag for the length filter (0 = no filtering, 1 = only maximum threshold, 2 = only minimum threshold, 3 = both)
+        int filter_abundance; // flag for the abundance filter (0 = no filtering, 1 = only maximum threshold, 2 = only minimum threshold, 3 = both)
+        std::string alphabet; // allowed alphabet for the amplicon sequences
+        lenSeqs_t min_length; // minimum allowed sequence length
+        lenSeqs_t max_length; // maximum allowed sequence length
+        numSeqs_t min_abundance; // minimum sequence abundance
+        numSeqs_t max_abundance; // maximum sequence abundance
+        std::string keep_preprocessed; // file to store preprocessed inputs
+
+        // swarm clustering
+        std::string mode; // mode of clustering
+        dist_t main_threshold; // clustering threshold for the clustering phase
+        dist_t refinement_threshold; // clustering threshold for the refinement phase
+        std::vector<dist_t> iterative_refinement_thresholds; // clustering thresholds for the refinement phase (iterative cluster refinement only)
+        numSeqs_t boundary; // minimum mass of a heavy cluster, used only in the refinement phase
+        bool break_swarms; // Boolean flag indicating usage of swarm breaking, equivalent of Swarm's option -n
+
+        // scoring function
+        int match_reward; // reward for a nucleotide match
+        int mismatch_penalty; // penalty for a nucleotide mismatch
+        int gap_opening_penalty; // penalty for opening a gap
+        int gap_extension_penalty; // penalty for extending a gap
+
+        // miscellaneous (provided via a string-to-string map)
+        std::map<std::string, std::string> misc;
+
+    protected:
+        Configuration() = default;
+
+        Configuration(const Configuration& other) = default; // copy constructor
+
+        Configuration(Configuration&& other) = default; // move constructor
+
+        Configuration& operator=(const Configuration& other) = default; // copy assignment operator
+
+        Configuration& operator=(Configuration&& other) = default; // move assignment operator
+
+        /*
+         * Parse the refinement thresholds given in list format (comma-separated list of thresholds)
+         * or in range format (<first>:<last>:<increment>).
+         * Sets the iterative refinement thresholds (iterative_refinement_thresholds)
+         * and picks the last one as the single refinement threshold (refinement_threshold).
+         */
+        void parse_and_set_refinement_thresholds(std::string arg);
+
+        /*
+         * Parse the list of miscellaneous configuration parameters.
+         * The $-separated list consists of key-value pairs of the format <key>:<value>.
+         */
+        void parse_misc(std::string arg);
+
+        /*
+         * Set default values, add basic configuration from file and apply command-line parameters.
+         *
+         * Assumed syntax in configuration file:
+         *  - Line comments are allowed and start with #.
+         *  - Every comment is written in its own line.
+         *  - Empty lines are allowed.
+         *  - Every configuration parameter is written in its own line.
+         *  - A line containing a configuration parameter must have the following form: <key>=<value>
+         *
+         *  The command-line parameters have the highest priority and overwrite the configuration read from file.
+         */
+        void set_general_parameters(int argc, const char* argv[]);
+
+        // data structure options
+        PreprocessorOption opt_preprocessor; // preprocessor used in this run
+        QualityEncodingOption opt_quality_encoding; // expected quality-score encoding (e.g. in FASTQ files)
+        ClustererOption opt_clusterer; // method for clustering phase
+        ClusterRefinerOption opt_refiner; // method for optional refinement phase
+        OutputGeneratorOption opt_output_generator; // determines available outputs and their format
+        AmpliconStorageOption opt_amplicon_storage; // representation of the amplicons
+        AmpliconCollectionOption opt_amplicon_collection; // amplicon pool
+        SwarmStorageOption opt_swarm_storage; // representation of swarms (clusters)
+        AuxiliaryDataOption opt_auxiliary_data; // auxiliary data (structures) supporting the clustering phase
+        RefinementAuxiliaryDataOption opt_refinement_auxiliary_data; // auxiliary data (structures) supporting the refinement phase
+        DistanceOption opt_distance; // computation of distance between amplicons
+
+    };
+
+
+    /*
+     * Abstract preprocessor class.
+     *
+     * Reads amplicons from a list of input files into an AmpliconStorage object.
+     * Preprocesses the amplicons according to the given configuration.
+     */
+    class Preprocessor {
+
+    public:
+        virtual ~Preprocessor() = default;
+
+        virtual Preprocessor* clone() const = 0; // deep-copy clone method
+
+
+        /*
+         * Perform the overall preprocessing step from input files to (filtered, preprocessed) amplicons.
+         */
+        virtual AmpliconStorage* preprocess_inputs(const std::vector<std::string>& files, const Configuration& conf) = 0;
+
+    protected:
+        Preprocessor() = default;
+
+        Preprocessor(const Preprocessor& other) = default; // copy constructor
+
+        Preprocessor(Preprocessor&& other) = default; // move constructor
+
+        Preprocessor& operator=(const Preprocessor& other) = default; // copy assignment operator
+
+        Preprocessor& operator=(Preprocessor&& other) = default; // move assignment operator
+
+    };
+
+
+    /*
+     * Abstract class for handling the clustering phase.
+     *
+     * Performs the initial clustering of the given amplicons into swarms (clusters).
+     * Parameters like the used thresholds are obtained from the configuration.
+     */
+    class Clusterer {
+
+    public:
+        virtual ~Clusterer() = default;
+
+        virtual Clusterer* clone() const = 0; // deep-copy clone method
+
+
+        /*
+         * Perform the overall clustering phase.
+         */
+        virtual SwarmStorage* cluster(const AmpliconStorage& amplicon_storage, const Configuration& config) = 0;
+
+    protected:
+        Clusterer() = default;
+
+        Clusterer(const Clusterer& other) = default; // copy constructor
+
+        Clusterer(Clusterer&& other) = default; // move constructor
+
+        Clusterer& operator=(const Clusterer& other) = default; // copy assignment operator
+
+        Clusterer& operator=(Clusterer&& other) = default; // move assignment operator
+
+    };
+
+
+    /*
+     * Abstract class for handling the optional refinement phase.
+     *
+     * Refines the given swarms according to the configuration.
+     */
+    class ClusterRefiner {
+
+    public:
+        virtual ~ClusterRefiner() = default;
+
+        virtual ClusterRefiner* clone() const = 0; // deep-copy clone method
+
+
+        /*
+         * Perform the overall refinement phase.
+         */
+        virtual void refine(const AmpliconStorage& amplicon_storage, SwarmStorage& swarm_storage,
+                const Configuration& config) = 0;
+
+    protected:
+        ClusterRefiner() = default;
+
+        ClusterRefiner(const ClusterRefiner& other) = default; // copy constructor
+
+        ClusterRefiner(ClusterRefiner&& other) = default; // move constructor
+
+        ClusterRefiner& operator=(const ClusterRefiner& other) = default; // copy assignment operator
+
+        ClusterRefiner& operator=(ClusterRefiner&& other) = default; // move assignment operator
+
+    };
+
+
+    /*
+     * Abstract class for handling the output generation.
+     *
+     * Determines the available output files and their format.
+     */
+    class OutputGenerator {
+
+    public:
+        virtual ~OutputGenerator() = default;
+
+        virtual OutputGenerator* clone() const = 0; // deep-copy clone method
+
+
+        /*
+         * Perform the overall output generation according to the configuration.
+         */
+        virtual void output_results(const AmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage,
+                const Configuration& config) = 0;
+
+    protected:
+        OutputGenerator() = default;
+
+        OutputGenerator(const OutputGenerator& other) = default; // copy constructor
+
+        OutputGenerator(OutputGenerator&& other) = default; // move constructor
+
+        OutputGenerator& operator=(const OutputGenerator& other) = default; // copy assignment operator
+
+        OutputGenerator& operator=(OutputGenerator&& other) = default; // move assignment operator
+
+    };
+
+#if 1
+    // Parts of the code related to q-grams adapted from:
+    /*
+        SWARM
+
+        Copyright (C) 2012-2017 Torbjorn Rognes and Frederic Mahe
+
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Affero General Public License as
+        published by the Free Software Foundation, either version 3 of the
+        License, or (at your option) any later version.
+
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        GNU Affero General Public License for more details.
+
+        You should have received a copy of the GNU Affero General Public License
+        along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+        Contact: Torbjorn Rognes <torognes@ifi.uio.no>,
+        Department of Informatics, University of Oslo,
+        PO Box 1080 Blindern, NO-0316 Oslo, Norway
+
+        https://github.com/torognes/swarm/
+    */
+    #define cpuid(f1, f2, a, b, c, d)                                       \
+    __asm__ __volatile__ ("cpuid"                                         \
+                        : "=a" (a), "=b" (b), "=c" (c), "=d" (d)        \
+                        : "a" (f1), "c" (f2));
+
+    #define popcnt_asm(x, y)                                         \
+    __asm__ __volatile__ ("popcnt %1,%0" : "=r"(y) : "r"(x));
+
+    // mapping of nucleotides onto integers (a/A -> 1, c/C -> 2, g/G -> 3, t/T/u/U -> 4)
+    extern char acgtu_map[256];
+
+    extern long popcnt_present;
+
+    extern long QGRAM_LENGTH;
+    extern long QGRAM_VECTOR_BYTES;
+
+    /*
+     * See also the following borrowed methods in class QgramComparer:
+     *  unsigned long popcount(unsigned long x)
+     *  void cpu_features_detect()
+     *  unsigned long popcount_128(__m128i x)
+     *  unsigned long compare_qgram_vectors_128(const unsigned char * a, const unsigned char * b)
+     *  unsigned long compare_qgram_vectors_64(const unsigned char * a, const unsigned char * b)
+     *  unsigned long compare_qgram_vectors(const unsigned char * a, const unsigned char * b)
+     */
+
+    /*
+     * Abstract class for storing a collection of amplicons with q-gram profiles.
+     *
+     * Provides additional methods for handling the q-gram profiles.
+     */
+    struct QgramComparer {
+
+        virtual ~QgramComparer() = default;
+
+        /*
+         * Compute lower bound on the q-gram distance between two amplicons.
+         *
+         * Based on the ideas from "Approximate string-matching with q-grams and maximal matches"
+         * (Ukkonen, 1992, https://core.ac.uk/download/pdf/82613520.pdf),
+         * as implemented in Swarm (https://github.com/torognes/swarm).
+         *
+         * Only considers whether a q-gram has an even (including 0) or odd number of occurrences,
+         * instead of using actual counts of the q-grams.
+         */
+        virtual unsigned long qgram_diff(const numSeqs_t i, const numSeqs_t j) const = 0;
+
+    protected:
+        QgramComparer() = default;
+
+        QgramComparer(const QgramComparer& other) = default; // copy constructor
+
+        QgramComparer(QgramComparer&& other) = default; // move constructor
+
+        QgramComparer& operator=(const QgramComparer& other) = default; // copy assignment operator
+
+        QgramComparer& operator=(QgramComparer&& other) = default; // move assignment operator
+
+
+        /*
+         * POPCOUNT- & SIMD-based methods for quick comparison of q-gram profiles.
+         *
+         * Support the computation of the lower bound on the q-gram distance.
+         *
+         * Borrowed from Swarm (https://github.com/torognes/swarm).
+         */
+
+        inline unsigned long popcount(unsigned long x) const;
+
+        void cpu_features_detect();
+
+        unsigned long popcount_128(__m128i x) const;
+
+        unsigned long compare_qgram_vectors_128(const unsigned char* a, const unsigned char* b) const;
+
+        unsigned long compare_qgram_vectors_64(const unsigned char* a, const unsigned char* b) const;
+
+        unsigned long compare_qgram_vectors(const unsigned char* a, const unsigned char* b) const;
+
+    };
 #endif
 
+    /*
+     * Abstract class for storing a collection of amplicons (optionally including quality scores).
+     *
+     * Provides access to (the characteristics of) the amplicons.
+     * While working on a single amplicon collection, the amplicons are accessed to by their position
+     * in the collection (also referred to as "pool-internal integer id").
+     */
+    struct AmpliconCollection : public QgramComparer {
+
+        virtual ~AmpliconCollection() = default;
+
+        virtual AmpliconCollection* clone() const = 0; // deep-copy clone method
+
+
+        /*
+         * Append amplicon to the collection.
+         *
+         * Identifier and abundance are obtained from the Defline instance.
+         * Additional information (specific to the derived class) can be obtained from the ExtraInfo instance.
+         */
+        virtual void emplace_back(const Defline& dl, const std::string& seq, const ExtraInfo& extra) = 0;
+
+        /*
+         * Return the number of amplicons in the collection.
+         */
+        virtual numSeqs_t size() const = 0;
+
+        /*
+         * Return the respective characteristic of the i-th amplicon of the collection.
+         */
+        virtual const char* id(const numSeqs_t i) const = 0; // identifier
+        virtual const char* seq(const numSeqs_t i) const = 0; // sequence
+        virtual lenSeqs_t len(const numSeqs_t i) const = 0; // length
+        virtual numSeqs_t ab(const numSeqs_t i) const = 0; // abundance
+        virtual const char* quals(const numSeqs_t i) const = 0; // returns nullptr when there are no quality scores available
+
+        /*
+         * Compute q-gram distance between two amplicons.
+         */
+        unsigned long qgram_diff(const numSeqs_t i, const numSeqs_t j) const override;
 
+    protected:
+        AmpliconCollection() = default;
+
+        AmpliconCollection(const AmpliconCollection& other) = default; // copy constructor
+
+        AmpliconCollection(AmpliconCollection&& other) = default; // move constructor
+
+        AmpliconCollection& operator=(const AmpliconCollection& other) = default; // copy assignment operator
+
+        AmpliconCollection& operator=(AmpliconCollection&& other) = default; // move assignment operator
 
-// =====================================================
-//              Data type for single amplicons
-// =====================================================
-
-/*
- * Representation of a single amplicon comprising the identifier, the sequence
- * and its length and the abundance of the amplicon.
- *
- * A q-gram vector can be added in order to speed up the candidate filtering step.
- * The handling of the q-gram vector is adapted from Swarm's findqgrams(...).
- *
- * The amplicon does NOT own the identifier and sequence strings.
- */
-struct Amplicon {
+    };
 
-    char* id; // amplicon identifier (e.g. first part of FASTA defline)
-    char* seq; // amplicon sequence
-    lenSeqs_t len; // length of amplicon sequence
-    numSeqs_t abundance; // abundance of amplicon
-#if QGRAM_FILTER
-    // one bit per possible q-gram:
-    // 0 (absence or even number of occurrences) and 1 (odd number of occurrences)
-    unsigned char qGramVector[QGRAMVECTORBYTES];
-#endif
 
-    Amplicon() {
+    /*
+     * Abstract amplicon storage class.
+     *
+     * AmpliconStorage manages the amplicons to be clustered.
+     * The amplicons are stored in one or more pools, which are expected to be disconnected,
+     * i.e. there can be no links between amplicons from different pools (during all clustering phases)
+     * based on the clustering (and refinement) threshold.
+     *
+     * The actual storage of the amplicons in the pool(s) is subject to the underlying AmpliconCollection class.
+     */
+    class AmpliconStorage {
+
+    public:
+        virtual ~AmpliconStorage() = default;
+
+        virtual AmpliconStorage* clone() const = 0; // deep-copy clone method
+
 
-        id = 0;
-        seq = 0;
-        len = 0;
-        abundance = 0;
-#if QGRAM_FILTER
-        memset(qGramVector, 0, QGRAMVECTORBYTES);
-#endif
+        /*
+         * Add an amplicon to the storage.
+         *
+         * ExtraInfo contains additional information (if any) that accompany the amplicon (e.g. FASTQ quality scores).
+         */
+        virtual void add_amplicon(const Defline& dl, const std::string& seq, const ExtraInfo& extra) = 0;
+
+        /*
+         * Retrieve i-th pool from the storage.
+         */
+        virtual AmpliconCollection& get_pool(const numSeqs_t i) = 0;
+
+        /*
+         * Retrieve i-th pool from the storage.
+         */
+        virtual const AmpliconCollection& get_pool(const numSeqs_t i) const = 0;
 
-    }
+        /*
+         * Return the number of pools in the storage.
+         */
+        virtual numSeqs_t num_pools() const = 0;
 
-    Amplicon(char* i, char* s, lenSeqs_t l, numSeqs_t a) {
+        /*
+         * Return the total number of amplicons in all pools.
+         */
+        virtual numSeqs_t num_amplicons() const = 0;
 
-        id = i;
-        seq = s;
-        len = l;
-        abundance = a;
-#if QGRAM_FILTER
-        memset(qGramVector, 0, QGRAMVECTORBYTES);
+        /*
+         * Return the number of amplicons in the i-th pool.
+         */
+        virtual numSeqs_t size_pool(numSeqs_t i) const = 0;
 
-        unsigned long qGram = 0;
-        unsigned long j = 0;
+        /*
+         * Return the maximum sequence length of all amplicons in the storage.
+         */
+        virtual lenSeqs_t max_length() const = 0;
 
-        while((j < QGRAMLENGTH - 1) && (j < len)) {
+        /*
+         * Finalise the storage, i.e. prepare it for use in the clustering phases.
+         *
+         * Should be called once after the last amplicon is added and before data is read from
+         * the storage for the first time.
+         */
+        virtual void finalise() = 0;
 
-            qGram = (qGram << 2) | (acgtuMap[seq[j]] - 1);
-            j++;
+        /*
+         * Print the amplicons to the specified file.
+         */
+        virtual void print(const std::string& file, const Configuration& config) const = 0;
 
-        }
+    protected:
+        AmpliconStorage() = default;
 
-        while(j < len) {
+        AmpliconStorage(const AmpliconStorage& other) = default; // copy constructor
 
-            qGram = (qGram << 2) | (acgtuMap[seq[j]] - 1);
-            qGramVector[(qGram >> 3) & (QGRAMVECTORBYTES - 1)] ^= (1 << (qGram & 7));
-            j++;
+        AmpliconStorage(AmpliconStorage&& other) = default; // move constructor
 
-        }
-#endif
+        AmpliconStorage& operator=(const AmpliconStorage& other) = default; // copy assignment operator
 
-    }
+        AmpliconStorage& operator=(AmpliconStorage&& other) = default; // move assignment operator
 
-    Amplicon& operator=(const Amplicon& other) {
+    };
 
-        // check for self-assignment
-        if (&other == this) {
-            return *this;
-        }
 
-        id = other.id;
-        seq = other.seq;
-        len = other.len;
-        abundance = other.abundance;
-#if QGRAM_FILTER
-        for (numSeqs_t i = 0; i < QGRAMVECTORBYTES; i++) {
-            qGramVector[i] = other.qGramVector[i];
-        }
-#endif
-        return *this;
+    /*
+     * Abstract class representing a collection of possible grafting links
+     * used during the refinement phase.
+     *
+     * For a grafting link, 'parent' refers to the amplicon / swarm to which
+     * the 'child' swarm is added (via the 'child' amplicon).
+     */
+    class GraftingInfo {
 
-    }
+    public:
+        virtual ~GraftingInfo() = default;
 
-};
+        virtual GraftingInfo* clone() const = 0; // deep-copy clone method
 
-// comparer structures for Amplicon structures
-struct AmpliconCompareAlph { // lexicographical, ascending
-    bool operator()(const Amplicon& amplA, const Amplicon& amplB);
-};
 
-struct AmpliconCompareLen { // by length, ascending
-    bool operator()(const Amplicon& amplA, const Amplicon& amplB);
-};
+        /*
+         * Return pool-internal integer id of the parent amplicon of the i-th grafting link in this collection.
+         */
+        virtual numSeqs_t get_parent(const numSeqs_t i) const = 0;
 
-struct AmpliconCompareAbund { // by abundance, ascending
-    bool operator()(const Amplicon& amplA, const Amplicon& amplB);
-};
+        /*
+         * Return pool-internal integer id of the child amplicon of the i-th grafting link in this collection.
+         */
+        virtual numSeqs_t get_child(const numSeqs_t i) const = 0;
 
-struct AmpliconSeqEqual { // string equality
-    bool operator()(const Amplicon& amplA, const Amplicon& amplB);
-};
+        /*
+         * Return a pointer to the swarm of the child amplicon of the i-th grafting link in this collection.
+         */
+        virtual Swarm* get_child_swarm(const numSeqs_t i) const = 0;
 
-// describes a set of substrings chosen for comparison with a segment
-struct Substrings {
+        /*
+         * Return the distance between the parent and child amplicon of the i-th grafting link in this collection.
+         */
+        virtual dist_t get_distance(const numSeqs_t i) const = 0;
 
-    lenSeqs_t first; // start position of first substring to be checked
-    lenSeqs_t last; // start position of last substring to be checked
-    lenSeqs_t len; // common length of all substrings to be checked
+        /*
+         * Add grafting link between parent amplicon p and child amplicon c (from swarm cs) with distance d.
+         */
+        virtual void add_link(const numSeqs_t p, const numSeqs_t c, Swarm* cs, const dist_t d) = 0;
 
-    Substrings() {
+        /*
+         * Return the number of grafting links in this collection.
+         */
+        virtual numSeqs_t num_links() const = 0;
 
-        first = 0;
-        last = 0;
-        len = 0;
+    protected:
+        GraftingInfo() = default;
 
-    }
+        GraftingInfo(const GraftingInfo& other) = default; // copy constructor
 
-    Substrings(lenSeqs_t fp, lenSeqs_t lp, lenSeqs_t l) {
+        GraftingInfo(GraftingInfo&& other) = default; // move constructor
 
-        first = fp;
-        last = lp;
-        len = l;
+        GraftingInfo& operator=(const GraftingInfo& other) = default; // copy assignment operator
 
-    }
+        GraftingInfo& operator=(GraftingInfo&& other) = default; // move assignment operator
 
-};
+    };
 
-// describes a set of segments to be indexed as (first position, length of segment)
-typedef std::vector<std::pair<lenSeqs_t, lenSeqs_t>> Segments;
 
+    /*
+     * Simple representation of a collection of grafting links.
+     *
+     * The different components of the grafting links are stored in separate STL vectors.
+     */
+    class SimpleGraftingInfo : public GraftingInfo {
 
-// select 'substrings' (MMASS) for segment filter
-Substrings selectSubstrs(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex,
-                         const lenSeqs_t t, const lenSeqs_t k);
-Substrings selectSubstrsBackward(const lenSeqs_t selfLen, const lenSeqs_t partnerLen, const lenSeqs_t segIndex,
-                                 const lenSeqs_t t, const lenSeqs_t k);
+    public:
+        SimpleGraftingInfo() = default;
 
-// select 'segments' (to be stored in a parameter) for indexing step
-void selectSegments(Segments& segments, const lenSeqs_t seqLen, const lenSeqs_t t, const lenSeqs_t k);
+        virtual ~SimpleGraftingInfo() = default;
 
+        SimpleGraftingInfo(const SimpleGraftingInfo& other) = default; // copy constructor
 
-// =====================================================
-//           Data types for multiple amplicons
-// =====================================================
+        SimpleGraftingInfo(SimpleGraftingInfo&& other) = default; // move constructor
 
-/*
- * Collection of amplicons with counts of the different occurring sequence lengths.
- *
- * The capacity of the collection and the counts are set before amplicons are added
- * and are not affected when new amplicons are added.
- */
-class AmpliconCollection {
+        SimpleGraftingInfo& operator=(const SimpleGraftingInfo& other) = default; // copy assignment operator
 
-public:
-    AmpliconCollection(const numSeqs_t capacity, const std::vector<std::pair<lenSeqs_t, numSeqs_t>>& counts);
+        SimpleGraftingInfo& operator=(SimpleGraftingInfo&& other) = default; // move assignment operator
 
-    ~AmpliconCollection();
+        SimpleGraftingInfo* clone() const override; // deep-copy clone method
 
-    void push_back(const Amplicon& ampl);
 
-    Amplicon& operator[](const numSeqs_t i);
+        numSeqs_t get_parent(const numSeqs_t i) const override;
 
-    const Amplicon& operator[](const numSeqs_t i) const;
+        numSeqs_t get_child(const numSeqs_t i) const override;
 
-    Amplicon& front() const;
+        Swarm* get_child_swarm(const numSeqs_t i) const override;
 
-    Amplicon& back() const;
+        dist_t get_distance(const numSeqs_t i) const override;
 
-    Amplicon* begin() const;
+        void add_link(const numSeqs_t p, const numSeqs_t c, Swarm* cs, const dist_t d) override;
 
-    Amplicon* end() const;
+        numSeqs_t num_links() const override;
 
-    numSeqs_t size() const;
+    protected:
+        std::vector<numSeqs_t> parents_; // pool-internal integer id of parent amplicon
+        std::vector<numSeqs_t> children_; // pool-internal integer id of child amplicon
+        std::vector<Swarm*> child_swarms_; // swarm the child amplicon belongs to
+        std::vector<dist_t> distances_; // distance between parent and child amplicon
 
-    numSeqs_t numSeqsOfLen(const lenSeqs_t len) const;
+    };
 
-    lenSeqs_t maxLen() const;
 
-    void reserve(const numSeqs_t newCapacity);
+    /*
+     * Abstract class representing a member (entry) of a swarm.
+     *
+     * Provides access to the pool-internal ids of the member, its parent in the swarm,
+     * the distance to the parent and its generation and radius in the swarm.
+     */
+    class SwarmEntry {
 
-    std::vector<lenSeqs_t> allLengths() const;
+    public:
+        virtual ~SwarmEntry() = default;
 
-private:
-    Amplicon* amplicons_; // amplicon array
-    numSeqs_t size_; // number of amplicons
-    numSeqs_t capacity_; // capacity of the amplicon array
+        virtual SwarmEntry* clone() const = 0; // deep-copy clone method
 
-    std::pair<lenSeqs_t, numSeqs_t>* counts_; // number of amplicons per (occurring) length
-    lenSeqs_t numLengths_; // number of different lengths in the amplicon collection
 
-};
+        /*
+         * Return pool-internal integer id of the member.
+         */
+        virtual numSeqs_t member() const = 0;
 
-/*
- * Collection of multiple amplicon collections.
- *
- * Manages a single array storing all identifier and sequence strings
- * of the comprised amplicon collections.
- */
-class AmpliconPools {
+        /*
+         * Return the pool-internal integer id of the parent of the member in the swarm.
+         */
+        virtual numSeqs_t parent() const = 0;
 
-public:
-    AmpliconPools(std::map<lenSeqs_t, numSeqs_t>& counts, const unsigned long long capacity, const lenSeqs_t threshold);
+        /*
+         * Return the generation of the member in the swarm.
+         */
+        virtual numSeqs_t gen() const = 0;
 
-    ~AmpliconPools();
+        /*
+         * Return the radius of the member in the swarm,
+         * i.e. the sum of the distances on the links between the member and the seed of the swarm.
+         */
+        virtual dist_t rad() const = 0;
 
-    // adds a new amplicon to pool / amplicon collection i by storing header and sequence information
-    // in the overall strings array and letting the amplicon members point there
-    void add(const lenSeqs_t i, const std::string& header, const std::string& sequence, const numSeqs_t abundance);
+        /*
+         * Return the distance between the member and its parent in the swarm.
+         */
+        virtual dist_t parent_dist() const = 0;
 
-    // return pointer to pool with the specified index (or null pointer if i is too large)
-    AmpliconCollection* get(const lenSeqs_t i) const;
+    protected:
+        SwarmEntry() = default;
 
-    // return number of pools / amplicon collections
-    lenSeqs_t numPools() const;
+        SwarmEntry(const SwarmEntry& other) = default; // copy constructor
 
-    // return total number of amplicons in all pools
-    numSeqs_t numAmplicons() const;
+        SwarmEntry(SwarmEntry&& other) = default; // move constructor
 
-private:
-    char* strings_; // overall strings (headers, sequences) array, each string ends with a \0
-    char* nextPos_; // position at which the next string would be inserted
-    unsigned long long capacity_; // capacity of strings_
-    std::vector<AmpliconCollection*> pools_; // pointers to the comprised amplicon collections
+        SwarmEntry& operator=(const SwarmEntry& other) = default; // copy assignment operator
 
-};
+        SwarmEntry& operator=(SwarmEntry&& other) = default; // move assignment operator
 
+    };
 
-// Description of a subset of an AmpliconCollection suitable for segment filtering
-//
-// Forward filtering (beginIndex <= beginMatch < end, reading left to right):
-// Amplicons with an index in [beginMatch, end) make up the actual content of the subpool, i.e. these are the amplicons to be filtered.
-// The amplicons with an index in [beginIndex, beginMatch) (if any) are used for indexing only,
-// in order to store the same information in the inverted indices as if we would process the whole pool at once.
-//
-// Backward filtering (beginMatch < beginIndex <= end, reading right to left):
-// Amplicons with an index in [beginIndex, end) are used for indexing only, while those with an index in [beginMatch, beginIndex)
-// have to be filtered. Here, starting at index end-1 and going down to beginIndex (inclusive) we are only indexing.
-// Then, starting at beginIndex-1 and going down to beginMatch (inclusive) we are filtering and indexing.
-//
-// Both getSubpoolBoundaries(...) and getSubpoolBoundariesBackward(...) assume that the amplicons are sorted by increasing sequence length.
-struct Subpool {
 
-    numSeqs_t beginIndex; // inclusive
-    numSeqs_t beginMatch; // inclusive
-    numSeqs_t end; // exclusive
+    /*
+     * Abstract class representing a swarm (cluster).
+     *
+     * Provides access to its members and their 'place' in it (parent, generation etc.).
+     */
+    class Swarm {
 
-    Subpool() {
+    public:
+        virtual ~Swarm() = default;
 
-        beginIndex = 0;
-        beginMatch = 0;
-        end = 0;
+        virtual Swarm* clone() const = 0; // deep-copy clone method
 
-    }
 
-    Subpool(numSeqs_t bi, numSeqs_t bm, numSeqs_t e) {
+        /*
+         * Return pool-internal integer id of the seed of the swarm.
+         */
+        virtual numSeqs_t seed() const = 0;
 
-        beginIndex = bi;
-        beginMatch = bm;
-        end = e;
+        /*
+         * Construct representation of the seed of the swarm.
+         * The second method reuses the provided SwarmEntry instance instead of allocating an additional one.
+         */
+        virtual SwarmEntry* seed_entry() const = 0;
+        virtual SwarmEntry* seed_entry(SwarmEntry* entry) const = 0;
 
-    }
+        /*
+         * Return the pool-internal integer id of the i-th member of the swarm.
+         */
+        virtual numSeqs_t get(const numSeqs_t i) = 0;
 
-};
+        /*
+         * Construct representation of the i-th member of the swarm.
+         * The second method reuses the provided SwarmEntry instance instead of allocating an additional one.
+         */
+        virtual SwarmEntry* get_entry(const numSeqs_t i) = 0;
+        virtual SwarmEntry* get_entry(const numSeqs_t i, SwarmEntry* entry) const = 0;
 
-std::vector<Subpool> getSubpoolBoundaries(const AmpliconCollection& ac, const numSeqs_t num, const lenSeqs_t threshold);
+        /*
+         * Return the pool-internal integer id of the i-th member of the swarm.
+         */
+        virtual numSeqs_t member(const numSeqs_t i) const = 0;
 
+        /*
+         * Return the pool-internal integer id of the i-th member of the swarm.
+         */
+        virtual numSeqs_t parent(const numSeqs_t i) const = 0;
 
-std::vector<Subpool> getSubpoolBoundariesBackward(const AmpliconCollection& ac, const numSeqs_t num, const lenSeqs_t threshold);
+        /*
+         * Return the generation of the i-th member of the swarm.
+         */
+        virtual numSeqs_t gen(const numSeqs_t i) const = 0;
 
+        /*
+         * Return the radius of the i-th member of the swarm.
+         */
+        virtual dist_t rad(const numSeqs_t i) const = 0;
 
+        /*
+         * Return the distance of the i-th member to its parent in the swarm.
+         */
+        virtual dist_t parent_dist(const numSeqs_t i) const = 0;
 
-// =====================================================
-//                          Misc
-// =====================================================
+        /*
+         * Return the number of members in the swarm.
+         * Does not include amplicons from attached swarms (see total_size()).
+         */
+        virtual numSeqs_t size() const = 0;
 
-// pair of amplicon 'ids', amplicons are potentially similar (have passed the filter, but not yet verified)
-typedef std::pair<numSeqs_t, numSeqs_t> Candidate;
+        /*
+         * Return the number of different sequences found in the swarm.
+         * This number can differ from the size of the swarm when the amplicons
+         * were not dereplicated before clustering them.
+         * Does not include amplicons from attached swarms (see total_num_different()).
+         */
+        virtual numSeqs_t num_different() const = 0;
 
-// pair of pointers (first, second) describing the string [first, last) + custom operators
-typedef std::pair<const char*, const char*> StringIteratorPair;
+        /*
+         * Return the number of singletons (i.e. amplicons with abundance one) in the swarm.
+         * Does not include amplicons from attached swarms (see total_num_singletons()).
+         */
+        virtual numSeqs_t num_singletons() const = 0;
 
-// hash function for StringIteratorPair
-struct hashStringIteratorPair {
-    size_t operator()(const StringIteratorPair& p) const;
-};
+        /*
+         * Return the mass of the swarm (i.e. the sum of the abundances of all amplicons).
+         * Does not include amplicons from attached swarms (see total_mass()).
+         */
+        virtual numSeqs_t mass() const = 0;
 
-// comparison function for string equality
-struct equalStringIteratorPair {
-    bool operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const;
-};
+        /*
+         * Sort the generation of amplicons of the swarm to be explored next.
+         * That generation starts with the p-th member and ends with the currently last member.
+         */
+        virtual void sort_next_generation(const AmpliconCollection& ac, const numSeqs_t p) = 0;
 
-// comparison function for lexicographical order
-struct lessStringIteratorPair {
-    bool operator()(const StringIteratorPair& a, const StringIteratorPair& b) const;
-};
+        /*
+         * Append new member m (generation g, radius r) with parent p (both via their pool-internal integer ids),
+         * distance dist to p and abundance ab to the swarm.
+         * Flag new_seq indicates whether the sequence of the amplicon has already been encountered
+         * (influences num_different()).
+         */
+        virtual void append(const numSeqs_t m, const numSeqs_t g, const dist_t r, const numSeqs_t p, const dist_t dist,
+                const numSeqs_t ab, const bool new_seq) = 0;
 
-/*
-* Collection of (inverted) indices for the segment filter.
-*
-* The inverted indices are arranged in a grid where
-* the columns correspond to segments and
-* the rows correspond to sequence lengths.
-*
-* During the execution of the segment filter,
-* 'older' rows can be removed once they correspond to
-* sequences too short to be able to provide candidates for
-* the current (and future) sequences.
-*
-*/
-template<typename T>
-class RollingIndices {
-public:
-    typedef std::vector<T> Row;
+        /*
+         * Append new member m (pool-internal integer id) with parent p (p-th member of swarm),
+         * distance dist to p and abundance ab to the swarm.
+         * Flag new_seq indicates whether the sequence of the amplicon has already been encountered
+         * (influences num_different()).
+         */
+        virtual void append(const numSeqs_t m, const numSeqs_t p, const dist_t dist, const numSeqs_t ab, const bool new_seq) = 0;
 
+        /*
+         * Attach swarm cs to this swarm via a link between amplicon p from this swarm and amplicon c from cs.
+         * The distance between p and c is d.
+         */
+        virtual void attach(const numSeqs_t p, const numSeqs_t c, Swarm* cs, const dist_t d) = 0;
 
-    RollingIndices(lenSeqs_t t, lenSeqs_t w, bool f, bool s = true) {
+        /*
+         * Indicate whether this swarm is attached to (i.e. is the child of) another swarm.
+         */
+        virtual bool is_attached() const = 0;
 
-        threshold_ = t;
-        width_ = w;
-        forward_ = f;
-        shrink_ = s;
-        minLength_ = 0;
-        maxLength_ = 0;
+        /*
+         * Mark this swarm as attached.
+         */
+        virtual void mark_as_attached() = 0;
 
-        empty_ = T();
-        emptyRow_ = Row(0);
+        /*
+         * Return the number of members in the swarm (including attached swarms).
+         */
+        virtual numSeqs_t total_size() const = 0;
 
-    }
+        /*
+         * Return the number of different sequences in the swarm (including attached swarms).
+         */
+        virtual numSeqs_t total_num_different() const = 0;
 
+        /*
+         * Return the number of singletons in the swarm (including attached swarms).
+         */
+        virtual numSeqs_t total_num_singletons() const = 0;
 
-    // return the indices for the specified length
-    Row& getIndicesRow(const lenSeqs_t len) {
+        /*
+         * Return the mass of the swarm (including attached swarms).
+         */
+        virtual numSeqs_t total_mass() const = 0;
 
-        auto iter = indices_.find(len);
+        /*
+         * Return the maximum radius of the swarm.
+         * Does not consider attached swarms.
+         */
+        virtual dist_t max_rad() const = 0;
 
-        return (iter != indices_.end()) ? iter->second : emptyRow_;
+        /*
+         * Return the maximum generation of the swarm
+         * (i.e. number of iterations before the swarm reached its natural limit).
+         * Does not consider attached swarms.
+         */
+        virtual lenSeqs_t max_gen() const = 0;
 
-    }
+        /*
+         * Retrieve the grafting links with this swarm as the parent.
+         */
+        virtual GraftingInfo* get_grafting_info() const = 0;
 
+    protected:
+        Swarm() = default;
 
-    // return the index corresponding to the specified length and segment
-    T& getIndex(const lenSeqs_t len, const lenSeqs_t i) {
+        Swarm(const Swarm& other) = default; // copy constructor
 
-        if (i >= width_) return empty_;
+        Swarm(Swarm&& other) = default; // move constructor
 
-        auto iter = indices_.find(len);
+        Swarm& operator=(const Swarm& other) = default; // copy assignment operator
 
-        return (iter != indices_.end()) ? (iter->second)[i] : empty_;
+        Swarm& operator=(Swarm&& other) = default; // move assignment operator
 
-    }
+    };
 
 
-    // add new row (and remove then outdated rows)
-    void roll(const lenSeqs_t len) {
+    /*
+     * Abstract class representing a collection of swarms.
+     */
+    class Swarms {
 
-        if (indices_.find(len) == indices_.end()) {
+    public:
+        virtual ~Swarms() = default;
 
-            indices_[len] = Row(width_);
-            minLength_ = std::min(minLength_, len);
-            maxLength_ = std::max(maxLength_, len);
-            if (shrink_) shrink(len);
+        virtual Swarms* clone() const = 0; // deep-copy clone method
 
-        }
 
+        /*
+         * Add new swarm to the collection and initialise it with the seed
+         * (pool-internal integer id s, abundance ab).
+         */
+        virtual Swarm& initialise_cluster(const numSeqs_t s, const numSeqs_t ab) = 0;
 
-    }
+        /*
+         * Return the number of swarms in the collection.
+         */
+        virtual numSeqs_t size() const  = 0;
 
+        /*
+         * Return the i-th swarm in the collection.
+         */
+        virtual Swarm& get(const numSeqs_t i) = 0;
+        virtual const Swarm& get(const numSeqs_t i) const = 0;
 
-    // remove outdated rows
-    void shrink(const lenSeqs_t cur) {
+        /*
+         * Discard the swarms in the collection, leaving behind an empty collection.
+         */
+        virtual void clear() = 0;
 
-        if (forward_) {
+    protected:
+        Swarms() = default;
 
-            for (lenSeqs_t len = minLength_; len < (cur - threshold_); len++) {
-                indices_.erase(len);
+        Swarms(const Swarms& other) = default; // copy constructor
+
+        Swarms(Swarms&& other) = default; // move constructor
+
+        Swarms& operator=(const Swarms& other) = default; // copy assignment operator
+
+        Swarms& operator=(Swarms&& other) = default; // move assignment operator
+
+    };
+
+
+    /*
+     * Abstract swarm storage class.
+     *
+     * SwarmStorage stores and manages swarms during clustering, refinement and output generation.
+     * The swarms are stored per pool.
+     *
+     * The actual storage of the swarms is subject to the underlying Swarms class.
+     */
+    class SwarmStorage {
+
+    public:
+        virtual ~SwarmStorage() = default;
+
+        virtual SwarmStorage* clone() const = 0; // deep-copy clone method
+
+
+        /*
+         * Return the swarms of the p-th pool.
+         */
+        virtual Swarms& get_swarms(const numSeqs_t p) = 0;
+        virtual const Swarms& get_swarms(const numSeqs_t p) const = 0;
+
+        /*
+         * Return the number of pools.
+         */
+        virtual numSeqs_t num_pools() const = 0;
+
+        /*
+         * Return the number of swarms in all pools.
+         */
+        virtual numSeqs_t num_swarms() const = 0;
+
+        /*
+         * Return the number of swarms in the p-th pool.
+         */
+        virtual numSeqs_t num_swarms(const numSeqs_t p) const = 0;
+
+    protected:
+        SwarmStorage() = default;
+
+        SwarmStorage(const SwarmStorage& other) = default; // copy constructor
+
+        SwarmStorage(SwarmStorage&& other) = default; // move constructor
+
+        SwarmStorage& operator=(const SwarmStorage& other) = default; // copy assignment operator
+
+        SwarmStorage& operator=(SwarmStorage&& other) = default; // move assignment operator
+
+    };
+
+
+    /*
+     * Method provider for generating an order of swarms across pools.
+     *
+     * The returned order consists of pairs of pointers to a Swarm instance (second member)
+     * and the AmpliconCollection (first member), from which it originates.
+     */
+    struct SwarmOrderer {
+
+        /*
+         * Sort the swarms by their mass (descending)
+         * and use the lexicographical rank (ascending) of the seeds as the tie-breaker.
+         */
+        static std::vector<std::pair<const AmpliconCollection*, const Swarm*>> order_by_mass(
+                const AmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage);
+
+        /*
+         * Sort the swarms by the abundance of their seeds (descending)
+         * and use the lexicographical rank (ascending) of the seeds as the tie-breaker.
+         */
+        static std::vector<std::pair<const AmpliconCollection*, const Swarm*>> order_by_seed_abundance(
+                const AmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage);
+
+    };
+
+
+    /*
+     * Abstract distance-function class.
+     *
+     * Provides the method to compute the distance between two amplicons.
+     */
+    class Distance {
+
+    public:
+        virtual ~Distance() = default;
+
+        virtual Distance* clone() const = 0; // deep-copy clone method
+
+
+        /*
+         * Compute distance between the two given amplicons.
+         */
+        virtual dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) = 0;
+
+    protected:
+        Distance() = default;
+
+        Distance(const Distance& other) = default; // copy constructor
+
+        Distance(Distance&& other) = default; // move constructor
+
+        Distance& operator=(const Distance& other) = default; // copy assignment operator
+
+        Distance& operator=(Distance&& other) = default; // move assignment operator
+
+    };
+
+
+    /*
+     * Abstract class describing auxiliary data for the clustering phases.
+     *
+     * Auxiliary data supports the efficient identification of partners of an amplicon.
+     */
+    class AuxiliaryData {
+
+    public:
+        /*
+         * Representation of a partner of an amplicon providing the necessary information
+         * to build a link in the swarm.
+         */
+        struct Partner {
+
+            numSeqs_t id; // pool-internal integer id of the partner
+            dist_t dist; // distance of the partner to the currently explored amplicon
+
+            Partner(numSeqs_t i, dist_t d) : id(i), dist(d) {
+                // nothing else to do
             }
-            for (lenSeqs_t len = cur - threshold_; len <= cur; len++) {
 
-                if (indices_.find(len) != indices_.end()) {
+        };
 
-                    minLength_ = len;
-                    break;
+        virtual ~AuxiliaryData() = default;
 
-                }
-
-            }
-
-        } else {
-
-            for (lenSeqs_t len = cur + threshold_ + 1; len <= maxLength_; len++) {
-                indices_.erase(len);
-            }
-            for (lenSeqs_t len = cur + threshold_; len >= cur; len--) {
-
-                if (indices_.find(len) != indices_.end()) {
-
-                    maxLength_ = len;
-                    break;
-
-                }
-
-            }
-
-        }
-
-    }
-
-    bool contains(const lenSeqs_t len) {
-        return (indices_.find(len) != indices_.end());
-    }
-
-    lenSeqs_t minLength() const {
-        return minLength_;
-    }
-    lenSeqs_t maxLength() const {
-        return maxLength_;
-    }
+        virtual AuxiliaryData* clone() const = 0; // deep-copy clone method
 
 
-private:
+        /*
+         * Mark the amplicon with the given pool-internal integer id as swarmed,
+         * such that it is not considered as a partner of other amplicons as well.
+         */
+        virtual void tick_off_amplicon(const numSeqs_t ampl_id) = 0;
 
-    lenSeqs_t threshold_; // limits number of rows when applying shrink()
-    lenSeqs_t width_; // number of columns / segments per row
-    lenSeqs_t minLength_;
-    lenSeqs_t maxLength_;
+        /*
+         * Record occurrence of an amplicon.
+         * This is used, e.g., to determine whether the sequence of the amplicon is new when adding it to a swarm.
+         * Returns true iff the sequence is new.
+         */
+        virtual bool record_amplicon(const numSeqs_t ampl_id) = 0;
 
-    std::unordered_map<lenSeqs_t, Row> indices_; // indices grid
+        /*
+         * Reset the records on already observed amplicons.
+         */
+        virtual void clear_amplicon_records() = 0;
 
-    T empty_; // empty (dummy) index returned for out-of-bounds queries
-    Row emptyRow_; // empty (dummy) row returned for out-of-bounds queries
+        /*
+         * Determine the partners of the amplicon with the given pool-internal integer id.
+         */
+        virtual std::vector<Partner> find_partners(const numSeqs_t ampl_id) = 0;
 
-    bool forward_; // flag indicating whether rolling forwards (increasingly larger lengths are 'inserted') or backwards (shorter lengths are 'inserted')
-    bool shrink_; // flag indicating whether roll() automatically shrinks the index
+    protected:
+        AuxiliaryData() = default;
 
-};
+        AuxiliaryData(const AuxiliaryData& other) = default; // copy constructor
 
+        AuxiliaryData(AuxiliaryData&& other) = default; // move constructor
+
+        AuxiliaryData& operator=(const AuxiliaryData& other) = default; // copy assignment operator
+
+        AuxiliaryData& operator=(AuxiliaryData&& other) = default; // move assignment operator
+
+    };
 
 }
-
 
 #endif //GEFAST_BASE_HPP

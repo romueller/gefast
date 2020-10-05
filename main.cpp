@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2017 Robert Mueller
+ * Copyright (C) 2016 - 2020 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,187 +21,141 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#include <ctime>
-#include <iostream>
-#include <thread>
-#include <vector>
-
-#include "include/Base.hpp"
-#include "include/Preprocessor.hpp"
-#include "include/Relation.hpp"
-#include "include/SIMD.hpp"
-#include "include/SwarmClustering.hpp"
-#include "include/Utility.hpp"
-
-
+#include "include/Factories.hpp"
 
 namespace GeFaST {
 
-/*
- * Prints general information on the tool as a header.
- */
-void printInformation() {
+    /*
+     * Controls the overall workflow of GeFaST:
+     * 0) read / set up configuration
+     * 1) reading and preprocessing input data
+     * 2) clustering amplicons
+     * 3) cluster refinement (optional)
+     * 4) output generation
+     */
+    int run(int argc, const char* argv[]) {
 
-    std::cout << "##### GeFaST (1.0.0) #####" << std::endl;
-    std::cout << "Copyright (C) 2016 - 2017 Robert Mueller" << std::endl;
-    std::cout << "https://github.com/romueller/gefast" << std::endl << std::endl;
-
-}
-
-/*
- * Controls the overall workflow of GeFaST: read / set up configuration,
- * read data, cluster and output results.
- */
-int run(int argc, const char* argv[]) {
-
-    printInformation();
+        print_information();
 
 
-    /* ===== Bootstrapping ===== */
+        /* ===== Configuration ===== */
 
-    Config<std::string> c = getConfiguration(argc, argv);
-#if QGRAM_FILTER
-    cpu_features_detect();
-#endif
+        if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
 
-
-    // if no list file is specified with -f / --files, then the first arguments
-    // not starting with a dash are assumed to be the input files
-    std::vector<std::string> files;
-    if (!c.peek(FILE_LIST)) {
-
-        for (int i = 1; i < argc; i++) {
-
-            if (argv[i][0] == '-') break;
-
-            files.push_back(argv[i]);
+            print_help();
+            return 0;
 
         }
 
-    } else {
-        files = readFileList(c.get(FILE_LIST));
-    }
+        if (argc < 4) {
+
+            std::cerr << "ERROR: Not enough arguments." << std::endl;
+            print_help();
+            return 1;
+
+        }
+
+        Configuration* config = ConfigurationFactory::create(argc, argv);
+
+        if (config->input_files.empty()) {
+
+            std::cerr << "ERROR: No input file(s) specified." << std::endl;
+            print_help();
+            delete config;
+            return 1;
+
+        }
+        if ((config->output_internal + config->output_otus + config->output_statistics + config->output_seeds +
+                config->output_uclust + config->keep_preprocessed).empty()) {
+
+            std::cerr << "ERROR: No output file(s) specified." << std::endl;
+            print_help();
+            delete config;
+            return 1;
+
+        }
+
+        config->print(std::cout);
+
+        std::cout << "===== Computation =====\n" << std::endl;
+
+        /* ===== Preprocessing ===== */
+
+        std::cout << "Preprocessing inputs..." << std::endl;
+        Preprocessor* preprocessor = config->build_preprocessor();
+        AmpliconStorage* amplicon_storage = preprocessor->preprocess_inputs(config->input_files, *config);
+
+        if (!config->keep_preprocessed.empty()) {
+            amplicon_storage->print(config->keep_preprocessed, *config);
+        }
 
 
-    if (files.size() == 0) {
+        if (amplicon_storage->num_amplicons() > 0) {
 
-        std::cerr << "ERROR: No input files specified." << std::endl;
-        return 1;
+            std::cout << " >> Number of amplicons: " << amplicon_storage->num_amplicons() << std::endl;
 
-    }
-    if (!((c.get(PREPROCESSING_ONLY) == "1") || c.peek(MATCHES_OUTPUT_FILE) || c.peek(SWARM_OUTPUT_INTERNAL) ||
-            c.peek(SWARM_OUTPUT_OTUS) || c.peek(SWARM_OUTPUT_STATISTICS) || c.peek(SWARM_OUTPUT_SEEDS) ||
-            c.peek(SWARM_OUTPUT_UCLUST))) {
+            /* ===== Clustering ===== */
 
-        std::cerr << "ERROR: No output file specified." << std::endl;
-        return 1;
+            Clusterer* clusterer = config->build_clusterer();
+            SwarmStorage* swarm_storage = clusterer->cluster(*amplicon_storage, *config);
 
-    }
+            std::cout << " >> Number of swarms: " << swarm_storage->num_swarms() << std::endl;
 
-    SwarmClustering::SwarmConfig sc;
-    sc.outInternals = c.peek(SWARM_OUTPUT_INTERNAL);
-    sc.outOtus = c.peek(SWARM_OUTPUT_OTUS);
-    sc.outMothur = (c.peek(SWARM_MOTHUR) && (c.get(SWARM_MOTHUR) == "1"));
-    sc.outStatistics = c.peek(SWARM_OUTPUT_STATISTICS);
-    sc.outSeeds = c.peek(SWARM_OUTPUT_SEEDS);
-    sc.outUclust = c.peek(SWARM_OUTPUT_UCLUST);
-    if (sc.outInternals) sc.oFileInternals = c.get(SWARM_OUTPUT_INTERNAL);
-    if (sc.outOtus) sc.oFileOtus = c.get(SWARM_OUTPUT_OTUS);
-    if (sc.outStatistics) sc.oFileStatistics = c.get(SWARM_OUTPUT_STATISTICS);
-    if (sc.outSeeds) sc.oFileSeeds = c.get(SWARM_OUTPUT_SEEDS);
-    if (sc.outUclust) sc.oFileUclust = c.get(SWARM_OUTPUT_UCLUST);
-    sc.noOtuBreaking = (c.get(SWARM_NO_OTU_BREAKING) != "0");
-    sc.dereplicate = (c.get(SWARM_DEREPLICATE) == "1");
-    sc.sepAbundance = c.get(SEPARATOR_ABUNDANCE);
-    sc.extraSegs = std::stoul(c.get(NUM_EXTRA_SEGMENTS));
-    sc.filterTwoWay = (std::stoul(c.get(SEGMENT_FILTER)) == 2) || (std::stoul(c.get(SEGMENT_FILTER)) == 3);
-    sc.numExplorers = std::stoul(c.get(SWARM_NUM_EXPLORERS));
-    sc.numThreadsPerExplorer = std::stoul(c.get(SWARM_NUM_THREADS_PER_CHECK));
-    sc.numGrafters = std::stoul(c.get(SWARM_NUM_GRAFTERS));
-    sc.fastidiousCheckingMode = std::stoul(c.get(SWARM_FASTIDIOUS_CHECKING_MODE));
-    sc.numThreadsPerCheck = std::stoul(c.get(SWARM_NUM_THREADS_PER_CHECK));
-    sc.threshold = std::stoul(c.get(THRESHOLD));
+            /* ===== Cluster refinement ===== */
 
-    if (sc.threshold <= 0 && !sc.dereplicate) { // check for feasible threshold unless dereplication is chosen
+            if (config->refinement_threshold > 0) {
 
-        std::cerr << "ERROR: Only positive thresholds are allowed." << std::endl;
-        return 1;
+                std::cout << "Refining swarms..." << std::endl;
+                ClusterRefiner* refiner = config->build_cluster_refiner();
+                refiner->refine(*amplicon_storage, *swarm_storage, *config);
+                delete refiner;
 
-    }
+                // determine number of amplicons from swarm storage (amplicons not added to / removed from swarms
+                // during refinement cannot be figured from the amplicon storage)
+                numSeqs_t num_ampl = 0;
+                for (auto p = 0; p < swarm_storage->num_pools(); p++) {
+                    auto& sws = swarm_storage->get_swarms(p);
+                    for (auto s = 0; s < sws.size(); s++) {
+                        auto& sw = sws.get(s);
+                        if (!sw.is_attached()) num_ampl += sw.total_size();
+                    }
+                }
+                std::cout << " >> Number of amplicons after refinement: " << num_ampl << std::endl;
+                std::cout << " >> Number of swarms after refinement: " << swarm_storage->num_swarms() << std::endl;
 
-    if (c.get(SWARM_FASTIDIOUS_THRESHOLD) == "0") { // "default" corresponds to Swarm postulating one virtual linking amplicon
-
-        c.set(SWARM_FASTIDIOUS_THRESHOLD, std::to_string(2 * sc.threshold));
-        sc.fastidiousThreshold = 2 * sc.threshold;
-
-    } else {
-        sc.fastidiousThreshold = std::stoul(c.get(SWARM_FASTIDIOUS_THRESHOLD));
-    }
-
-    if (sc.dereplicate) { // fastidious option pointless when dereplicating or matching with distance 0
-
-        c.set(SWARM_FASTIDIOUS, "0");
-        sc.fastidious = false;
-
-        c.set(USE_SCORE, "0");
-        sc.useScore = false;
-
-    }
-
-    sc.fastidious = (c.get(SWARM_FASTIDIOUS) == "1");
-    sc.boundary = std::stoul(c.get(SWARM_BOUNDARY));
-
-    sc.useScore = (c.get(USE_SCORE) == "1");
-    sc.scoring = Verification::Scoring(std::stoull(c.get(SWARM_MATCH_REWARD)), std::stoll(c.get(SWARM_MISMATCH_PENALTY)),
-                                       std::stoll(c.get(SWARM_GAP_OPENING_PENALTY)), std::stoll(c.get(SWARM_GAP_EXTENSION_PENALTY)));
-
-    std::cout << "===== Configuration =====" << std::endl;
-    c.print(std::cout);
-    std::cout << "=========================" << std::endl << std::endl;
-    std::string jobName = c.get(NAME);
-    std::replace(jobName.begin(), jobName.end(), ':', '-');
-    if (c.peek(INFO_FOLDER)) writeJobParameters(c.get(INFO_FOLDER) + jobName + ".txt", c, files);
+            }
 
 
-    /* ===== Preprocessing ===== */
+            /* ===== Output generation ===== */
 
-    auto pools = Preprocessor::run(c, files);
+            std::cout << "Generating outputs..." << std::endl;
+            OutputGenerator* generator = config->build_output_generator();
+            generator->output_results(*amplicon_storage, *swarm_storage, *config);
 
-    if (c.get(PREPROCESSING_ONLY) == "1") {
+            delete generator;
+            delete clusterer;
+            delete swarm_storage;
+
+        } else {
+            std::cout << " >> No amplicons remained after the preprocessing, i.e. there is nothing to cluster." << std::endl;
+        }
+
+
+        /* ===== Cleaning up ===== */
 
         std::cout << "Cleaning up..." << std::endl;
-        delete pools;
+        delete amplicon_storage;
+        delete preprocessor;
+        delete config;
         std::cout << "Computation finished." << std::endl;
 
         return 0;
 
     }
 
-
-    /* ===== Clustering resp. dereplication ===== */
-
-    if (sc.dereplicate) {
-        SwarmClustering::dereplicate(*pools, sc);
-    } else {
-        SwarmClustering::cluster(*pools, sc);
-    }
-
-
-    /* ===== Cleaning up ===== */
-
-    std::cout << "Cleaning up..." << std::endl;
-    delete pools;
-    std::cout << "Computation finished." << std::endl;
-
-    return 0;
-
-}
-
 }
 
 
 int main(int argc, const char* argv[]) {
-
     GeFaST::run(argc, argv);
-
 }

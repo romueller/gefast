@@ -58,14 +58,15 @@ the value specified on the command line has priority.
 The chosen mode influences the fundamental behaviour of **GeFaST** as well as the available parameters.
  * Levenshtein (```lev```): Cluster amplicons based on the number of edit operations in optimal pairwise alignments.
  * Alignment score (```as```): Cluster amplicons based on the score of optimal pairwise alignments.
- * Quality-weighted Levenshtein (```qlev```): Cluster amplicons based on the number of edit operations in optimal pairwise alignments
+ * Quality Levenshtein (```qlev```): Cluster amplicons based on the number of edit operations in optimal pairwise alignments
     considering the quality scores associated with the sequences.
- * Quality-weighted alignment score (```qas```): Cluster amplicons based on the score of optimal pairwise alignments
+ * Quality alignment score (```qas```): Cluster amplicons based on the score of optimal pairwise alignments
     considering the quality scores associated with the sequences.
  * Consistency (```cons```): Cluster amplicons using a notion of consistency considering the quality and abundance of amplicons.
  * Dereplication (```derep```): Group amplicons based on exact sequence equality.
 
-A full description of the available options and more details on the different modes are provided in the manual.
+A full description of the available options and more details on the different modes are provided in the manual. 
+Moreover, examples of how to run GeFaST in the different modes are shown in the `examples/` subdirectory.
 
 ## Citation
 
@@ -75,6 +76,12 @@ Müller, R., & Nebel, M. (2018). GeFaST: An improved method for OTU assignment b
 		*BMC Bioinformatics*, 19(1), 321. doi:[10.1186/s12859-018-2349-1](https://doi.org/10.1186/s12859-018-2349-1)
 
 ## Version history
+
+### version 2.0.1 ###
+**GeFaST** v2.0.1 provides additional options for how to combine quality scores while dereplicating FASTQ sequences 
+and changes the default scaling factor of the quality-weighted Frith cost function to a value that corresponds to the default scoring function.
+It also includes some smaller performance improvements and adds examples of how to run **GeFaST** in the different modes.
+
 
 ### version 2.0.0 ###
 **GeFaST** v2.0.0 further generalises the iterative clustering strategy by considering additional notions of distance

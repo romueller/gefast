@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -36,7 +36,7 @@
 namespace GeFaST {
 
     // version number of current implementation of GeFaST
-    const std::string VERSION = "2.0.0";
+    const std::string VERSION = "2.0.1";
 
     // output separators
     const char SEP_INTERNALS = '\t'; // between columns in output_internal
@@ -397,6 +397,49 @@ namespace GeFaST {
         ExtraInfoQuality() = default;
 
         std::string quality_scores = ""; // encoded quality scores
+    };
+
+
+    /*
+     * Pair of pointers (first, second) describing the (sub)string corresponding to [first, last).
+     */
+    typedef std::pair<const char*, const char*> StringIteratorPair;
+
+    // hash function for StringIteratorPair
+    struct hashStringIteratorPair {
+
+        hashStringIteratorPair() : hash(std::hash<std::string>()) {
+            // nothing else to do
+        }
+
+        size_t operator()(const StringIteratorPair& p) const;
+
+        std::hash<std::string> hash;
+    };
+
+    // comparison function for string equality
+    struct equalStringIteratorPair {
+        bool operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const;
+    };
+
+    // comparison function for lexicographical order
+    struct lessStringIteratorPair {
+        bool operator()(const StringIteratorPair& a, const StringIteratorPair& b) const;
+    };
+
+
+    // hash function for std::pair of integers
+    // based on: https://www.boost.org/doc/libs/1_35_0/doc/html/boost/hash_combine_id241013.html
+    struct hashStdPair {
+
+        hashStdPair() : hash(std::hash<lenSeqs_t>()) {
+            // nothing else to do
+        }
+
+        size_t operator()(const std::pair<lenSeqs_t, lenSeqs_t>& p) const;
+
+        std::hash<lenSeqs_t> hash;
+
     };
 
 

@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -908,7 +908,8 @@ namespace GeFaST {
                     if (max_sid < target_clusters.size() && !is_significant(src_ampl, swarms.get(max_sid).mass(), total_num)) {
 
                         auto& target_swarm = swarms.get(max_sid);
-                        target_swarm.append(aid, 1, config.main_threshold + 1, target_swarm.seed(), config.main_threshold + 1, src_ampl.abundance, true);
+                        Swarm& new_swarm = swarms.initialise_cluster(aid, ac.ab(aid));
+                        target_swarm.attach(0, 0, &new_swarm, config.main_threshold + 1);
 
                     } else {
                         ungrafted_amplicons.emplace_back(aid);
@@ -1254,7 +1255,8 @@ namespace GeFaST {
                     if ((aid != src_swarm.seed() || remaining_members.empty()) && max_sid < target_clusters.size() && !is_significant(src_ampl, swarms.get(max_sid).mass(), total_num)) {
 
                         auto& target_swarm = swarms.get(max_sid);
-                        target_swarm.append(aid, 1, config.main_threshold + 1, target_swarm.seed(), config.main_threshold + 1, src_ampl.abundance, true);
+                        Swarm& new_swarm = swarms.initialise_cluster(aid, ac.ab(aid));
+                        target_swarm.attach(0, 0, &new_swarm, config.main_threshold + 1);
 
                     } else {
                         remaining_members.emplace_back(m - 1);

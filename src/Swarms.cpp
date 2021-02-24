@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -141,13 +141,12 @@ namespace GeFaST {
     }
 
     SwarmEntry* SimpleSwarm::seed_entry() const {
-        return new SimpleSwarmEntry(this, 0);
+        return new ForwardingSwarmEntry<SimpleSwarm>(this, 0);
     }
 
     SwarmEntry* SimpleSwarm::seed_entry(SwarmEntry* entry) const {
 
-        dynamic_cast<SimpleSwarmEntry*>(entry)->swarm_ = this;
-        dynamic_cast<SimpleSwarmEntry*>(entry)->internal_id_ = 0;
+        dynamic_cast<ForwardingSwarmEntry<SimpleSwarm>*>(entry)->reassign(this, 0);
         return entry;
 
     }
@@ -157,13 +156,12 @@ namespace GeFaST {
     }
 
     SwarmEntry* SimpleSwarm::get_entry(numSeqs_t i) {
-        return new SimpleSwarmEntry(this, i);
+        return new ForwardingSwarmEntry<SimpleSwarm>(this, i);
     }
 
     SwarmEntry* SimpleSwarm::get_entry(numSeqs_t i, SwarmEntry* entry) const {
 
-        dynamic_cast<SimpleSwarmEntry*>(entry)->swarm_ = this;
-        dynamic_cast<SimpleSwarmEntry*>(entry)->internal_id_ = i;
+        dynamic_cast<ForwardingSwarmEntry<SimpleSwarm>*>(entry)->reassign(this, i);
         return entry;
 
     }
@@ -364,6 +362,319 @@ namespace GeFaST {
     }
 
     GraftingInfo* SimpleSwarm::get_grafting_info() const {
+        return graftings_;
+    }
+
+
+    /* === SimpleCombinedSwarm === */
+
+    SimpleCombinedSwarm::SimpleCombinedSwarm(numSeqs_t m, numSeqs_t ab) {
+
+        members_.emplace_back(m, m, 0, 0, 0);
+
+        mass_ = ab;
+        num_different_ = 1;
+        num_singletons_ = (ab == 1);
+
+        max_rad_ = 0;
+
+        graftings_ = nullptr;
+        attached_ = false;
+
+    }
+
+    SimpleCombinedSwarm::~SimpleCombinedSwarm() {
+        delete graftings_;
+    }
+
+    SimpleCombinedSwarm::SimpleCombinedSwarm(const SimpleCombinedSwarm& other) : // copy constructor
+            members_(other.members_), mass_(other.mass_), num_different_(other.num_different_),
+            num_singletons_(other.num_singletons_), max_rad_(other.max_rad_), graftings_(other.graftings_->clone()),
+            attached_(other.attached_) {
+
+        // nothing else to do
+
+    }
+
+    SimpleCombinedSwarm::SimpleCombinedSwarm(SimpleCombinedSwarm&& other) noexcept : // move constructor
+            members_(std::move(other.members_)), mass_(other.mass_), num_different_(other.num_different_),
+            num_singletons_(other.num_singletons_), max_rad_(other.max_rad_), graftings_(other.graftings_), attached_(other.attached_) {
+
+        other.graftings_ = nullptr;
+
+    }
+
+    SimpleCombinedSwarm& SimpleCombinedSwarm::operator=(const SimpleCombinedSwarm& other) { // copy assignment operator
+
+        // check for self-assignment
+        if (&other == this) {
+            return *this;
+        }
+
+        // release old resources
+        delete graftings_;
+
+        // copy new resources
+        members_ = other.members_;
+
+        mass_ = other.mass_;
+        num_different_ = other.num_different_;
+        num_singletons_ = other.num_singletons_;
+
+        max_rad_ = other.max_rad_;
+
+        graftings_ = other.graftings_->clone();
+        attached_ = other.attached_;
+
+        return *this;
+
+    }
+
+    SimpleCombinedSwarm& SimpleCombinedSwarm::operator=(SimpleCombinedSwarm&& other) noexcept { // move assignment operator
+
+        // check for self-assignment
+        if (&other == this) {
+            return *this;
+        }
+
+        // release old resources
+        delete graftings_;
+
+        // copy new resources
+        members_ = other.members_;
+
+        mass_ = other.mass_;
+        num_different_ = other.num_different_;
+        num_singletons_ = other.num_singletons_;
+
+        max_rad_ = other.max_rad_;
+
+        graftings_ = other.graftings_; other.graftings_ = nullptr;
+        attached_ = other.attached_;
+
+        return *this;
+
+    }
+
+    SimpleCombinedSwarm* SimpleCombinedSwarm::clone() const {
+        return new SimpleCombinedSwarm(*this);
+    }
+
+    numSeqs_t SimpleCombinedSwarm::seed() const {
+        return members_[0].member;
+    }
+
+    SwarmEntry* SimpleCombinedSwarm::seed_entry() const {
+        return new ForwardingSwarmEntry<SimpleCombinedSwarm>(this, 0);
+    }
+
+    SwarmEntry* SimpleCombinedSwarm::seed_entry(SwarmEntry* entry) const {
+
+        dynamic_cast<ForwardingSwarmEntry<SimpleCombinedSwarm>*>(entry)->reassign(this, 0);
+        return entry;
+
+    }
+
+    numSeqs_t SimpleCombinedSwarm::get(numSeqs_t i) {
+        return members_[i].member;
+    }
+
+    SwarmEntry* SimpleCombinedSwarm::get_entry(numSeqs_t i) {
+        return new ForwardingSwarmEntry<SimpleCombinedSwarm>(this, i);
+    }
+
+    SwarmEntry* SimpleCombinedSwarm::get_entry(numSeqs_t i, SwarmEntry* entry) const {
+
+        dynamic_cast<ForwardingSwarmEntry<SimpleCombinedSwarm>*>(entry)->reassign(this, i);
+        return entry;
+
+    }
+
+    numSeqs_t SimpleCombinedSwarm::member(numSeqs_t i) const {
+        return members_[i].member;
+    }
+
+    numSeqs_t SimpleCombinedSwarm::parent(numSeqs_t i) const {
+        return members_[i].parent;
+    }
+
+    numSeqs_t SimpleCombinedSwarm::gen(numSeqs_t i) const {
+        return members_[i].gen;
+    }
+
+    dist_t SimpleCombinedSwarm::rad(numSeqs_t i) const {
+        return members_[i].rad;
+    }
+
+    dist_t SimpleCombinedSwarm::parent_dist(numSeqs_t i) const {
+        return members_[i].parent_dist;
+    }
+
+    numSeqs_t SimpleCombinedSwarm::size() const {
+        return members_.size();
+    }
+
+    numSeqs_t SimpleCombinedSwarm::num_different() const {
+        return num_different_;
+    }
+
+    numSeqs_t SimpleCombinedSwarm::num_singletons() const {
+        return num_singletons_;
+    }
+
+    numSeqs_t SimpleCombinedSwarm::mass() const {
+        return mass_;
+    }
+
+    void SimpleCombinedSwarm::sort_next_generation(const AmpliconCollection& ac, numSeqs_t p) {
+
+        std::vector<numSeqs_t> permutation(size() - p);
+        std::iota(permutation.begin(), permutation.end(), p);
+
+        std::sort(permutation.begin(), permutation.end(),
+                  [&](const numSeqs_t a, const numSeqs_t b) {
+                      return (ac.ab(members_[a].member) > ac.ab(members_[b].member)) ||
+                             ((ac.ab(members_[a].member) == ac.ab(members_[b].member)) &&
+                              (strcmp(ac.id(members_[a].member), ac.id(members_[b].member)) < 0));
+                  }
+        );
+
+        std::vector<bool> done(size());
+        for (numSeqs_t i = p; i < size(); ++i) {
+
+            if (!done[i]) {
+
+                done[i] = true;
+                numSeqs_t prev_j = i;
+                numSeqs_t j = permutation[i - p];
+
+                while (i != j) {
+
+                    std::swap(members_[prev_j], members_[j]);
+
+                    done[j] = true;
+                    prev_j = j;
+                    j = permutation[j - p];
+
+                }
+            }
+
+        }
+
+    }
+
+    void SimpleCombinedSwarm::append(numSeqs_t m, numSeqs_t g, dist_t r, numSeqs_t p, dist_t dist, numSeqs_t ab, bool new_seq) {
+
+        members_.emplace_back(m, p, dist, g, r);
+
+        mass_ += ab;
+        num_different_ += new_seq;
+        num_singletons_ += (ab == 1);
+
+        max_rad_ = std::max(max_rad_, r);
+
+    }
+
+    void SimpleCombinedSwarm::append(numSeqs_t m, numSeqs_t p, dist_t dist, numSeqs_t ab, bool new_seq) {
+
+        members_.emplace_back(m, members_[p].member, dist, members_[p].gen + 1, members_[p].rad + dist);
+
+        mass_ += ab;
+        num_different_ += new_seq;
+        num_singletons_ += (ab == 1);
+
+        max_rad_ = std::max(max_rad_, members_.back().rad);
+
+    }
+
+    void SimpleCombinedSwarm::attach(const numSeqs_t p, const numSeqs_t c, Swarm* cs, const dist_t d) {
+
+        if (graftings_ == nullptr) {
+            graftings_ = new SimpleGraftingInfo();
+        }
+
+        graftings_->add_link(p, c, cs, d);
+        cs->mark_as_attached();
+
+    }
+
+    void SimpleCombinedSwarm::mark_as_attached() {
+        attached_ = true;
+    }
+
+    bool SimpleCombinedSwarm::is_attached() const {
+        return attached_;
+    }
+
+    numSeqs_t SimpleCombinedSwarm::total_size() const {
+
+        numSeqs_t sum = size();
+        if (graftings_ != nullptr) {
+
+            for (numSeqs_t i = 0; i < graftings_->num_links(); i++) {
+                sum += graftings_->get_child_swarm(i)->size();
+            }
+
+        }
+
+        return sum;
+
+    }
+
+    numSeqs_t SimpleCombinedSwarm::total_num_different() const {
+
+        numSeqs_t sum = num_different();
+        if (graftings_ != nullptr) {
+
+            for (numSeqs_t i = 0; i < graftings_->num_links(); i++) {
+                sum += graftings_->get_child_swarm(i)->num_different();
+            }
+
+        }
+
+        return sum;
+
+    }
+
+    numSeqs_t SimpleCombinedSwarm::total_num_singletons() const {
+
+        numSeqs_t sum = num_singletons();
+        if (graftings_ != nullptr) {
+
+            for (numSeqs_t i = 0; i < graftings_->num_links(); i++) {
+                sum += graftings_->get_child_swarm(i)->num_singletons();
+            }
+
+        }
+
+        return sum;
+
+    }
+
+    numSeqs_t SimpleCombinedSwarm::total_mass() const {
+
+        numSeqs_t sum = mass();
+        if (graftings_ != nullptr) {
+
+            for (numSeqs_t i = 0; i < graftings_->num_links(); i++) {
+                sum += graftings_->get_child_swarm(i)->mass();
+            }
+
+        }
+
+        return sum;
+
+    }
+
+    dist_t SimpleCombinedSwarm::max_rad() const {
+        return max_rad_;
+    }
+
+    lenSeqs_t SimpleCombinedSwarm::max_gen() const {
+        return members_.back().gen;
+    }
+
+    GraftingInfo* SimpleCombinedSwarm::get_grafting_info() const {
         return graftings_;
     }
 

@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -840,7 +840,6 @@ namespace GeFaST {
         return std::min({d_row_[len_longer], p_row_[len_longer], val_q});
 
     }
-
 
 
     /* === QgramBoundedScoreDistance === */

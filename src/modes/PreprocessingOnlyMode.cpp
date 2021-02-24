@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -54,6 +54,8 @@ namespace GeFaST {
             if (key == "distance") opt_distance = get_distance_option(line.substr(delim_pos + 1));
             if (key == "amplicon_storage") opt_amplicon_storage = get_amplicon_storage_option(line.substr(delim_pos + 1));
 
+            if (key == "amplicon_collection") opt_amplicon_collection = get_amplicon_collection_option(line.substr(delim_pos + 1));
+
         }
 
         check();
@@ -66,12 +68,12 @@ namespace GeFaST {
         // opt_distance: user-defined, handled above
         // opt_amplicon_storage: user-defined, handled above
         // opt_amplicon_collection: given by opt_amplicon_storage
+        // opt_swarm_storage: user-defined, handled in set_general_parameters()
 
         opt_clusterer = CL_IDLE;
         opt_refiner = CR_IDLE;
         opt_output_generator = OG_IDLE;
 
-        opt_swarm_storage = SS_SIMPLE_PER_POOL;
         opt_auxiliary_data = AD_NAIVE_AUXILIARY;
         opt_refinement_auxiliary_data = RD_NAIVE_AUXILIARY;
 

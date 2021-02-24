@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -73,8 +73,8 @@ namespace GeFaST {
         // opt_refiner: user-defined, handled above and in set_general_parameters()
         // opt_output_generator: user-defined, handled above and in set_general_parameters()
         // opt_amplicon_collection: given by opt_amplicon_storage
+        // opt_swarm_storage: user-defined, handled in set_general_parameters()
 
-        opt_swarm_storage = SS_SIMPLE_PER_POOL;
         opt_amplicon_storage = AS_PREPARED_POOLS_QUALITY;
         opt_auxiliary_data = AD_NAIVE_AUXILIARY;
         opt_refinement_auxiliary_data = RD_NAIVE_AUXILIARY;

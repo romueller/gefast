@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -769,7 +769,6 @@ namespace GeFaST {
     }
 
 
-
     Preprocessor* PreprocessorFactory::create(const PreprocessorOption opt, const QualityEncoding<>& qe,
             const Configuration& config) {
 
@@ -780,9 +779,26 @@ namespace GeFaST {
                 res = new FastaPreprocessor();
                 break;
 
-            case PP_FASTQ:
-                res = new FastqPreprocessor(qe);
+            case PP_FASTQ: {
+                auto iter = config.misc.find("score_derep");
+                std::string derep_opt = (iter != config.misc.end()) ? iter->second : "mean";
+
+                if (derep_opt == "mean") {
+                    res = new FastqPreprocessor<MeanReadRepresentation>(qe);
+                } else if (derep_opt == "max") {
+                    res = new FastqPreprocessor<MaxReadRepresentation>(qe);
+                } else if (derep_opt == "mode") {
+                    res = new FastqPreprocessor<ModeReadRepresentation>(qe);
+                } else if (derep_opt == "median") {
+                    res = new FastqPreprocessor<MedianReadRepresentation>(qe);
+                } else if (derep_opt == "product") {
+                    res = new FastqPreprocessor<ProductReadRepresentation>(qe);
+                } else {
+                    std::cerr << "ERROR: Unknown 'score_derep' option. Resorting to 'mean'." << std::endl;
+                    res = new FastqPreprocessor<MeanReadRepresentation>(qe);
+                }
                 break;
+            }
 
             case PP_UNKNOWN: // fallthrough to default for error handling
             default:
@@ -804,9 +820,26 @@ namespace GeFaST {
                 res = new FastaPreprocessor();
                 break;
 
-            case PP_FASTQ:
-                res = new FastqPreprocessor(opt_qe);
+            case PP_FASTQ: {
+                auto iter = config.misc.find("score_derep");
+                std::string derep_opt = (iter != config.misc.end()) ? iter->second : "mean";
+
+                if (derep_opt == "mean") {
+                    res = new FastqPreprocessor<MeanReadRepresentation>(opt_qe);
+                } else if (derep_opt == "max") {
+                    res = new FastqPreprocessor<MaxReadRepresentation>(opt_qe);
+                } else if (derep_opt == "mode") {
+                    res = new FastqPreprocessor<ModeReadRepresentation>(opt_qe);
+                } else if (derep_opt == "median") {
+                    res = new FastqPreprocessor<MedianReadRepresentation>(opt_qe);
+                } else if (derep_opt == "product") {
+                    res = new FastqPreprocessor<ProductReadRepresentation>(opt_qe);
+                } else {
+                    std::cerr << "ERROR: Unknown 'score_derep' option. Resorting to 'mean'." << std::endl;
+                    res = new FastqPreprocessor<MeanReadRepresentation>(opt_qe);
+                }
                 break;
+            }
 
             case PP_UNKNOWN: // fallthrough to default for error handling
             default:
@@ -944,7 +977,7 @@ namespace GeFaST {
 
             case OG_UNKNOWN: // fallthrough to default for error handling
             default:
-                std::cerr << "ERROR: Unknown ClusterRefiner option." << std::endl;
+                std::cerr << "ERROR: Unknown OutputGenerator option." << std::endl;
 
         }
 
@@ -962,13 +995,28 @@ namespace GeFaST {
         switch (opt) {
 
             case SS_SIMPLE_PER_POOL: {
-                res = new SimpleSwarmStorage(amplicon_storage.num_pools());
+                res = new SimpleSwarmStorage<SimpleSwarms<SimpleSwarm>>(amplicon_storage.num_pools());
+                break;
+            }
+
+            case SS_SIMPLE_COMB_PER_POOL: {
+                res = new SimpleSwarmStorage<SimpleSwarms<SimpleCombinedSwarm>>(amplicon_storage.num_pools());
+                break;
+            }
+
+            case SS_FORWARDING_PER_POOL: {
+                res = new SimpleSwarmStorage<SharingSplitSwarms<ForwardingSwarm>>(amplicon_storage.num_pools());
+                break;
+            }
+
+            case SS_FORWARDING_COMB_PER_POOL: {
+                res = new SimpleSwarmStorage<SharingCombinedSwarms<ForwardingSwarm>>(amplicon_storage.num_pools());
                 break;
             }
 
             case SS_UNKNOWN: // fallthrough to default for error handling
             default:
-                std::cerr << "ERROR: Unknown ClusterRefiner option." << std::endl;
+                std::cerr << "ERROR: Unknown SwarmStorage option." << std::endl;
 
         }
 
@@ -994,7 +1042,7 @@ namespace GeFaST {
 
             case AD_UNKNOWN: // fallthrough to default for error handling
             default:
-                std::cerr << "ERROR: Unknown ClusterRefiner option." << std::endl;
+                std::cerr << "ERROR: Unknown AuxiliaryData option." << std::endl;
 
         }
 
@@ -1030,8 +1078,11 @@ namespace GeFaST {
             // The set-up process of the segment filter is adapted in order to determine the number of segments
             // needed for the filter based on the distance threshold and the edit-operation costs.
             case AD_SCORE_SEGMENT_FILTER: {
+                ScoringFunction sf(config.match_reward, config.mismatch_penalty, config.gap_opening_penalty, config.gap_extension_penalty);
+                lenSeqs_t num_threshold_segments = static_cast<lenSeqs_t>(threshold) / std::min({sf.penalty_mismatch, sf.penalty_open, sf.penalty_extend});
+
                 res = new ScoreSegmentFilterAuxiliaryData(amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
-                        num_extra_segments, config);
+                        num_threshold_segments, num_extra_segments, config);
                 break;
             }
 
@@ -1060,7 +1111,7 @@ namespace GeFaST {
 
             case RD_UNKNOWN: // fallthrough to default for error handling
             default:
-                std::cerr << "ERROR: Unknown ClusterRefiner option." << std::endl;
+                std::cerr << "ERROR: Unknown AuxiliaryData option." << std::endl;
 
         }
 
@@ -1097,8 +1148,11 @@ namespace GeFaST {
             // The set-up process of the segment filter is adapted in order to determine the number of segments
             // needed for the filter based on the distance threshold and the edit-operation costs.
             case RD_SCORE_SEGMENT_FILTER: {
+                ScoringFunction sf(config.match_reward, config.mismatch_penalty, config.gap_opening_penalty, config.gap_extension_penalty);
+                lenSeqs_t num_threshold_segments = static_cast<lenSeqs_t>(threshold) / std::min({sf.penalty_mismatch, sf.penalty_open, sf.penalty_extend});
+
                 res = new ScoreSegmentFilterAuxiliaryData(amplicon_storage, swarm_storage, pool_id,
-                        static_cast<lenSeqs_t>(threshold), num_extra_segments, config);
+                        static_cast<lenSeqs_t>(threshold), num_threshold_segments, num_extra_segments, config);
                 break;
             }
 

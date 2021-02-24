@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -97,7 +97,7 @@ namespace GeFaST {
     }
 
     bool SimpleAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.insert(ac_.seq(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
     }
 
     void SimpleAuxiliaryData::clear_amplicon_records() {
@@ -107,10 +107,11 @@ namespace GeFaST {
     std::vector<AuxiliaryData::Partner> SimpleAuxiliaryData::find_partners(numSeqs_t ampl_id) {
 
         std::vector<Partner> partners;
+        numSeqs_t ampl_ab = ac_.ab(ampl_id);
 
         for (auto partner_id : unswarmed_) {
 
-            if (!break_swarms_ || (ac_.ab(ampl_id) >= ac_.ab(partner_id))) {
+            if (!break_swarms_ || (ampl_ab >= ac_.ab(partner_id))) {
 
                 auto dist = dist_fun_->distance(ac_, ampl_id, partner_id);
 
@@ -268,27 +269,13 @@ namespace GeFaST {
         }
 
     }
-    
-    //TODO? custom hash function (e.g. FNV) to avoid construction of temporary string
-    size_t hashStringIteratorPair::operator()(const StringIteratorPair& p) const {
-        return std::hash<std::string>{}(std::string(p.first, p.second));
-    }
-
-    bool equalStringIteratorPair::operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const {
-        return ((lhs.second - lhs.first) == (rhs.second - rhs.first)) && std::equal(lhs.first, lhs.second, rhs.first);
-    }
-
-    bool lessStringIteratorPair::operator()(const StringIteratorPair& a, const StringIteratorPair& b) const {
-        return std::lexicographical_compare(a.first, a.second, b.first, b.second);
-    }
 
 
     /* === SegmentFilterAuxiliaryData === */
 
     SegmentFilterAuxiliaryData::SegmentFilterAuxiliaryData(const AmpliconStorage& amplicon_storage, const numSeqs_t pool_id,
             lenSeqs_t threshold, lenSeqs_t num_extra_segments, const Configuration& config) :
-            indices_(SwarmingIndices(threshold + 1, threshold + num_extra_segments, true, false)),
-            ac_(amplicon_storage.get_pool(pool_id)) {
+            ac_(amplicon_storage.get_pool(pool_id)), indices_(ac_, threshold + num_extra_segments) {
 
         threshold_ = threshold;
         num_extra_segments_ = num_extra_segments;
@@ -303,8 +290,7 @@ namespace GeFaST {
     SegmentFilterAuxiliaryData::SegmentFilterAuxiliaryData(const AmpliconStorage& amplicon_storage,
             const SwarmStorage& swarm_storage, const numSeqs_t pool_id, lenSeqs_t threshold,
             lenSeqs_t num_extra_segments, const Configuration& config) :
-            indices_(SwarmingIndices(threshold + 1, threshold + num_extra_segments, true, false)),
-            ac_(amplicon_storage.get_pool(pool_id)) {
+            ac_(amplicon_storage.get_pool(pool_id)), indices_(ac_, threshold + num_extra_segments) {
 
         threshold_ = threshold;
         num_extra_segments_ = num_extra_segments;
@@ -317,15 +303,27 @@ namespace GeFaST {
     }
 
     SegmentFilterAuxiliaryData::~SegmentFilterAuxiliaryData() {
+
         delete dist_fun_;
+
+        for (auto& kv : substrs_archive_) {
+            delete[] kv.second; kv.second = nullptr;
+        }
+
     }
 
     SegmentFilterAuxiliaryData::SegmentFilterAuxiliaryData(const SegmentFilterAuxiliaryData& other) : // copy constructor
             ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
             threshold_(other.threshold_), num_extra_segments_(other.num_extra_segments_),
-            break_swarms_(other.break_swarms_), indices_(other.indices_), substrs_archive_(other.substrs_archive_) {
+            break_swarms_(other.break_swarms_), indices_(other.indices_) {
+std::cout<<"<<<<<<<<<<<CC>>>>>>>>>>>>"<<std::endl;
+        for (auto& kv : other.substrs_archive_) {
 
-        // nothing else to do
+            auto tmp = new Substrings[threshold_ + num_extra_segments_];
+            std::copy(kv.second, kv.second + threshold_ + num_extra_segments_, tmp);
+            substrs_archive_[kv.first] = tmp;
+
+        }
 
     }
 
@@ -334,7 +332,7 @@ namespace GeFaST {
             threshold_(other.threshold_), num_extra_segments_(other.num_extra_segments_),
             break_swarms_(other.break_swarms_), indices_(std::move(other.indices_)),
             substrs_archive_(std::move(other.substrs_archive_)) {
-
+std::cout<<"<<<<<<<<<<<MC>>>>>>>>>>>>"<<std::endl;
         other.dist_fun_ = nullptr;
 
     }
@@ -345,16 +343,11 @@ namespace GeFaST {
 
 
     void SegmentFilterAuxiliaryData::tick_off_amplicon(numSeqs_t ampl_id) {
-
-        auto& invs = indices_.get_indices_row(ac_.len(ampl_id));
-        for (auto i = 0; i < threshold_ + num_extra_segments_; i++) {
-            invs[i].remove_label(ampl_id);
-        }
-
+        indices_.remove_amplicon(ampl_id);
     }
 
     bool SegmentFilterAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.insert(ac_.seq(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
     }
 
     void SegmentFilterAuxiliaryData::clear_amplicon_records() {
@@ -366,13 +359,16 @@ namespace GeFaST {
         std::vector<Partner> partners;
         std::vector<numSeqs_t> cand_cnts;
 
-        for (lenSeqs_t partner_len = (ac_.len(ampl_id) > threshold_) * (ac_.len(ampl_id) - threshold_);
-                partner_len <= ac_.len(ampl_id) + threshold_; partner_len++) {
+        auto ampl_seq = ac_.seq(ampl_id);
+        numSeqs_t ampl_ab = ac_.ab(ampl_id);
+
+        for (lenSeqs_t seq_len = ac_.len(ampl_id), partner_len = (seq_len > threshold_) * (seq_len - threshold_);
+             partner_len <= seq_len + threshold_; partner_len++) {
 
             cand_cnts.clear();
 
-            add_candidate_counts(ampl_id, partner_len, cand_cnts);
-            verify_candidates(ampl_id, cand_cnts, partners);
+            add_candidate_counts(ampl_seq, seq_len, partner_len, cand_cnts);
+            verify_candidates(ampl_id, ampl_ab, cand_cnts, partners);
 
         }
 
@@ -387,41 +383,38 @@ namespace GeFaST {
 
             lenSeqs_t seq_len = ac_.len(ampl_id);
 
-            if (!indices_.contains(seq_len)) {
-
-                // inverted index
-                indices_.roll(seq_len);
+            if (substrs_archive_.find(std::make_pair(seq_len, seq_len)) == substrs_archive_.end()) {
 
                 // substrings information
-                std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrs_archive_[seq_len];
+                std::pair<lenSeqs_t, lenSeqs_t> len_pair(seq_len, 0);
                 for (lenSeqs_t partner_len = (seq_len > threshold_) * (seq_len - threshold_);
                         partner_len <= seq_len + threshold_; partner_len++) {
 
-                    std::vector<Substrings>& vec = substrs[partner_len];
+                    len_pair.second = partner_len;
+                    auto arr = new Substrings[threshold_ + num_extra_segments_];
                     for (lenSeqs_t segment_index = 0; segment_index < threshold_ + num_extra_segments_; segment_index++) {
                         if (partner_len <= seq_len) {
-                            vec.push_back(select_substrs(seq_len, partner_len, segment_index, threshold_, num_extra_segments_));
+                            arr[segment_index] = select_substrs(seq_len, partner_len, segment_index, threshold_, num_extra_segments_);
                         } else {
-                            vec.push_back(select_substrs_backward(seq_len, partner_len, segment_index, threshold_, num_extra_segments_));
+                            arr[segment_index] = select_substrs_backward(seq_len, partner_len, segment_index, threshold_, num_extra_segments_);
                         }
                     }
+                    substrs_archive_[len_pair] = arr;
 
                 }
 
             }
 
             lenSeqs_t d = seq_len - (seq_len / (threshold_ + num_extra_segments_)) * (threshold_ + num_extra_segments_);
-            lenSeqs_t p = 0;
             lenSeqs_t l = (seq_len / (threshold_ + num_extra_segments_));
+
+            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
 
             for (lenSeqs_t s = 0; s < threshold_ + num_extra_segments_; s++) {
 
-                indices_.get_index(seq_len, s).add(StringIteratorPair(
-                        ac_.seq(ampl_id) + p,
-                        ac_.seq(ampl_id) + p + l + (s >= (threshold_ + num_extra_segments_ - d))),
-                                                   ampl_id);
-
-                p += l + (s >= (threshold_ + num_extra_segments_ - d));
+                sip.first = sip.second;
+                sip.second += l + (s >= (threshold_ + num_extra_segments_ - d));
+                indices_.record_segment(seq_len, s, sip, ampl_id);
 
             }
 
@@ -432,6 +425,7 @@ namespace GeFaST {
     void SegmentFilterAuxiliaryData::prepare_light(const Swarms& swarms, const numSeqs_t boundary) {
 
         std::vector<numSeqs_t> light_amplicons;
+        std::set<lenSeqs_t> observed_lengths;
 
         // prepare indexing of amplicons of light swarms
         for (numSeqs_t s = 0; s < swarms.size(); s++) {
@@ -450,21 +444,23 @@ namespace GeFaST {
 
                     lenSeqs_t seq_len = ac_.len(swarm.member(i));
 
-                    if (substrs_archive_.find(seq_len) == substrs_archive_.end()) {
+                    if (observed_lengths.insert(seq_len).second) {
 
                         // substrings information of amplicons of heavy swarms
-                        std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrs_archive_[seq_len];
+                        std::pair<lenSeqs_t, lenSeqs_t> len_pair(seq_len, 0);
                         for (lenSeqs_t partner_len = (seq_len > threshold_) * (seq_len - threshold_);
                                 partner_len <= seq_len + threshold_; partner_len++) {
 
-                            std::vector<Substrings>& vec = substrs[partner_len];
+                            len_pair.second = partner_len;
+                            auto arr = new Substrings[threshold_ + num_extra_segments_];
                             for (lenSeqs_t segment_index = 0; segment_index < threshold_ + num_extra_segments_; segment_index++) {
                                 if (partner_len <= seq_len) {
-                                    vec.push_back(select_substrs(seq_len, partner_len, segment_index, threshold_, num_extra_segments_));
+                                    arr[segment_index] = select_substrs(seq_len, partner_len, segment_index, threshold_, num_extra_segments_);
                                 } else {
-                                    vec.push_back(select_substrs_backward(seq_len, partner_len, segment_index, threshold_, num_extra_segments_));
+                                    arr[segment_index] = select_substrs_backward(seq_len, partner_len, segment_index, threshold_, num_extra_segments_);
                                 }
                             }
+                            substrs_archive_[len_pair] = arr;
 
                         }
 
@@ -484,22 +480,16 @@ namespace GeFaST {
 
             lenSeqs_t seq_len = ac_.len(ampl_id);
 
-            if (!indices_.contains(seq_len)) { // new inverted index row
-                indices_.roll(seq_len);
-            }
-
             lenSeqs_t d = seq_len - (seq_len / (threshold_ + num_extra_segments_)) * (threshold_ + num_extra_segments_);
-            lenSeqs_t p = 0;
             lenSeqs_t l = (seq_len / (threshold_ + num_extra_segments_));
 
-            for (lenSeqs_t seg = 0; seg < threshold_ + num_extra_segments_; seg++) {
+            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
 
-                indices_.get_index(seq_len, seg).add(StringIteratorPair(
-                        ac_.seq(ampl_id) + p,
-                        ac_.seq(ampl_id) + p + l + (seg >= (threshold_ + num_extra_segments_ - d))),
-                                                     ampl_id);
+            for (lenSeqs_t s = 0; s < threshold_ + num_extra_segments_; s++) {
 
-                p += l + (seg >= (threshold_ + num_extra_segments_ - d));
+                sip.first = sip.second;
+                sip.second += l + (s >= (threshold_ + num_extra_segments_ - d));
+                indices_.record_segment(seq_len, s, sip, ampl_id);
 
             }
 
@@ -507,26 +497,28 @@ namespace GeFaST {
 
     }
 
-    void SegmentFilterAuxiliaryData::add_candidate_counts(const numSeqs_t ampl_id, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts) {
+    void SegmentFilterAuxiliaryData::add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len,
+                                                          lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts) {
 
-        StringIteratorPair sip;
-        for (lenSeqs_t i = 0; i < threshold_ + num_extra_segments_; i++) {
+        if (indices_.contains_length(partner_len)) {
 
-            const Substrings& subs = substrs_archive_[ac_.len(ampl_id)][partner_len][i];
-            SwarmingInvertedIndex& inv = indices_.get_index(partner_len, i);
-            sip.first = ac_.seq(ampl_id) + subs.first;
-            sip.second = sip.first + subs.len;
+            auto arr = substrs_archive_[std::make_pair(ampl_len, partner_len)];
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
-                inv.add_label_counts_of(sip, cand_cnts);
+            for (lenSeqs_t i = 0; i < threshold_ + num_extra_segments_; i++) {
+
+                Substrings& subs = arr[i];
+                StringIteratorPair sip(ampl_seq + subs.first, ampl_seq + subs.first + subs.len);
+
+                indices_.add_neighboured_counts(partner_len, i, sip, subs.last - subs.first, cand_cnts);
+
             }
 
         }
 
     }
 
-    void SegmentFilterAuxiliaryData::verify_candidates(const numSeqs_t ampl_id, std::vector<numSeqs_t>& cand_cnts,
-            std::vector<Partner>& partners) {
+    void SegmentFilterAuxiliaryData::verify_candidates(const numSeqs_t ampl_id, const numSeqs_t ampl_ab,
+                                                       std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners) {
 
         std::sort(cand_cnts.begin(), cand_cnts.end());
 
@@ -537,7 +529,7 @@ namespace GeFaST {
 
             if (prev_cand != cand_id) {
 
-                if ((cnt >= num_extra_segments_) && (!break_swarms_ || ac_.ab(ampl_id) >= ac_.ab(prev_cand))) {
+                if ((cnt >= num_extra_segments_) && (!break_swarms_ || ampl_ab >= ac_.ab(prev_cand))) {
 
                     auto dist = dist_fun_->distance(ac_, ampl_id, prev_cand);
 
@@ -557,7 +549,7 @@ namespace GeFaST {
 
         }
 
-        if ((cnt >= num_extra_segments_) && (!break_swarms_ || ac_.ab(ampl_id) >= ac_.ab(prev_cand))) {
+        if ((cnt >= num_extra_segments_) && (!break_swarms_ || ampl_ab >= ac_.ab(prev_cand))) {
 
             auto dist = dist_fun_->distance(ac_, ampl_id, prev_cand);
 
@@ -574,8 +566,7 @@ namespace GeFaST {
 
     TwoWaySegmentFilterAuxiliaryData::TwoWaySegmentFilterAuxiliaryData(const AmpliconStorage& amplicon_storage,
             const numSeqs_t pool_id, lenSeqs_t threshold, lenSeqs_t num_extra_segments, const Configuration& config) :
-            indices_(SwarmingIndices(threshold + 1, threshold + num_extra_segments, true, false)),
-            ac_(amplicon_storage.get_pool(pool_id)) {
+            ac_(amplicon_storage.get_pool(pool_id)), indices_(ac_, threshold + num_extra_segments) {
 
         threshold_ = threshold;
         num_extra_segments_ = num_extra_segments;
@@ -593,8 +584,7 @@ namespace GeFaST {
     TwoWaySegmentFilterAuxiliaryData::TwoWaySegmentFilterAuxiliaryData(const AmpliconStorage& amplicon_storage,
             const SwarmStorage& swarm_storage, const numSeqs_t pool_id, lenSeqs_t threshold,
             lenSeqs_t num_extra_segments, const Configuration& config) :
-            indices_(SwarmingIndices(threshold + 1, threshold + num_extra_segments, true, false)),
-            ac_(amplicon_storage.get_pool(pool_id)) {
+            ac_(amplicon_storage.get_pool(pool_id)), indices_(ac_, threshold + num_extra_segments) {
 
         threshold_ = threshold;
         num_extra_segments_ = num_extra_segments;
@@ -610,16 +600,28 @@ namespace GeFaST {
     }
 
     TwoWaySegmentFilterAuxiliaryData::~TwoWaySegmentFilterAuxiliaryData() {
+
         delete dist_fun_;
+
+        for (auto& kv : substrs_archive_) {
+            delete[] kv.second; kv.second = nullptr;
+        }
+
     }
 
     TwoWaySegmentFilterAuxiliaryData::TwoWaySegmentFilterAuxiliaryData(const TwoWaySegmentFilterAuxiliaryData& other) : // copy constructor
             ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
             threshold_(other.threshold_), num_extra_segments_(other.num_extra_segments_),
-            break_swarms_(other.break_swarms_), indices_(other.indices_), substrs_archive_(other.substrs_archive_),
+            break_swarms_(other.break_swarms_), indices_(other.indices_),
             segments_(other.segments_), segment_strs_(other.segment_strs_) {
 
-        // nothing else to do
+        for (auto& kv : other.substrs_archive_) {
+
+            auto tmp = new Substrings[threshold_ + num_extra_segments_];
+            std::copy(kv.second, kv.second + threshold_ + num_extra_segments_, tmp);
+            substrs_archive_[kv.first] = tmp;
+
+        }
 
     }
 
@@ -639,16 +641,11 @@ namespace GeFaST {
     }
 
     void TwoWaySegmentFilterAuxiliaryData::tick_off_amplicon(numSeqs_t ampl_id) {
-
-        auto& invs = indices_.get_indices_row(ac_.len(ampl_id));
-        for (auto i = 0; i < threshold_ + num_extra_segments_; i++) {
-            invs[i].remove_label(ampl_id);
-        }
-
+        indices_.remove_amplicon(ampl_id);
     }
 
     bool TwoWaySegmentFilterAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.insert(ac_.seq(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
     }
 
     void TwoWaySegmentFilterAuxiliaryData::clear_amplicon_records() {
@@ -660,19 +657,23 @@ namespace GeFaST {
         std::vector<Partner> partners;
         std::vector<numSeqs_t> cand_cnts;
 
-        select_segments(segments_, ac_.len(ampl_id), threshold_, num_extra_segments_);
+        auto ampl_seq = ac_.seq(ampl_id);
+        numSeqs_t ampl_ab = ac_.ab(ampl_id);
+        lenSeqs_t seq_len = ac_.len(ampl_id);
+
+        select_segments(segments_, seq_len, threshold_, num_extra_segments_);
         for (auto i = 0; i < threshold_ + num_extra_segments_; i++) {
-            segment_strs_[i] = std::string(ac_.seq(ampl_id) + segments_[i].first,
-                    ac_.seq(ampl_id) + segments_[i].first + segments_[i].second);
+            segment_strs_[i] = std::string(ampl_seq + segments_[i].first,
+                                           ampl_seq + segments_[i].first + segments_[i].second);
         }
 
-        for (lenSeqs_t partner_len = (ac_.len(ampl_id) > threshold_) * (ac_.len(ampl_id) - threshold_);
-                partner_len <= ac_.len(ampl_id) + threshold_; partner_len++) {
+        for (lenSeqs_t partner_len = (seq_len > threshold_) * (seq_len - threshold_);
+                partner_len <= seq_len + threshold_; partner_len++) {
 
             cand_cnts.clear();
 
-            add_candidate_counts(ampl_id, partner_len, cand_cnts);
-            verify_candidates(ampl_id, partner_len, cand_cnts, partners);
+            add_candidate_counts(ampl_seq, seq_len, partner_len, cand_cnts);
+            verify_candidates(ampl_id, seq_len, ampl_ab, partner_len, cand_cnts, partners);
 
         }
 
@@ -687,41 +688,38 @@ namespace GeFaST {
 
             lenSeqs_t seq_len = ac_.len(ampl_id);
 
-            if (!indices_.contains(seq_len)) {
-
-                // inverted index
-                indices_.roll(seq_len);
+            if (substrs_archive_.find(std::make_pair(seq_len, seq_len)) == substrs_archive_.end()) {
 
                 // substrings information
-                std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrs_archive_[seq_len];
+                std::pair<lenSeqs_t, lenSeqs_t> len_pair(seq_len, 0);
                 for (lenSeqs_t partner_len = (seq_len > threshold_) * (seq_len - threshold_);
                         partner_len <= seq_len + threshold_; partner_len++) {
 
-                    std::vector<Substrings>& vec = substrs[partner_len];
+                    len_pair.second = partner_len;
+                    auto arr = new Substrings[threshold_ + num_extra_segments_];
                     for (lenSeqs_t segment_index = 0; segment_index < threshold_ + num_extra_segments_; segment_index++) {
                         if (partner_len <= seq_len) {
-                            vec.push_back(select_substrs(seq_len, partner_len, segment_index, threshold_, num_extra_segments_));
+                            arr[segment_index] = select_substrs(seq_len, partner_len, segment_index, threshold_, num_extra_segments_);
                         } else {
-                            vec.push_back(select_substrs_backward(seq_len, partner_len, segment_index, threshold_, num_extra_segments_));
+                            arr[segment_index] = select_substrs_backward(seq_len, partner_len, segment_index, threshold_, num_extra_segments_);
                         }
                     }
+                    substrs_archive_[len_pair] = arr;
 
                 }
 
             }
 
             lenSeqs_t d = seq_len - (seq_len / (threshold_ + num_extra_segments_)) * (threshold_ + num_extra_segments_);
-            lenSeqs_t p = 0;
             lenSeqs_t l = (seq_len / (threshold_ + num_extra_segments_));
+
+            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
 
             for (lenSeqs_t s = 0; s < threshold_ + num_extra_segments_; s++) {
 
-                indices_.get_index(seq_len, s).add(StringIteratorPair(
-                        ac_.seq(ampl_id) + p,
-                        ac_.seq(ampl_id) + p + l + (s >= (threshold_ + num_extra_segments_ - d))),
-                                                   ampl_id);
-
-                p += l + (s >= (threshold_ + num_extra_segments_ - d));
+                sip.first = sip.second;
+                sip.second += l + (s >= (threshold_ + num_extra_segments_ - d));
+                indices_.record_segment(seq_len, s, sip, ampl_id);
 
             }
 
@@ -732,6 +730,7 @@ namespace GeFaST {
     void TwoWaySegmentFilterAuxiliaryData::prepare_light(const Swarms& swarms, const numSeqs_t boundary) {
 
         std::vector<numSeqs_t> light_amplicons;
+        std::set<lenSeqs_t> observed_lengths;
 
         // prepare indexing of amplicons of light swarms
         for (numSeqs_t s = 0; s < swarms.size(); s++) {
@@ -750,21 +749,23 @@ namespace GeFaST {
 
                 lenSeqs_t seq_len = ac_.len(swarm.member(i));
 
-                if (substrs_archive_.find(seq_len) == substrs_archive_.end()) {
+                if (observed_lengths.insert(seq_len).second) {
 
                     // substrings information of amplicons of heavy swarms
-                    std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrs_archive_[seq_len];
+                    std::pair<lenSeqs_t, lenSeqs_t> len_pair(seq_len, 0);
                     for (lenSeqs_t partner_len = (seq_len > threshold_) * (seq_len - threshold_);
                             partner_len <= seq_len + threshold_; partner_len++) {
 
-                        std::vector<Substrings>& vec = substrs[partner_len];
+                        len_pair.second = partner_len;
+                        auto arr = new Substrings[threshold_ + num_extra_segments_];
                         for (lenSeqs_t segment_index = 0; segment_index < threshold_ + num_extra_segments_; segment_index++) {
                             if (partner_len <= seq_len) {
-                                vec.push_back(select_substrs(seq_len, partner_len, segment_index, threshold_, num_extra_segments_));
+                                arr[segment_index] = select_substrs(seq_len, partner_len, segment_index, threshold_, num_extra_segments_);
                             } else {
-                                vec.push_back(select_substrs_backward(seq_len, partner_len, segment_index, threshold_, num_extra_segments_));
+                                arr[segment_index] = select_substrs_backward(seq_len, partner_len, segment_index, threshold_, num_extra_segments_);
                             }
                         }
+                        substrs_archive_[len_pair] = arr;
 
                     }
 
@@ -782,22 +783,16 @@ namespace GeFaST {
 
             lenSeqs_t seq_len = ac_.len(ampl_id);
 
-            if (!indices_.contains(seq_len)) { // new inverted index row
-                indices_.roll(seq_len);
-            }
-
             lenSeqs_t d = seq_len - (seq_len / (threshold_ + num_extra_segments_)) * (threshold_ + num_extra_segments_);
-            lenSeqs_t p = 0;
             lenSeqs_t l = (seq_len / (threshold_ + num_extra_segments_));
 
-            for (lenSeqs_t seg = 0; seg < threshold_ + num_extra_segments_; seg++) {
+            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
 
-                indices_.get_index(seq_len, seg).add(StringIteratorPair(
-                        ac_.seq(ampl_id) + p,
-                        ac_.seq(ampl_id) + p + l + (seg >= (threshold_ + num_extra_segments_ - d))),
-                                                     ampl_id);
+            for (lenSeqs_t s = 0; s < threshold_ + num_extra_segments_; s++) {
 
-                p += l + (seg >= (threshold_ + num_extra_segments_ - d));
+                sip.first = sip.second;
+                sip.second += l + (s >= (threshold_ + num_extra_segments_ - d));
+                indices_.record_segment(seq_len, s, sip, ampl_id);
 
             }
 
@@ -805,32 +800,34 @@ namespace GeFaST {
 
     }
 
-    void TwoWaySegmentFilterAuxiliaryData::add_candidate_counts(const numSeqs_t ampl_id, lenSeqs_t partner_len,
-            std::vector<numSeqs_t>& cand_cnts) {
+    void TwoWaySegmentFilterAuxiliaryData::add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len,
+                                                                lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts) {
 
-        StringIteratorPair sip;
-        for (lenSeqs_t i = 0; i < threshold_ + num_extra_segments_; i++) {
+        if (indices_.contains_length(partner_len)) {
 
-            const Substrings& subs = substrs_archive_[ac_.len(ampl_id)][partner_len][i];
-            SwarmingInvertedIndex& inv = indices_.get_index(partner_len, i);
-            sip.first = ac_.seq(ampl_id) + subs.first;
-            sip.second = sip.first + subs.len;
+            auto arr = substrs_archive_[std::make_pair(ampl_len, partner_len)];
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
-                inv.add_label_counts_of(sip, cand_cnts);
+            for (lenSeqs_t i = 0; i < threshold_ + num_extra_segments_; i++) {
+
+                Substrings& subs = arr[i];
+                StringIteratorPair sip(ampl_seq + subs.first, ampl_seq + subs.first + subs.len);
+
+                indices_.add_neighboured_counts(partner_len, i, sip, subs.last - subs.first, cand_cnts);
+
             }
 
         }
 
     }
 
-    void TwoWaySegmentFilterAuxiliaryData::verify_candidates(const numSeqs_t ampl_id, const lenSeqs_t partner_len,
-            std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners) {
+    void TwoWaySegmentFilterAuxiliaryData::verify_candidates(const numSeqs_t ampl_id, const lenSeqs_t ampl_len,
+                                                             const numSeqs_t ampl_ab, const lenSeqs_t partner_len,
+                                                             std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners) {
 
         std::sort(cand_cnts.begin(), cand_cnts.end());
 
         // general pigeonhole principle: for being a candidate, at least k segments have to be matched
-        std::vector<Substrings>& cand_substrs = substrs_archive_[partner_len][ac_.len(ampl_id)];
+        Substrings* cand_substrs = cand_cnts.empty() ? nullptr : substrs_archive_[std::make_pair(partner_len, ampl_len)];
 
         lenSeqs_t cnt = 0;
         numSeqs_t prev_cand = (cand_cnts.empty()) ? 0 : cand_cnts.front();
@@ -838,7 +835,7 @@ namespace GeFaST {
 
             if (prev_cand != cand_id) {
 
-                if ((cnt >= num_extra_segments_) && (!break_swarms_ || ac_.ab(ampl_id) >= ac_.ab(prev_cand))) {
+                if ((cnt >= num_extra_segments_) && (!break_swarms_ || ampl_ab >= ac_.ab(prev_cand))) {
 
                     cnt = 0; // reset to 0 and count matching segments in the other direction
                     std::string cand_str = std::string(ac_.seq(prev_cand));
@@ -871,7 +868,7 @@ namespace GeFaST {
 
         }
 
-        if ((cnt >= num_extra_segments_) && (!break_swarms_ || ac_.ab(ampl_id) >= ac_.ab(prev_cand))) {
+        if ((cnt >= num_extra_segments_) && (!break_swarms_ || ampl_ab >= ac_.ab(prev_cand))) {
 
             cnt = 0; // reset to 0 and count matching segments in the other direction
             std::string cand_str = std::string(ac_.seq(prev_cand));
@@ -900,14 +897,12 @@ namespace GeFaST {
     /* === ScoreSegmentFilterAuxiliaryData === */
 
     ScoreSegmentFilterAuxiliaryData::ScoreSegmentFilterAuxiliaryData(const AmpliconStorage& amplicon_storage,
-            const numSeqs_t pool_id, lenSeqs_t threshold, lenSeqs_t num_extra_segments, const Configuration& config) :
-            indices_(SwarmingIndices(threshold + 1, threshold + num_extra_segments, true, false)),
-            ac_(amplicon_storage.get_pool(pool_id)) {
-
-        ScoringFunction sf(config.match_reward, config.mismatch_penalty, config.gap_opening_penalty, config.gap_extension_penalty);
+            const numSeqs_t pool_id, lenSeqs_t threshold, lenSeqs_t num_threshold_segments,
+            lenSeqs_t num_extra_segments, const Configuration& config) :
+            ac_(amplicon_storage.get_pool(pool_id)), indices_(ac_, num_threshold_segments + num_extra_segments) {
 
         threshold_ = threshold;
-        num_threshold_segments_ = threshold / std::min({sf.penalty_mismatch, sf.penalty_open, sf.penalty_extend});
+        num_threshold_segments_ = num_threshold_segments;
         num_extra_segments_ = num_extra_segments;
         break_swarms_ = config.break_swarms;
 
@@ -919,14 +914,11 @@ namespace GeFaST {
 
     ScoreSegmentFilterAuxiliaryData::ScoreSegmentFilterAuxiliaryData(const AmpliconStorage& amplicon_storage,
             const SwarmStorage& swarm_storage, const numSeqs_t pool_id, lenSeqs_t threshold,
-            lenSeqs_t num_extra_segments, const Configuration& config) :
-            indices_(SwarmingIndices(threshold + 1, threshold + num_extra_segments, true, false)),
-            ac_(amplicon_storage.get_pool(pool_id)) {
-
-        ScoringFunction sf(config.match_reward, config.mismatch_penalty, config.gap_opening_penalty, config.gap_extension_penalty);
+            lenSeqs_t num_threshold_segments, lenSeqs_t num_extra_segments, const Configuration& config) :
+            ac_(amplicon_storage.get_pool(pool_id)), indices_(ac_, num_threshold_segments + num_extra_segments) {
 
         threshold_ = threshold;
-        num_threshold_segments_ = threshold / std::min({sf.penalty_mismatch, sf.penalty_open, sf.penalty_extend});
+        num_threshold_segments_ = num_threshold_segments;
         num_extra_segments_ = num_extra_segments;
         break_swarms_ = false;
 
@@ -937,16 +929,28 @@ namespace GeFaST {
     }
 
     ScoreSegmentFilterAuxiliaryData::~ScoreSegmentFilterAuxiliaryData() {
+
         delete dist_fun_;
+
+        for (auto& kv : substrs_archive_) {
+            delete[] kv.second; kv.second = nullptr;
+        }
+
     }
 
     ScoreSegmentFilterAuxiliaryData::ScoreSegmentFilterAuxiliaryData(const ScoreSegmentFilterAuxiliaryData& other) : // copy constructor
         ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
         threshold_(other.threshold_), num_threshold_segments_(other.num_threshold_segments_),
         num_extra_segments_(other.num_extra_segments_), break_swarms_(other.break_swarms_),
-        indices_(other.indices_), substrs_archive_(other.substrs_archive_) {
+        indices_(other.indices_) {
 
-        // nothing else to do
+        for (auto& kv : other.substrs_archive_) {
+
+            auto tmp = new Substrings[num_threshold_segments_ + num_extra_segments_];
+            std::copy(kv.second, kv.second + num_threshold_segments_ + num_extra_segments_, tmp);
+            substrs_archive_[kv.first] = tmp;
+
+        }
 
     }
 
@@ -965,16 +969,11 @@ namespace GeFaST {
     }
 
     void ScoreSegmentFilterAuxiliaryData::tick_off_amplicon(numSeqs_t ampl_id) {
-
-        auto& invs = indices_.get_indices_row(ac_.len(ampl_id));
-        for (auto i = 0; i < num_threshold_segments_ + num_extra_segments_; i++) {
-            invs[i].remove_label(ampl_id);
-        }
-
+        indices_.remove_amplicon(ampl_id);
     }
 
     bool ScoreSegmentFilterAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.insert(ac_.seq(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
     }
 
     void ScoreSegmentFilterAuxiliaryData::clear_amplicon_records() {
@@ -986,13 +985,16 @@ namespace GeFaST {
         std::vector<Partner> partners;
         std::vector<numSeqs_t> cand_cnts;
 
-        for (lenSeqs_t partner_len = (ac_.len(ampl_id) > num_threshold_segments_) * (ac_.len(ampl_id) - num_threshold_segments_);
-                partner_len <= ac_.len(ampl_id) + num_threshold_segments_; partner_len++) {
+        auto ampl_seq = ac_.seq(ampl_id);
+        numSeqs_t ampl_ab = ac_.ab(ampl_id);
+
+        for (lenSeqs_t seq_len = ac_.len(ampl_id), partner_len = (seq_len > num_threshold_segments_) * (seq_len - num_threshold_segments_);
+                partner_len <= seq_len + num_threshold_segments_; partner_len++) {
 
             cand_cnts.clear();
 
-            add_candidate_counts(ampl_id, partner_len, cand_cnts);
-            verify_candidates(ampl_id, cand_cnts, partners);
+            add_candidate_counts(ampl_seq, seq_len, partner_len, cand_cnts);
+            verify_candidates(ampl_id, ampl_ab, cand_cnts, partners);
 
         }
 
@@ -1007,41 +1009,38 @@ namespace GeFaST {
 
             lenSeqs_t seq_len = ac_.len(ampl_id);
 
-            if (!indices_.contains(seq_len)) {
-
-                // inverted index
-                indices_.roll(seq_len);
+            if (substrs_archive_.find(std::make_pair(seq_len, seq_len)) == substrs_archive_.end()) {
 
                 // substrings information
-                std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrs_archive_[seq_len];
+                std::pair<lenSeqs_t, lenSeqs_t> len_pair(seq_len, 0);
                 for (lenSeqs_t partner_len = (seq_len > num_threshold_segments_) * (seq_len - num_threshold_segments_);
                         partner_len <= seq_len + num_threshold_segments_; partner_len++) {
 
-                    std::vector<Substrings>& vec = substrs[partner_len];
+                    len_pair.second = partner_len;
+                    auto arr = new Substrings[num_threshold_segments_ + num_extra_segments_];
                     for (lenSeqs_t segment_index = 0; segment_index < num_threshold_segments_ + num_extra_segments_; segment_index++) {
                         if (partner_len <= seq_len) {
-                            vec.push_back(select_substrs(seq_len, partner_len, segment_index, num_threshold_segments_, num_extra_segments_));
+                            arr[segment_index] = select_substrs(seq_len, partner_len, segment_index, num_threshold_segments_, num_extra_segments_);
                         } else {
-                            vec.push_back(select_substrs_backward(seq_len, partner_len, segment_index, num_threshold_segments_, num_extra_segments_));
+                            arr[segment_index] = select_substrs_backward(seq_len, partner_len, segment_index, num_threshold_segments_, num_extra_segments_);
                         }
                     }
+                    substrs_archive_[len_pair] = arr;
 
                 }
 
             }
 
             lenSeqs_t d = seq_len - (seq_len / (num_threshold_segments_ + num_extra_segments_)) * (num_threshold_segments_ + num_extra_segments_);
-            lenSeqs_t p = 0;
             lenSeqs_t l = (seq_len / (num_threshold_segments_ + num_extra_segments_));
+
+            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
 
             for (lenSeqs_t s = 0; s < num_threshold_segments_ + num_extra_segments_; s++) {
 
-                indices_.get_index(seq_len, s).add(StringIteratorPair(
-                        ac_.seq(ampl_id) + p,
-                        ac_.seq(ampl_id) + p + l + (s >= (num_threshold_segments_ + num_extra_segments_ - d))),
-                                                   ampl_id);
-
-                p += l + (s >= (num_threshold_segments_ + num_extra_segments_ - d));
+                sip.first = sip.second;
+                sip.second += l + (s >= (num_threshold_segments_ + num_extra_segments_ - d));
+                indices_.record_segment(seq_len, s, sip, ampl_id);
 
             }
 
@@ -1052,6 +1051,7 @@ namespace GeFaST {
     void ScoreSegmentFilterAuxiliaryData::prepare_light(const Swarms& swarms, const numSeqs_t boundary) {
 
         std::vector<numSeqs_t> light_amplicons;
+        std::set<lenSeqs_t> observed_lengths;
 
         // prepare indexing of amplicons of light swarms
         for (numSeqs_t s = 0; s < swarms.size(); s++) {
@@ -1070,21 +1070,23 @@ namespace GeFaST {
 
                     lenSeqs_t seq_len = ac_.len(swarm.member(i));
 
-                    if (substrs_archive_.find(seq_len) == substrs_archive_.end()) {
+                    if (observed_lengths.insert(seq_len).second) {
 
                         // substrings information of amplicons of heavy swarms
-                        std::unordered_map<lenSeqs_t, std::vector<Substrings>>& substrs = substrs_archive_[seq_len];
+                        std::pair<lenSeqs_t, lenSeqs_t> len_pair(seq_len, 0);
                         for (lenSeqs_t partner_len = (seq_len > num_threshold_segments_) * (seq_len - num_threshold_segments_);
                                 partner_len <= seq_len + num_threshold_segments_; partner_len++) {
 
-                            std::vector<Substrings>& vec = substrs[partner_len];
+                            len_pair.second = partner_len;
+                            auto arr = new Substrings[num_threshold_segments_ + num_extra_segments_];
                             for (lenSeqs_t segment_index = 0; segment_index < num_threshold_segments_ + num_extra_segments_; segment_index++) {
                                 if (partner_len <= seq_len) {
-                                    vec.push_back(select_substrs(seq_len, partner_len, segment_index, num_threshold_segments_, num_extra_segments_));
+                                    arr[segment_index] = select_substrs(seq_len, partner_len, segment_index, num_threshold_segments_, num_extra_segments_);
                                 } else {
-                                    vec.push_back(select_substrs_backward(seq_len, partner_len, segment_index, num_threshold_segments_, num_extra_segments_));
+                                    arr[segment_index] = select_substrs_backward(seq_len, partner_len, segment_index, num_threshold_segments_, num_extra_segments_);
                                 }
                             }
+                            substrs_archive_[len_pair] = arr;
 
                         }
 
@@ -1104,22 +1106,16 @@ namespace GeFaST {
 
             lenSeqs_t seq_len = ac_.len(ampl_id);
 
-            if (!indices_.contains(seq_len)) { // new inverted index row
-                indices_.roll(seq_len);
-            }
-
             lenSeqs_t d = seq_len - (seq_len / (num_threshold_segments_ + num_extra_segments_)) * (num_threshold_segments_ + num_extra_segments_);
-            lenSeqs_t p = 0;
             lenSeqs_t l = (seq_len / (num_threshold_segments_ + num_extra_segments_));
 
-            for (lenSeqs_t seg = 0; seg < num_threshold_segments_ + num_extra_segments_; seg++) {
+            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
 
-                indices_.get_index(seq_len, seg).add(StringIteratorPair(
-                        ac_.seq(ampl_id) + p,
-                        ac_.seq(ampl_id) + p + l + (seg >= (num_threshold_segments_ + num_extra_segments_ - d))),
-                                                     ampl_id);
+            for (lenSeqs_t s = 0; s < num_threshold_segments_ + num_extra_segments_; s++) {
 
-                p += l + (seg >= (num_threshold_segments_ + num_extra_segments_ - d));
+                sip.first = sip.second;
+                sip.second += l + (s >= (num_threshold_segments_ + num_extra_segments_ - d));
+                indices_.record_segment(seq_len, s, sip, ampl_id);
 
             }
 
@@ -1127,27 +1123,28 @@ namespace GeFaST {
 
     }
 
-    void ScoreSegmentFilterAuxiliaryData::add_candidate_counts(const numSeqs_t ampl_id, lenSeqs_t partner_len,
+    void ScoreSegmentFilterAuxiliaryData::add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len,
             std::vector<numSeqs_t>& cand_cnts) {
 
-        StringIteratorPair sip;
-        for (lenSeqs_t i = 0; i < num_threshold_segments_ + num_extra_segments_; i++) {
+        if (indices_.contains_length(partner_len)) {
 
-            const Substrings& subs = substrs_archive_[ac_.len(ampl_id)][partner_len][i];
-            SwarmingInvertedIndex& inv = indices_.get_index(partner_len, i);
-            sip.first = ac_.seq(ampl_id) + subs.first;
-            sip.second = sip.first + subs.len;
+            auto arr = substrs_archive_[std::make_pair(ampl_len, partner_len)];
 
-            for (auto substrPos = subs.first; substrPos <= subs.last; substrPos++, sip.first++, sip.second++) {
-                inv.add_label_counts_of(sip, cand_cnts);
+            for (lenSeqs_t i = 0; i < num_threshold_segments_ + num_extra_segments_; i++) {
+
+                Substrings& subs = arr[i];
+                StringIteratorPair sip(ampl_seq + subs.first, ampl_seq + subs.first + subs.len);
+
+                indices_.add_neighboured_counts(partner_len, i, sip, subs.last - subs.first, cand_cnts);
+
             }
 
         }
 
     }
 
-    void ScoreSegmentFilterAuxiliaryData::verify_candidates(const numSeqs_t ampl_id, std::vector<numSeqs_t>& cand_cnts,
-            std::vector<Partner>& partners) {
+    void ScoreSegmentFilterAuxiliaryData::verify_candidates(const numSeqs_t ampl_id, const numSeqs_t ampl_ab,
+                                                            std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners) {
 
         std::sort(cand_cnts.begin(), cand_cnts.end());
 
@@ -1158,7 +1155,7 @@ namespace GeFaST {
 
             if (prev_cand != cand_id) {
 
-                if ((cnt >= num_extra_segments_) && (!break_swarms_ || ac_.ab(ampl_id) >= ac_.ab(prev_cand))) {
+                if ((cnt >= num_extra_segments_) && (!break_swarms_ || ampl_ab >= ac_.ab(prev_cand))) {
 
                     auto dist = dist_fun_->distance(ac_, ampl_id, prev_cand);
 
@@ -1178,7 +1175,7 @@ namespace GeFaST {
 
         }
 
-        if ((cnt >= num_extra_segments_) && (!break_swarms_ || ac_.ab(ampl_id) >= ac_.ab(prev_cand))) {
+        if ((cnt >= num_extra_segments_) && (!break_swarms_ || ampl_ab >= ac_.ab(prev_cand))) {
 
             auto dist = dist_fun_->distance(ac_, ampl_id, prev_cand);
 

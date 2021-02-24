@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -1566,7 +1566,7 @@ namespace GeFaST {
             gap_extend_ = sf.penalty_extend;
 
             alphabet_size_ = (config.alphabet.empty()) ? 4 : config.alphabet.length();
-            scaling_factor_ = 1.0f / std::log(2.0f);
+            scaling_factor_ = 5.22113;
             if (config.misc.find("scaling_factor") != config.misc.end()) scaling_factor_ = std::stof(config.misc.find("scaling_factor")->second);
 
             // compute contents of modified scoring matrix by incorporating the error probabilities
@@ -1832,7 +1832,7 @@ namespace GeFaST {
             gap_extend_ = sf.penalty_extend;
 
             alphabet_size_ = (config.alphabet.empty()) ? 4 : config.alphabet.length();
-            scaling_factor_ = 1.0f / std::log(2.0f);
+            scaling_factor_ = 5.22113;
             if (config.misc.find("scaling_factor") != config.misc.end()) scaling_factor_ = std::stof(config.misc.find("scaling_factor")->second);
 
             // compute contents of modified scoring matrix by incorporating the error probabilities

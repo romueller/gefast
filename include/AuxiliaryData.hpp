@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -68,7 +68,7 @@ namespace GeFaST {
     protected:
         const AmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<std::string> different_seqs_; // recorded different sequences
+        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
 
         dist_t threshold_; // threshold applied during search for partners / similar amplicons
         bool break_swarms_; // flag indicating whether swarm breaking should be applied
@@ -119,181 +119,6 @@ namespace GeFaST {
 
 
     /*
-     * Pair of pointers (first, second) describing the (sub)string corresponding to [first, last).
-     */
-    typedef std::pair<const char*, const char*> StringIteratorPair;
-
-    // hash function for StringIteratorPair
-    struct hashStringIteratorPair {
-        size_t operator()(const StringIteratorPair& p) const;
-    };
-
-    // comparison function for string equality
-    struct equalStringIteratorPair {
-        bool operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const;
-    };
-
-    // comparison function for lexicographical order
-    struct lessStringIteratorPair {
-        bool operator()(const StringIteratorPair& a, const StringIteratorPair& b) const;
-    };
-
-
-    /*
-     * Collection of (inverted) indices for the segment filter.
-     *
-     * The inverted indices are arranged in a grid where
-     * the columns correspond to segments and
-     * the rows correspond to sequence lengths.
-     *
-     * During the execution of the segment filter,
-     * 'older' rows can be removed once they correspond to
-     * sequences too short to be able to provide candidates for
-     * the current (and future) sequences.
-     *
-     */
-    template<typename T>
-    class RollingIndices {
-
-    public:
-        typedef std::vector<T> Row;
-
-
-        RollingIndices(lenSeqs_t t, lenSeqs_t w, bool f, bool s = true) {
-
-            threshold_ = t;
-            width_ = w;
-            forward_ = f;
-            shrink_ = s;
-            min_length_ = 0;
-            max_length_ = 0;
-
-            empty_ = T();
-            empty_row_ = Row(0);
-
-        }
-
-
-        /*
-         * Return the indices for the specified length.
-         */
-        Row& get_indices_row(const lenSeqs_t len) {
-
-            auto iter = indices_.find(len);
-
-            return (iter != indices_.end()) ? iter->second : empty_row_;
-
-        }
-
-        /*
-         * Return the index corresponding to the specified length and segment
-         */
-        T& get_index(const lenSeqs_t len, const lenSeqs_t i) {
-
-            if (i >= width_) return empty_;
-
-            auto iter = indices_.find(len);
-
-            return (iter != indices_.end()) ? (iter->second)[i] : empty_;
-
-        }
-
-        /*
-         * Add new row (and remove then outdated rows).
-         */
-        void roll(const lenSeqs_t len) {
-
-            if (indices_.find(len) == indices_.end()) {
-
-                indices_[len] = Row(width_);
-                min_length_ = std::min(min_length_, len);
-                max_length_ = std::max(max_length_, len);
-                if (shrink_) shrink(len);
-
-            }
-
-        }
-
-        /*
-         * Remove outdated rows.
-         */
-        void shrink(const lenSeqs_t cur) {
-
-            if (forward_) {
-
-                for (lenSeqs_t len = min_length_; len < (cur - threshold_); len++) {
-                    indices_.erase(len);
-                }
-                for (lenSeqs_t len = cur - threshold_; len <= cur; len++) {
-
-                    if (indices_.find(len) != indices_.end()) {
-
-                        min_length_ = len;
-                        break;
-
-                    }
-
-                }
-
-            } else {
-
-                for (lenSeqs_t len = cur + threshold_ + 1; len <= max_length_; len++) {
-                    indices_.erase(len);
-                }
-                for (lenSeqs_t len = cur + threshold_; len >= cur; len--) {
-
-                    if (indices_.find(len) != indices_.end()) {
-
-                        max_length_ = len;
-                        break;
-
-                    }
-
-                }
-
-            }
-
-        }
-
-        /*
-         * Check whether there are indices for the given length.
-         */
-        bool contains(const lenSeqs_t len) {
-            return (indices_.find(len) != indices_.end());
-        }
-
-        /*
-         * Return minimum length for which there are indices.
-         */
-        lenSeqs_t min_length() const {
-            return min_length_;
-        }
-
-        /*
-         * Return maximum length for which there are indices.
-         */
-        lenSeqs_t max_length() const {
-            return max_length_;
-        }
-
-    private:
-        lenSeqs_t threshold_; // limits number of rows when applying shrink()
-        lenSeqs_t width_; // number of columns / segments per row
-        lenSeqs_t min_length_; // minimum length for which there are indices
-        lenSeqs_t max_length_; // maximum length for which there are indices
-
-        std::unordered_map<lenSeqs_t, Row> indices_; // indices grid
-
-        T empty_; // empty (dummy) index returned for out-of-bounds queries
-        Row empty_row_; // empty (dummy) row returned for out-of-bounds queries
-
-        bool forward_; // indicates whether rolling forwards (lengths increase) or backwards (lengths decrease)
-        bool shrink_; // flag indicating whether roll() automatically shrinks the index
-
-    };
-
-
-    /*
      * Support for clustering phases employing a (one-way) segment filter to efficiently search
      * for (not yet swarmed) partners of an amplicon.
      *
@@ -306,8 +131,7 @@ namespace GeFaST {
     class SegmentFilterAuxiliaryData : public AuxiliaryData {
 
         // maps sequence segments to amplicon 'ids' (represented by their indices within the AmpliconPool)
-        typedef LabelLinkBinaryRelation<StringIteratorPair, numSeqs_t, hashStringIteratorPair, equalStringIteratorPair> SwarmingInvertedIndex;
-        typedef RollingIndices<SwarmingInvertedIndex> SwarmingIndices;
+        typedef SegmentRelations SwarmingIndices;
 
     public:
         /*
@@ -357,25 +181,25 @@ namespace GeFaST {
          * Search for segment matches with indexed amplicons of a given length and
          * add the found matches to the candidate counts.
          */
-        void add_candidate_counts(const numSeqs_t ampl_id, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
+        void add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
 
         /*
          * Verify the candidates by searching for amplicons with sufficient segment matches
          * and then computing the distance using the distance function.
          */
-        void verify_candidates(const numSeqs_t ampl_id, std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners);
+        void verify_candidates(const numSeqs_t ampl_id, const numSeqs_t ampl_ab, std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners);
 
 
         const AmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<std::string> different_seqs_; // recorded different sequences
+        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
 
         lenSeqs_t threshold_; // threshold applied to partner search
         lenSeqs_t num_extra_segments_; // number of extra segments for segment filter
         bool break_swarms_; // flag indicating whether swarm breaking should be applied
 
         SwarmingIndices indices_; // inverted indices of the segment filter
-        std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrs_archive_; // substrings archive for more efficient segment filter
+        std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*> substrs_archive_; // substrings archive for more efficient segment filter
 
     };
 
@@ -394,8 +218,7 @@ namespace GeFaST {
     class TwoWaySegmentFilterAuxiliaryData : public AuxiliaryData {
 
         // maps sequence segments to amplicon 'ids' (represented by their indices within the AmpliconPool)
-        typedef LabelLinkBinaryRelation<StringIteratorPair, numSeqs_t, hashStringIteratorPair, equalStringIteratorPair> SwarmingInvertedIndex;
-        typedef RollingIndices<SwarmingInvertedIndex> SwarmingIndices;
+        typedef SegmentRelations SwarmingIndices;
 
     public:
         /*
@@ -446,27 +269,27 @@ namespace GeFaST {
          * Search for segment matches with indexed amplicons of a given length and
          * add the found matches to the candidate counts.
          */
-        void add_candidate_counts(const numSeqs_t ampl_id, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
+        void add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
 
         /*
          * Verify the candidates by searching for amplicons with sufficient segment matches,
          * applying the segment filter in the other direction as well,
          * and then computing the distance using the distance function on the remaining candidates.
          */
-        void verify_candidates(const numSeqs_t ampl_id, const lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts,
-                std::vector<Partner>& partners);
+        void verify_candidates(const numSeqs_t ampl_id, const lenSeqs_t ampl_len, const numSeqs_t ampl_ab,
+                               const lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners);
 
 
         const AmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<std::string> different_seqs_; // recorded different sequences
+        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
 
         lenSeqs_t threshold_; // threshold applied to partner search
         lenSeqs_t num_extra_segments_; // number of extra segments for segment filter
         bool break_swarms_; // flag indicating whether swarm breaking should be applied
 
         SwarmingIndices indices_; // inverted indices of the segment filter
-        std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrs_archive_; // substrings archive for more efficient segment filter
+        std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*> substrs_archive_; // substrings archive for more efficient segment filter
 
         Segments segments_; // segment information of currently searched amplicon
         std::vector<std::string> segment_strs_; // segment strings of currently searched amplicon
@@ -495,21 +318,21 @@ namespace GeFaST {
     class ScoreSegmentFilterAuxiliaryData : public AuxiliaryData {
 
         // maps sequence segments to amplicon 'ids' (represented by their indices within the AmpliconPool)
-        typedef LabelLinkBinaryRelation<StringIteratorPair, numSeqs_t, hashStringIteratorPair, equalStringIteratorPair> SwarmingInvertedIndex;
-        typedef RollingIndices<SwarmingInvertedIndex> SwarmingIndices;
+        typedef SegmentRelations SwarmingIndices;
 
     public:
         /*
          * Prepare the auxiliary data for the clustering phase (inverted indices on all amplicons).
          */
         ScoreSegmentFilterAuxiliaryData(const AmpliconStorage& amplicon_storage, const numSeqs_t pool_id,
-                lenSeqs_t threshold, lenSeqs_t num_extra_segments, const Configuration& config);
+                lenSeqs_t threshold, lenSeqs_t num_threshold_segments, lenSeqs_t num_extra_segments, const Configuration& config);
 
         /*
          * Prepare the auxiliary data for the refinement phase (inverted indices on amplicon from light swarms).
          */
         ScoreSegmentFilterAuxiliaryData(const AmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage,
-                const numSeqs_t pool_id, lenSeqs_t threshold, lenSeqs_t num_extra_segments, const Configuration& config);
+                const numSeqs_t pool_id, lenSeqs_t threshold, lenSeqs_t num_threshold_segments,
+                lenSeqs_t num_extra_segments, const Configuration& config);
 
         virtual ~ScoreSegmentFilterAuxiliaryData();
 
@@ -547,18 +370,18 @@ namespace GeFaST {
          * Search for segment matches with indexed amplicons of a given length and
          * add the found matches to the candidate counts.
          */
-        void add_candidate_counts(const numSeqs_t ampl_id, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
+        void add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
 
         /*
          * Verify the candidates by searching for amplicons with sufficient segment matches
          * and then computing the distance using the distance function.
          */
-        void verify_candidates(const numSeqs_t ampl_id, std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners);
+        void verify_candidates(const numSeqs_t ampl_id, const numSeqs_t ampl_ab, std::vector<numSeqs_t>& cand_cnts, std::vector<Partner>& partners);
 
 
         const AmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<std::string> different_seqs_; // recorded different sequences
+        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
 
         lenSeqs_t threshold_; // threshold applied to partner search
         lenSeqs_t num_threshold_segments_; // number of segments based on threshold and minimum penalty for edit operation for segment filter
@@ -566,7 +389,7 @@ namespace GeFaST {
         bool break_swarms_; // flag indicating whether swarm breaking should be applied
 
         SwarmingIndices indices_; // inverted indices of the segment filter
-        std::unordered_map<lenSeqs_t, std::unordered_map<lenSeqs_t, std::vector<Substrings>>> substrs_archive_; // substrings archive for more efficient segment filter
+        std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*> substrs_archive_; // substrings archive for more efficient segment filter
 
     };
 

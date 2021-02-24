@@ -1,0 +1,2 @@
+reads_pt1.fastq
+reads_pt2.fastq

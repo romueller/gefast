@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -34,10 +34,13 @@ namespace GeFaST {
      *
      * Basic implementation storing the swarms / clusters as separate entities.
      */
+    template<typename S>
     class SimpleSwarmStorage : public SwarmStorage {
 
     public:
-        explicit SimpleSwarmStorage(const numSeqs_t num_pools);
+        explicit SimpleSwarmStorage(const numSeqs_t num_pools) {
+            swarms_per_pool_ = std::vector<S>(num_pools);
+        }
 
         virtual ~SimpleSwarmStorage() = default;
 
@@ -49,21 +52,43 @@ namespace GeFaST {
 
         SimpleSwarmStorage& operator=(SimpleSwarmStorage&& other) = default; // move assignment operator
 
-        SimpleSwarmStorage* clone() const override; // deep-copy clone method
+        SimpleSwarmStorage* clone() const override { // deep-copy clone method
+            return new SimpleSwarmStorage(*this);
+        }
 
 
-        Swarms& get_swarms(numSeqs_t p) override;
+        Swarms& get_swarms(numSeqs_t p) override {
+            return swarms_per_pool_[p];
+        }
 
-        const Swarms& get_swarms(numSeqs_t p) const override;
+        const Swarms& get_swarms(numSeqs_t p) const override {
+            return swarms_per_pool_[p];
+        }
 
-        numSeqs_t num_pools() const override;
+        numSeqs_t num_pools() const override {
+            return swarms_per_pool_.size();
+        }
 
-        numSeqs_t num_swarms() const override;
+        numSeqs_t num_swarms() const override {
 
-        numSeqs_t num_swarms(numSeqs_t p) const override;
+            numSeqs_t sum = 0;
+            for (auto& sws : swarms_per_pool_) {
+                sum += sws.size();
+                for (auto i = 0; i < sws.size(); i++) {
+                    sum -= sws.get(i).is_attached();
+                }
+            }
+
+            return sum;
+
+        }
+
+        numSeqs_t num_swarms(numSeqs_t p) const override {
+            return swarms_per_pool_[p].size();
+        }
 
     protected:
-        std::vector<SimpleSwarms<SimpleSwarm>> swarms_per_pool_; // collection of swarms / clusters per pool
+        std::vector<S> swarms_per_pool_; // collection of swarms / clusters per pool
 
     };
 

@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,7 +57,7 @@ namespace GeFaST {
                     swarmed[seed] = true;
                     aux->record_amplicon(seed);
                     aux->tick_off_amplicon(seed);
-                    SwarmEntry* cur_seed = cur_swarm.get_entry(seed);
+                    SwarmEntry* cur_seed = cur_swarm.seed_entry();
 
                     lenSeqs_t last_gen = 0;
 
@@ -76,18 +76,19 @@ namespace GeFaST {
                         cur_seed = cur_swarm.get_entry(pos, cur_seed);
                         numSeqs_t cur_seed_gen = cur_seed->gen();
                         dist_t cur_seed_rad = cur_seed->rad();
+                        numSeqs_t cur_seed_mem = cur_seed->member();
 
                         // Consider yet unseen (unswarmed) amplicons to continue the exploration.
                         // An amplicon is marked as 'swarmed' as soon as it occurs the first time as a partner
                         // in order to prevent the algorithm from queueing it more than once coming from different amplicons.
-                        for (auto& partner : aux->find_partners(cur_seed->member())) {
+                        for (auto& partner : aux->find_partners(cur_seed_mem)) {
 
                             // append new member
                             cur_swarm.append(
                                     partner.id, // pool-internal integer id of new member
                                     cur_seed_gen + 1, // generation number of new member
                                     cur_seed_rad + partner.dist, // radius of new member
-                                    cur_seed->member(), // pool-internal integer id of parent
+                                    cur_seed_mem, // pool-internal integer id of parent
                                     partner.dist, // distance to parent
                                     ac.ab(partner.id), // abundance of new member
                                     (partner.dist != 0) && aux->record_amplicon(partner.id) // flag indicating whether new member is also a new sequence
@@ -98,7 +99,7 @@ namespace GeFaST {
 
                         }
 
-                        last_gen = cur_seed->gen();
+                        last_gen = cur_seed_gen;
                         pos++;
 
                     }
@@ -1051,6 +1052,14 @@ namespace GeFaST {
         char* seq = new char[amplicon_storage.max_length() + 1];
         uint8_t* qual = new uint8_t[amplicon_storage.max_length()];
 
+        size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
+        auto cur_seed_kmer8 = new uint8_t[n_kmer];
+        auto cur_seed_kmer = new uint16_t[n_kmer];
+        auto cur_seed_kord = new uint16_t[amplicon_storage.max_length()];
+        auto cur_partner_kmer8 = new uint8_t[n_kmer];
+        auto cur_partner_kmer = new uint16_t[n_kmer];
+        auto cur_partner_kord = new uint16_t[amplicon_storage.max_length()];
+
         for (numSeqs_t p = 0; p < amplicon_storage.num_pools(); p++) {
 
             auto& ac = amplicon_storage.get_pool(p);
@@ -1070,7 +1079,7 @@ namespace GeFaST {
                     swarmed[seed] = true;
                     aux->record_amplicon(seed);
                     aux->tick_off_amplicon(seed);
-                    SwarmEntry* cur_seed = cur_swarm.get_entry(seed);
+                    SwarmEntry* cur_seed = cur_swarm.seed_entry();
 
                     lenSeqs_t last_gen = 0;
 
@@ -1089,22 +1098,22 @@ namespace GeFaST {
                         cur_seed = cur_swarm.get_entry(pos, cur_seed);
                         numSeqs_t cur_seed_gen = cur_seed->gen();
                         dist_t cur_seed_rad = cur_seed->rad();
+                        numSeqs_t cur_seed_mem = cur_seed->member();
 
                         // construct a raw for the current (sub)seed
-                        Dada2Utility::nt2int(seq, ac.seq(cur_seed->member()));
-                        auto quals = ac.quals(cur_seed->member());
-                        for (lenSeqs_t ppos = 0; ppos < ac.len(cur_seed->member()); ppos++) {
+                        Dada2Utility::nt2int(seq, ac.seq(cur_seed_mem));
+                        auto quals = ac.quals(cur_seed_mem);
+                        for (lenSeqs_t ppos = 0; ppos < ac.len(cur_seed_mem); ppos++) {
                             qual[ppos] = (uint8_t)(quals[ppos] - qe->get_offset());
                         }
-                        Dada2Utility::RawSequence cur_seed_raw(seq, ac.len(cur_seed->member()), qual, ac.ab(cur_seed->member()), false);
+                        Dada2Utility::RawSequence cur_seed_raw(seq, ac.len(cur_seed_mem), qual, ac.ab(cur_seed_mem), false);
                         if (use_k_mers) {
 
-                            size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
-                            cur_seed_raw.kmer8 = new uint8_t[n_kmer];
+                            cur_seed_raw.kmer8 = cur_seed_kmer8;
                             Dada2Utility::assign_kmer8(cur_seed_raw.kmer8, cur_seed_raw.seq, Dada2Utility::k_mer_size);
-                            cur_seed_raw.kmer = new uint16_t[n_kmer];
+                            cur_seed_raw.kmer = cur_seed_kmer;
                             Dada2Utility::assign_kmer(cur_seed_raw.kmer, cur_seed_raw.seq, Dada2Utility::k_mer_size);
-                            cur_seed_raw.kord = new uint16_t[cur_seed_raw.length];
+                            cur_seed_raw.kord = cur_seed_kord;
                             Dada2Utility::assign_kmer_order(cur_seed_raw.kord, cur_seed_raw.seq, Dada2Utility::k_mer_size);
 
                         }
@@ -1113,7 +1122,7 @@ namespace GeFaST {
                         // Consider yet unseen (unswarmed) amplicons to continue the exploration.
                         // An amplicon is marked as 'swarmed' as soon as it occurs the first time as a partner
                         // in order to prevent the algorithm from queueing it more than once coming from different amplicons.
-                        for (auto& partner : aux->find_partners(cur_seed->member())) {
+                        for (auto& partner : aux->find_partners(cur_seed_mem)) {
 
                             Dada2Utility::nt2int(seq, ac.seq(partner.id));
                             quals = ac.quals(partner.id);
@@ -1121,14 +1130,13 @@ namespace GeFaST {
                                 qual[ppos] = (uint8_t)(quals[ppos] - qe->get_offset());
                             }
                             Dada2Utility::RawSequence cur_partner_raw(seq, ac.len(partner.id), qual, ac.ab(partner.id), false);
-                            if (use_k_mers) {//TODO? alloc kmer arrays only once? (based on maximum seq length?)
+                            if (use_k_mers) {
 
-                                size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
-                                cur_partner_raw.kmer8 = new uint8_t[n_kmer];
+                                cur_partner_raw.kmer8 = cur_partner_kmer8;
                                 Dada2Utility::assign_kmer8(cur_partner_raw.kmer8, cur_partner_raw.seq, Dada2Utility::k_mer_size);
-                                cur_partner_raw.kmer = new uint16_t[n_kmer];
+                                cur_partner_raw.kmer = cur_partner_kmer;
                                 Dada2Utility::assign_kmer(cur_partner_raw.kmer, cur_partner_raw.seq, Dada2Utility::k_mer_size);
-                                cur_partner_raw.kord = new uint16_t[cur_partner_raw.length];
+                                cur_partner_raw.kord = cur_partner_kord;
                                 Dada2Utility::assign_kmer_order(cur_partner_raw.kord, cur_partner_raw.seq, Dada2Utility::k_mer_size);
 
                             }
@@ -1144,7 +1152,7 @@ namespace GeFaST {
                                     cur_partner_raw.qual, &sub, error_matrix, tvec, qind);
 
                             // calculate the fold over-abundance and the Hamming distance to this raw
-                            if (sub.nsubs >= min_hamming && (min_fold <= 1 || ac.ab(partner.id) >= min_fold * lambda * ac.ab(cur_seed->member()))) { // only those passing the Hamming / fold screens can be budded
+                            if (sub.nsubs >= min_hamming && (min_fold <= 1 || ac.ab(partner.id) >= min_fold * lambda * ac.ab(cur_seed_mem))) { // only those passing the Hamming / fold screens can be budded
 
                                 double p_value;
                                 if (ac.ab(partner.id) == 1 || sub.nsubs == 0) {
@@ -1154,7 +1162,7 @@ namespace GeFaST {
                                 } else {
 
                                     // exp_reads is the expected number of reads for this raw
-                                    double exp_reads = lambda * ac.ab(cur_seed->member());
+                                    double exp_reads = lambda * ac.ab(cur_seed_mem);
                                     p_value = Dada2Utility::calc_p_a(ac.ab(partner.id), exp_reads, false);
 
                                 }
@@ -1168,7 +1176,7 @@ namespace GeFaST {
                                             partner.id, // pool-internal integer id of new member
                                             cur_seed_gen + 1, // generation number of new member
                                             cur_seed_rad + partner.dist, // radius of new member
-                                            cur_seed->member(), // pool-internal integer id of parent
+                                            cur_seed_mem, // pool-internal integer id of parent
                                             partner.dist, // distance to parent
                                             ac.ab(partner.id), // abundance of new member
                                             (partner.dist != 0) && aux->record_amplicon(partner.id) // flag indicating whether new member is also a new sequence
@@ -1181,26 +1189,10 @@ namespace GeFaST {
 
                             }
 
-                            if (use_k_mers) {
-
-                                delete[] cur_partner_raw.kord; cur_partner_raw.kord = nullptr;
-                                delete[] cur_partner_raw.kmer; cur_partner_raw.kmer = nullptr;
-                                delete[] cur_partner_raw.kmer8; cur_partner_raw.kmer8 = nullptr;
-
-                            }
-
                         }
 
-                        last_gen = cur_seed->gen();
+                        last_gen = cur_seed_gen;
                         pos++;
-
-                        if (use_k_mers) {
-
-                            delete[] cur_seed_raw.kord; cur_seed_raw.kord = nullptr;
-                            delete[] cur_seed_raw.kmer; cur_seed_raw.kmer = nullptr;
-                            delete[] cur_seed_raw.kmer8; cur_seed_raw.kmer8 = nullptr;
-
-                        }
 
                     }
 
@@ -1215,6 +1207,13 @@ namespace GeFaST {
             delete aux;
 
         }
+
+        delete[] cur_partner_kord;
+        delete[] cur_partner_kmer;
+        delete[] cur_partner_kmer8;
+        delete[] cur_seed_kord;
+        delete[] cur_seed_kmer;
+        delete[] cur_seed_kmer8;
 
         delete[] qual;
         delete[] seq;
@@ -1295,6 +1294,14 @@ namespace GeFaST {
         char* seq = new char[amplicon_storage.max_length() + 1];
         uint8_t* qual = new uint8_t[amplicon_storage.max_length()];
 
+        size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
+        auto cur_seed_kmer8 = new uint8_t[n_kmer];
+        auto cur_seed_kmer = new uint16_t[n_kmer];
+        auto cur_seed_kord = new uint16_t[amplicon_storage.max_length()];
+        auto cur_partner_kmer8 = new uint8_t[n_kmer];
+        auto cur_partner_kmer = new uint16_t[n_kmer];
+        auto cur_partner_kord = new uint16_t[amplicon_storage.max_length()];
+
         for (numSeqs_t p = 0; p < amplicon_storage.num_pools(); p++) {
 
             auto& ac = amplicon_storage.get_pool(p);
@@ -1316,7 +1323,7 @@ namespace GeFaST {
                     auto& cur_swarm = swarms.initialise_cluster(seed, ac.ab(seed));
                     swarmed[seed] = true;
                     auto iii = unswarmed.erase(seed);
-                    SwarmEntry* cur_seed = cur_swarm.get_entry(seed);
+                    SwarmEntry* cur_seed = cur_swarm.seed_entry();
 
                     lenSeqs_t last_gen = 0;
 
@@ -1332,22 +1339,22 @@ namespace GeFaST {
                         cur_seed = cur_swarm.get_entry(pos, cur_seed);
                         numSeqs_t cur_seed_gen = cur_seed->gen();
                         dist_t cur_seed_rad = cur_seed->rad();
+                        numSeqs_t cur_seed_mem = cur_seed->member();
 
                         // construct a raw for the current (sub)seed
-                        Dada2Utility::nt2int(seq, ac.seq(cur_seed->member()));
-                        auto quals = ac.quals(cur_seed->member());
-                        for (lenSeqs_t ppos = 0; ppos < ac.len(cur_seed->member()); ppos++) {
+                        Dada2Utility::nt2int(seq, ac.seq(cur_seed_mem));
+                        auto quals = ac.quals(cur_seed_mem);
+                        for (lenSeqs_t ppos = 0; ppos < ac.len(cur_seed_mem); ppos++) {
                             qual[ppos] = (uint8_t)(quals[ppos] - qe->get_offset());
                         }
-                        Dada2Utility::RawSequence cur_seed_raw(seq, ac.len(cur_seed->member()), qual, ac.ab(cur_seed->member()), false);
+                        Dada2Utility::RawSequence cur_seed_raw(seq, ac.len(cur_seed_mem), qual, ac.ab(cur_seed_mem), false);
                         if (use_k_mers) {
 
-                            size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
-                            cur_seed_raw.kmer8 = new uint8_t[n_kmer];
+                            cur_seed_raw.kmer8 = cur_seed_kmer8;
                             Dada2Utility::assign_kmer8(cur_seed_raw.kmer8, cur_seed_raw.seq, Dada2Utility::k_mer_size);
-                            cur_seed_raw.kmer = new uint16_t[n_kmer];
+                            cur_seed_raw.kmer = cur_seed_kmer;
                             Dada2Utility::assign_kmer(cur_seed_raw.kmer, cur_seed_raw.seq, Dada2Utility::k_mer_size);
-                            cur_seed_raw.kord = new uint16_t[cur_seed_raw.length];
+                            cur_seed_raw.kord = cur_seed_kord;
                             Dada2Utility::assign_kmer_order(cur_seed_raw.kord, cur_seed_raw.seq, Dada2Utility::k_mer_size);
 
                         }
@@ -1360,7 +1367,7 @@ namespace GeFaST {
 
                             numSeqs_t partner_id = *iter;
 
-                            if (ac.ab(partner_id) <= ac.ab(cur_seed->member())) {
+                            if (ac.ab(partner_id) <= ac.ab(cur_seed_mem)) {
 
                                 Dada2Utility::nt2int(seq, ac.seq(partner_id));
                                 quals = ac.quals(partner_id);
@@ -1368,14 +1375,13 @@ namespace GeFaST {
                                     qual[ppos] = (uint8_t)(quals[ppos] - qe->get_offset());
                                 }
                                 Dada2Utility::RawSequence cur_partner_raw(seq, ac.len(partner_id), qual, ac.ab(partner_id), false);
-                                if (use_k_mers) {//TODO? alloc kmer arrays only once?
+                                if (use_k_mers) {
 
-                                    size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
-                                    cur_partner_raw.kmer8 = new uint8_t[n_kmer];
+                                    cur_partner_raw.kmer8 = cur_partner_kmer8;
                                     Dada2Utility::assign_kmer8(cur_partner_raw.kmer8, cur_partner_raw.seq, Dada2Utility::k_mer_size);
-                                    cur_partner_raw.kmer = new uint16_t[n_kmer];
+                                    cur_partner_raw.kmer = cur_partner_kmer;
                                     Dada2Utility::assign_kmer(cur_partner_raw.kmer, cur_partner_raw.seq, Dada2Utility::k_mer_size);
-                                    cur_partner_raw.kord = new uint16_t[cur_partner_raw.length];
+                                    cur_partner_raw.kord = cur_partner_kord;
                                     Dada2Utility::assign_kmer_order(cur_partner_raw.kord, cur_partner_raw.seq, Dada2Utility::k_mer_size);
 
                                 }
@@ -1388,7 +1394,7 @@ namespace GeFaST {
                                 double lambda = Dada2Utility::compute_lambda(cur_partner_raw.seq, cur_partner_raw.length, cur_partner_raw.qual, &sub, error_matrix, tvec, qind);
 
                                 // calculate the fold over-abundance and the Hamming distance to this raw
-                                if (sub.nsubs >= min_hamming && (min_fold <= 1 || ac.ab(partner_id) >= min_fold * lambda * ac.ab(cur_seed->member()))) { // only those passing the Hamming / fold screens can be budded
+                                if (sub.nsubs >= min_hamming && (min_fold <= 1 || ac.ab(partner_id) >= min_fold * lambda * ac.ab(cur_seed_mem))) { // only those passing the Hamming / fold screens can be budded
 
                                     double p_value;
                                     if (ac.ab(partner_id) == 1 || sub.nsubs == 0) {
@@ -1398,7 +1404,7 @@ namespace GeFaST {
                                     } else {
 
                                         // exp_reads is the expected number of reads for this raw
-                                        double exp_reads = lambda * ac.ab(cur_seed->member());
+                                        double exp_reads = lambda * ac.ab(cur_seed_mem);
                                         p_value = Dada2Utility::calc_p_a(ac.ab(partner_id), exp_reads, false);
 
                                     }
@@ -1412,7 +1418,7 @@ namespace GeFaST {
                                                 partner_id, // pool-internal integer id of new member
                                                 cur_seed_gen + 1, // generation number of new member
                                                 cur_seed_rad + sub.nsubs, // radius of new member
-                                                cur_seed->member(), // pool-internal integer id of parent
+                                                cur_seed_mem, // pool-internal integer id of parent
                                                 sub.nsubs, // distance to parent
                                                 ac.ab(partner_id), // abundance of new member
                                                 true // flag indicating whether new member is also a new sequence
@@ -1421,14 +1427,6 @@ namespace GeFaST {
                                         swarmed[partner_id] = true;
 
                                     }
-
-                                }
-
-                                if (use_k_mers) {
-
-                                    delete[] cur_partner_raw.kord; cur_partner_raw.kord = nullptr;
-                                    delete[] cur_partner_raw.kmer; cur_partner_raw.kmer = nullptr;
-                                    delete[] cur_partner_raw.kmer8; cur_partner_raw.kmer8 = nullptr;
 
                                 }
 
@@ -1442,16 +1440,8 @@ namespace GeFaST {
 
                         }
 
-                        last_gen = cur_seed->gen();
+                        last_gen = cur_seed_gen;
                         pos++;
-
-                        if (use_k_mers) {
-
-                            delete[] cur_seed_raw.kord; cur_seed_raw.kord = nullptr;
-                            delete[] cur_seed_raw.kmer; cur_seed_raw.kmer = nullptr;
-                            delete[] cur_seed_raw.kmer8; cur_seed_raw.kmer8 = nullptr;
-
-                        }
 
                     }
 
@@ -1463,6 +1453,13 @@ namespace GeFaST {
             }
 
         }
+
+        delete[] cur_partner_kord;
+        delete[] cur_partner_kmer;
+        delete[] cur_partner_kmer8;
+        delete[] cur_seed_kord;
+        delete[] cur_seed_kmer;
+        delete[] cur_seed_kmer8;
 
         delete[] qual;
         delete[] seq;

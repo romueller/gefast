@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -277,101 +277,149 @@ namespace GeFaST {
     }
 
 
-    /* === FastqPreprocessor === */
+    /* === MaxReadRepresentation === */
 
-    FastqPreprocessor::ReadRepresentation::ReadRepresentation(const Defline& dl, const std::string& seq,
-            const std::vector<float>& quality_scores) {
+    void MaxReadRepresentation::initialise(const Defline& dl, const std::string& seq, const std::string& quality_scores, const QualityEncoding<>& qe) {
 
         id = dl.id;
         abundance = dl.abundance;
-        probability_sums = std::vector<float>(seq.length(), 0.0f);
-        for (auto i = 0; i < probability_sums.size(); i++) {
-            probability_sums[i] += abundance * quality_scores[i];
-        }
+        max_scores = quality_scores;
 
     }
 
-    void FastqPreprocessor::ReadRepresentation::add_duplicate(const numSeqs_t ab, const std::vector<float>& quality_scores) {
+    void MaxReadRepresentation::add_duplicate(const numSeqs_t ab, const std::string& quality_scores, const QualityEncoding<>& qe) {
 
         abundance += ab;
-        for (auto i = 0; i < probability_sums.size(); i++) {
-            probability_sums[i] += ab * quality_scores[i];
+        for (auto i = 0; i < quality_scores.length(); i++) {
+            max_scores[i] = std::max(max_scores[i], quality_scores[i]);
         }
 
     }
 
+    std::string MaxReadRepresentation::get_scores(const QualityEncoding<>& qe) const {
+        return max_scores;
+    }
 
-    void FastqPreprocessor::read_input_file(const std::string& file, const Configuration& config, DataStatistics<>& ds,
-            std::map<std::string, ReadRepresentation>& different_reads) {
+    /* === MeanReadRepresentation === */
 
-        std::ifstream in_stream(file);
-        if (!in_stream.good()) {
+    void MeanReadRepresentation::initialise(const Defline& dl, const std::string& seq, const std::string& quality_scores, const QualityEncoding<>& qe) {
 
-            std::cerr << " -- WARNING: File '" << file << "' not opened correctly. No sequences are read from it." << std::endl;
-            return;
+        id = dl.id;
+        abundance = dl.abundance;
+        abundances.push_back(dl.abundance);
+        scores.emplace_back(quality_scores);
 
-        }
+    }
 
-        // set up filters (depending on configuration)
-        lenSeqs_t min_length = 0;
-        lenSeqs_t max_length = std::numeric_limits<lenSeqs_t>::max();
-        switch (config.filter_length) {
-            case 1: { // 01 = only max
-                max_length = config.max_length;
-                break;
-            }
+    void MeanReadRepresentation::add_duplicate(const numSeqs_t ab, const std::string& quality_scores, const QualityEncoding<>& qe) {
 
-            case 2: { // 10 = only min
-                min_length = config.min_length;
-                break;
-            }
+        abundance += ab;
+        abundances.push_back(ab);
+        scores.emplace_back(quality_scores);
 
-            case 3: { // 11 = min & max
-                min_length = config.min_length;
-                max_length = config.max_length;
-                break;
-            }
+    }
 
-            default: {
-                // do nothing
+    std::string MeanReadRepresentation::get_scores(const QualityEncoding<>& qe) const {
+
+        std::vector<float> probability_sums = std::vector<float>(scores[0].length(), 0);
+        for (auto d = 0; d < abundances.size(); d++) {
+            for (auto i = 0; i < scores[d].length(); i++) {
+                probability_sums[i] = abundances[d] * qe.encoded_quality_to_probability(scores[d][i]);
             }
         }
 
-        numSeqs_t min_abundance = 0;
-        numSeqs_t max_abundance = std::numeric_limits<numSeqs_t>::max();
+        std::string mean_scores(probability_sums.size(), ' ');
+        for (auto i = 0; i < probability_sums.size(); i++) {
+            mean_scores[i] = qe.probability_to_encoded_quality(probability_sums[i] / abundance);
+        }
 
+        return mean_scores;
 
-        Defline dl;
-        std::string line, seq;
+    }
 
-        while (std::getline(in_stream, line).good()) {
+    /* === ModeReadRepresentation === */
 
-            if (line.empty() || line[0] == ';') continue; // skip empty and comment lines (begin with ';')
+    void ModeReadRepresentation::initialise(const Defline& dl, const std::string& seq, const std::string& quality_scores, const QualityEncoding<>& qe) {
 
-            if (line[0] == '@') { // header line
+        id = dl.id;
+        abundance = dl.abundance;
+        score_tallies = std::vector<std::map<char, numSeqs_t>>(quality_scores.length());
+        for (auto i = 0; i < quality_scores.length(); i++) {
+            score_tallies[i][quality_scores[i]] = abundance;
+        }
 
-                dl = Defline::parse_description_line(line, config.separator);
+    }
 
-                std::getline(in_stream, seq); // read sequence
-                upper_case(seq);
+    void ModeReadRepresentation::add_duplicate(const numSeqs_t ab, const std::string& quality_scores, const QualityEncoding<>& qe) {
 
-                std::getline(in_stream, line); // read '+' line (ignored)
-                std::getline(in_stream, line); // read quality scores
+        abundance += ab;
+        for (auto i = 0; i < quality_scores.size(); i++) {
+            score_tallies[i][quality_scores[i]] += ab;
+        }
 
-                if (check_sequence(seq, config.alphabet, dl.abundance, min_length, max_length, min_abundance, max_abundance)) {
+    }
 
-                    std::vector<float> quality_scores(seq.length(), 0.0f); // error probability per position corresponding to quality score
-                    for (auto i = 0; i < seq.length(); i++) {
-                        quality_scores[i] += quality_encoding_.encoded_quality_to_probability(line[i]);
-                    }
+    std::string ModeReadRepresentation::get_scores(const QualityEncoding<>& qe) const {
 
-                    auto iter = different_reads.find(seq);
-                    if (iter != different_reads.end()) {
-                        iter->second.add_duplicate(dl.abundance, quality_scores);
-                    } else {
+        std::string scores(score_tallies.size(), ' ');
+        for (auto i = 0; i < score_tallies.size(); i++) {
+            scores[i] = std::max_element(
+                    score_tallies[i].begin(),
+                    score_tallies[i].end(),
+                    [](const std::map<char, numSeqs_t>::value_type& a, const std::map<char, numSeqs_t>::value_type& b) {
+                        return a.second < b.second;
+                    })->first;
+        }
 
-                        different_reads[seq] = ReadRepresentation(dl, seq, quality_scores);
-                        ds.record(dl.id.length(), seq.length());
+        return scores;
+
+    }
+
+    /* === MedianReadRepresentation === */
+
+    void MedianReadRepresentation::initialise(const Defline& dl, const std::string& seq, const std::string& quality_scores, const QualityEncoding<>& qe) {
+
+        id = dl.id;
+        abundance = dl.abundance;
+        score_tallies = std::vector<std::map<char, numSeqs_t>>(quality_scores.length());
+        for (auto i = 0; i < quality_scores.length(); i++) {
+            score_tallies[i][quality_scores[i]] = abundance;
+        }
+
+    }
+
+    void MedianReadRepresentation::add_duplicate(const numSeqs_t ab, const std::string& quality_scores, const QualityEncoding<>& qe) {
+
+        abundance += ab;
+        for (auto i = 0; i < quality_scores.size(); i++) {
+            score_tallies[i][quality_scores[i]] += ab;
+        }
+
+    }
+
+    std::string MedianReadRepresentation::get_scores(const QualityEncoding<>& qe) const {
+
+        std::string scores(score_tallies.size(), ' ');
+
+        if (abundance == 1) { // copy the single existing value
+
+            for (auto i = 0; i < score_tallies.size(); i++) {
+                scores[i] = score_tallies[i].begin()->first;
+            }
+
+        } else { // determine median from value-count pairs
+
+            for (auto i = 0; i < score_tallies.size(); i++) {
+
+                numSeqs_t pos = abundance / 2;
+                numSeqs_t cnt = 0;
+                for (auto& kv : score_tallies[i]) {
+
+                    cnt += kv.second;
+                    if (cnt > pos) {
+
+                        scores[i] = kv.first;
+                        break;
 
                     }
 
@@ -381,103 +429,41 @@ namespace GeFaST {
 
         }
 
+        return scores;
+
     }
 
-    FastqPreprocessor::FastqPreprocessor(const QualityEncoding<>& qe) : quality_encoding_(qe) {
-        // nothing else to do
-    }
+    /* === ProductReadRepresentation === */
 
-    FastqPreprocessor::FastqPreprocessor(const QualityEncodingOption opt) : quality_encoding_(QualityEncoding<>(opt)) {
-        // nothing else to do
-    }
+    void ProductReadRepresentation::initialise(const Defline& dl, const std::string& seq, const std::string& quality_scores, const QualityEncoding<>& qe) {
 
-    FastqPreprocessor* FastqPreprocessor::clone() const {
-        return new FastqPreprocessor(*this);
-    }
-
-    AmpliconStorage* FastqPreprocessor::preprocess_inputs(const std::vector<std::string>& files, const Configuration& config) {
-
-        AmpliconStorage* amplicon_storage = nullptr;
-        std::map<std::string, ReadRepresentation> different_reads;
-
-        {
-            DataStatistics<> ds;
-
-            std::cout << " -- Scanning input files..." << std::endl;
-            for (auto& f : files) {
-                read_input_file(f, config, ds, different_reads);
-            }
-
-            if (config.filter_abundance > 0) {
-                filter_by_abundance(different_reads, ds, config);
-            }
-
-            amplicon_storage = config.build_amplicon_storage(ds);
-
-            std::cout << " -- Scan completed." << std::endl;
-
+        id = dl.id;
+        abundance = dl.abundance;
+        probability_products = std::vector<float>(quality_scores.length());
+        for (auto i = 0; i < quality_scores.length(); i++) {
+            probability_products[i] = std::pow(qe.encoded_quality_to_probability(quality_scores[i]), abundance);
         }
 
-        std::cout << " -- Inserting amplicons..." << std::endl;
-        for (auto iter = different_reads.begin(); iter != different_reads.end(); iter++) {
+    }
 
-            auto& rr = iter->second;
-            ExtraInfoQuality ei;
-            for (auto i = 0; i < rr.probability_sums.size(); i++) {
-                ei.quality_scores.push_back(quality_encoding_.probability_to_encoded_quality(rr.probability_sums[i] / rr.abundance));
-            }
-            Defline dl(rr.id, "", rr.abundance);
-            amplicon_storage->add_amplicon(dl, iter->first, ei);
+    void ProductReadRepresentation::add_duplicate(const numSeqs_t ab, const std::string& quality_scores, const QualityEncoding<>& qe) {
 
+        abundance += ab;
+        for (auto i = 0; i < quality_scores.size(); i++) {
+            probability_products[i] *= std::pow(qe.encoded_quality_to_probability(quality_scores[i]), ab);
         }
-
-        amplicon_storage->finalise();
-
-        std::cout << " -- Construction of amplicon storage completed." << std::endl;
-
-        return amplicon_storage;
 
     }
 
-    void FastqPreprocessor::filter_by_abundance(std::map<std::string, ReadRepresentation>& different_reads,
-            DataStatistics<>& ds, const Configuration& config) {
+    std::string ProductReadRepresentation::get_scores(const QualityEncoding<>& qe) const {
 
-        numSeqs_t min_abundance = 0;
-        numSeqs_t max_abundance = std::numeric_limits<numSeqs_t>::max();
-        switch (config.filter_abundance) {
-            case 1: { // 01 = only max
-                max_abundance = config.max_abundance;
-                break;
-            }
-
-            case 2: { // 10 = only min
-                min_abundance = config.min_abundance;
-                break;
-            }
-
-            case 3: { // 11 = min & max
-                min_abundance = config.min_abundance;
-                max_abundance = config.max_abundance;
-                break;
-            }
-
-            default: {
-                // do nothing
-            }
+        float min_err_prob = qe.encoded_quality_to_probability(qe.get_accepted_scores().back());
+        std::string scores(probability_products.size(), ' ');
+        for (auto i = 0; i < probability_products.size(); i++) {
+            scores[i] = qe.probability_to_encoded_quality(std::max(min_err_prob, probability_products[i]));
         }
 
-        for (auto iter = different_reads.begin(); iter != different_reads.end(); ) {
-
-            if (iter->second.abundance < min_abundance || iter->second.abundance > max_abundance) {
-
-                ds.unrecord(iter->second.id.length(), iter->first.length());
-                iter = different_reads.erase(iter);
-
-            } else {
-                iter++;
-            }
-
-        }
+        return scores;
 
     }
 

@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,6 +25,7 @@
 #define GEFAST_OPTIONS_HPP
 
 #include <map>
+#include <string>
 
 namespace GeFaST {
 
@@ -256,7 +257,10 @@ namespace GeFaST {
 
     enum SwarmStorageOption {
         SS_UNKNOWN,
-        SS_SIMPLE_PER_POOL
+        SS_SIMPLE_PER_POOL,
+        SS_SIMPLE_COMB_PER_POOL,
+        SS_FORWARDING_PER_POOL,
+        SS_FORWARDING_COMB_PER_POOL
     };
 
     extern std::map<std::string, SwarmStorageOption> swarm_storage_map;

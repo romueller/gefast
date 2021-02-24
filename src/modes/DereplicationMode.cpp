@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -64,6 +64,7 @@ namespace GeFaST {
         // opt_preprocessor: user-defined, handled in set_general_parameters()
         // opt_quality_encoding: user-defined, handled in set_general_parameters()
         // opt_amplicon_collection: given by opt_amplicon_storage
+        // opt_swarm_storage: user-defined, handled in set_general_parameters()
 
         opt_distance = DT_BOUNDED_LEVENSHTEIN;
         opt_clusterer = CL_DEREPLICATOR;
@@ -71,7 +72,6 @@ namespace GeFaST {
         opt_output_generator = OG_DEREPLICATION;
 
         opt_amplicon_storage = (opt_preprocessor == PP_FASTQ) ? AS_PREPARED_LENGTH_POOLS_QUALITY : AS_PREPARED_LENGTH_POOLS;
-        opt_swarm_storage = SS_SIMPLE_PER_POOL;
         opt_auxiliary_data = AD_NAIVE_AUXILIARY;
         opt_refinement_auxiliary_data = RD_NAIVE_AUXILIARY;
 

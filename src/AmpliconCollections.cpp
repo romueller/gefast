@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -984,6 +984,8 @@ namespace GeFaST {
         delete[] abundances_;
         delete[] seq_pointers_;
         delete[] header_pointers_;
+        delete[] qgram_offsets_;
+        delete[] qgrams_;
         delete[] sequences_;
         delete[] headers_;
 
@@ -1405,6 +1407,8 @@ namespace GeFaST {
         delete[] abundances_;
         delete[] seq_pointers_;
         delete[] header_pointers_;
+        delete[] qgram_offsets_;
+        delete[] qgrams_;
         delete[] qualities_;
         delete[] sequences_;
         delete[] headers_;

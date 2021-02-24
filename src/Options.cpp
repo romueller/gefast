@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -159,7 +159,7 @@ namespace GeFaST {
 
     std::map<std::string, PreprocessorOption> prep_map = {
             {"fasta", PP_FASTA},
-            {"fastq", PP_FASTQ},
+            {"fastq", PP_FASTQ}
     };
 
     PreprocessorOption get_preprocessor_option(const std::string& type) {
@@ -255,7 +255,10 @@ namespace GeFaST {
     /* === SwarmStorage === */
 
     std::map<std::string, SwarmStorageOption> swarm_storage_map = {
-            {"simple", SS_SIMPLE_PER_POOL}
+            {"simple", SS_SIMPLE_PER_POOL},
+            {"simple-combined", SS_SIMPLE_COMB_PER_POOL},
+            {"forwarding", SS_FORWARDING_PER_POOL},
+            {"forwarding-combined", SS_FORWARDING_COMB_PER_POOL}
     };
 
     SwarmStorageOption get_swarm_storage_option(const std::string& type) {

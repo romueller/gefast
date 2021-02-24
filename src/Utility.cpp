@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,7 +35,7 @@ namespace GeFaST {
     void print_information() {
 
         std::cout << "##### GeFaST (" + VERSION + ") #####" << std::endl;
-        std::cout << "Copyright (C) 2016 - 2020 Robert Mueller" << std::endl;
+        std::cout << "Copyright (C) 2016 - 2021 Robert Mueller" << std::endl;
         std::cout << "https://github.com/romueller/gefast" << std::endl << std::endl;
 
     }
@@ -196,6 +196,32 @@ namespace GeFaST {
         }
 
         return Defline(first_part, second_part, abundance);
+
+    }
+
+
+    /* === StringIteratorPair === */
+
+    //TODO? custom hash function (e.g. FNV) to avoid construction of temporary string
+    size_t hashStringIteratorPair::operator()(const StringIteratorPair& p) const {
+        return hash(std::string(p.first, p.second));
+    }
+
+    bool equalStringIteratorPair::operator()(const StringIteratorPair& lhs, const StringIteratorPair& rhs) const {
+        return ((lhs.second - lhs.first) == (rhs.second - rhs.first)) && std::equal(lhs.first, lhs.second, rhs.first);
+    }
+
+    bool lessStringIteratorPair::operator()(const StringIteratorPair& a, const StringIteratorPair& b) const {
+        return std::lexicographical_compare(a.first, a.second, b.first, b.second);
+    }
+
+
+    /* === StdPair === */
+
+    size_t hashStdPair::operator()(const std::pair<lenSeqs_t, lenSeqs_t>& p) const {
+
+        size_t seed = hash(p.first);
+        return hash(p.second) + 0x9e3779b9 + (seed << 6ul) + (seed >> 2ul);
 
     }
 

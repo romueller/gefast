@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -76,9 +76,9 @@ namespace GeFaST {
         // opt_refiner: user-defined, handled above and in set_general_parameters()
         // opt_output_generator: user-defined, handled above and in set_general_parameters()
         // opt_amplicon_collection: given by opt_amplicon_storage
+        // opt_swarm_storage: user-defined, handled in set_general_parameters()
 
         opt_amplicon_storage = AS_PREPARED_LENGTH_POOLS;
-        opt_swarm_storage = SS_SIMPLE_PER_POOL;
         opt_auxiliary_data = (two_way_segment_filter) ? AD_2W_SEGMENT_FILTER : AD_SEGMENT_FILTER;
         opt_refinement_auxiliary_data = (two_way_segment_filter) ? RD_2W_SEGMENT_FILTER : RD_SEGMENT_FILTER;
         opt_distance = (use_score) ? DT_BOUNDED_SCORE_LEVENSHTEIN : DT_BOUNDED_LEVENSHTEIN;

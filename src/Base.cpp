@@ -1,7 +1,7 @@
 /*
  * GeFaST
  *
- * Copyright (C) 2016 - 2020 Robert Mueller
+ * Copyright (C) 2016 - 2021 Robert Mueller
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -72,6 +72,7 @@ namespace GeFaST {
         stream << "Mode: " << mode << std::endl;
         stream << "Clusterer: " << get_clusterer_label(opt_clusterer) << std::endl;
         if (refinement_threshold > 0) stream << "Cluster refiner: " << get_refiner_label(opt_refiner) << std::endl;
+//        if (opt_swarm_storage != SS_SIMPLE_PER_POOL) stream << "Swarm storage: " << get_swarm_storage_label(opt_swarm_storage) << std::endl;
         stream << "Distance function: " << get_distance_label(opt_distance) << std::endl;
         stream << "Threshold: " << main_threshold << std::endl;
         if (refinement_threshold > 0) stream << "Refinement threshold: " << refinement_threshold << std::endl;
@@ -221,6 +222,7 @@ namespace GeFaST {
         opt_refiner = CR_IDLE;
         opt_output_generator = OG_IDLE;
         opt_amplicon_collection = AC_UNKNOWN;
+        opt_swarm_storage = SS_FORWARDING_PER_POOL;
         opt_distance = DT_UNKNOWN;
         match_reward = 5;
         mismatch_penalty = -4;
@@ -268,6 +270,7 @@ namespace GeFaST {
             if (key == "refiner") opt_refiner = get_refiner_option(line.substr(delim_pos + 1));
             if (key == "output_generator") opt_output_generator = get_output_generator_option(line.substr(delim_pos + 1));
             if (key == "quality_encoding") opt_quality_encoding = get_quality_encoding_option(line.substr(delim_pos + 1));
+            if (key == "swarm_storage") opt_swarm_storage = get_swarm_storage_option(line.substr(delim_pos + 1));
             if (key == "match_reward") match_reward = std::stoi(line.substr(delim_pos + 1));
             if (key == "mismatch_penalty") mismatch_penalty = std::stoi(line.substr(delim_pos + 1));
             if (key == "gap_opening_penalty") gap_opening_penalty = std::stoi(line.substr(delim_pos + 1));

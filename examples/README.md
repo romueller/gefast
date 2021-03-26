@@ -4,7 +4,6 @@ This directory exemplarily describes how to run GeFaST in different modes and wi
 For each mode, a possible scenario is described, followed by a configuration and a command suitable to perform the desired clustering.
 Here, the full configuration of GeFaST is provided through the configuration file (if possible).
 The described configuration files together with the exemplary outputs are provided in the respective subdirectories.
-The used commands
 
 The toy data set comprises 57 sequences of varying abundance.
 The data set is provided in three versions to show different input processing options: 

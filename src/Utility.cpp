@@ -1287,7 +1287,7 @@ namespace GeFaST {
         // calculate lambda
         double lambda = 1.0;
         for (int pos1 = 0; pos1 < seq_len; pos1++) {
-            lambda = lambda * error_matrix[tvec[pos1]][qind[pos1]];
+            lambda = lambda * error_matrix.at(tvec[pos1]).at(qind[pos1]);
         }
 
         if (lambda < 0 || lambda > 1) throw std::runtime_error("Bad lambda.");

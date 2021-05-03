@@ -276,44 +276,42 @@ namespace GeFaST {
     public:
         explicit QualityEncoding(const QualityEncodingOption opt = QE_SANGER) {
 
-            int from, to;
-
             switch (opt) {
 
                 case QE_SANGER:
                     offset_ = 33;
-                    from = 0;
-                    to = 40;
+                    from_ = 0;
+                    to_ = 40;
                     break;
 
                 case QE_ILLUMINA13:
                     offset_ = 64;
-                    from = 0;
-                    to = 40;
+                    from_ = 0;
+                    to_ = 40;
                     break;
 
                 case QE_ILLUMINA15:
                     offset_ = 64;
-                    from = 3;
-                    to = 41;
+                    from_ = 3;
+                    to_ = 41;
                     break;
 
                 case QE_ILLUMINA18:
                     offset_ = 33;
-                    from = 0;
-                    to = 41;
+                    from_ = 0;
+                    to_ = 41;
                     break;
 
                 case QE_UNKNOWN: // fallthrough to default for error handling
                 default:
                     std::cerr << " -- WARNING: Unknown quality-encoding name. Resorting to sanger." << std::endl;
                     offset_ = 33;
-                    from = 0;
-                    to = 40;
+                    from_ = 0;
+                    to_ = 40;
 
             }
 
-            for (char i = from; i <= to; i++) {
+            for (char i = from_; i <= to_; i++) {
                 score_to_error_prob_[i + offset_] = quality_to_probability(i);
             }
 
@@ -371,9 +369,25 @@ namespace GeFaST {
             return offset_;
         }
 
+        /*
+         * Return the smallest raw quality score of the quality encoding.
+         */
+        char get_from() const {
+            return from_;
+        }
+
+        /*
+         * Return the largest raw quality score of the quality encoding.
+         */
+        char get_to() const {
+            return to_;
+        }
+
     private:
         std::map<char, T> score_to_error_prob_; // mapping between quality score and error probability
         char offset_; // encoding-specific offset
+        char from_; // smallest raw quality score in encoding
+        char to_; // largest raw quality score in encoding
 
     };
 

@@ -324,13 +324,15 @@ namespace GeFaST {
         std::vector<float> probability_sums = std::vector<float>(scores[0].length(), 0);
         for (auto d = 0; d < abundances.size(); d++) {
             for (auto i = 0; i < scores[d].length(); i++) {
-                probability_sums[i] = abundances[d] * qe.encoded_quality_to_probability(scores[d][i]);
+                probability_sums[i] += abundances[d] * qe.encoded_quality_to_probability(scores[d][i]);
             }
         }
 
+        char max_score = qe.get_accepted_scores().back();
         std::string mean_scores(probability_sums.size(), ' ');
         for (auto i = 0; i < probability_sums.size(); i++) {
-            mean_scores[i] = qe.probability_to_encoded_quality(probability_sums[i] / abundance);
+            // limit to the score to the encoding range (as a precaution against imprecision and rounding errors)
+            mean_scores[i] = std::min(max_score, qe.probability_to_encoded_quality(probability_sums[i] / abundance));
         }
 
         return mean_scores;

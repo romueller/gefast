@@ -238,6 +238,7 @@ namespace GeFaST {
 
         // set up error matrix
         QualityEncoding<>* qe = config.build_quality_encoding();
+        char score_shift = qe->get_offset() + qe->get_from(); // subtracted from quality scores before accessing the error matrix
         std::vector<std::vector<double>> error_matrix;
         if (!Dada2Utility::fill_error_matrix(error_matrix, matrix_file, qe->get_accepted_scores().size())) {
 
@@ -283,7 +284,7 @@ namespace GeFaST {
 
                 auto quals = ac.quals(i);
                 for (lenSeqs_t pos = 0; pos < ac.len(i); pos++) {
-                    qual[pos] = (uint8_t)(quals[pos] - qe->get_offset());
+                    qual[pos] = (uint8_t)(quals[pos] - score_shift);
                 }
                 raws[i] = new RawSequence(seq, ac.len(i), qual, ac.ab(i), false);
 
@@ -391,6 +392,7 @@ namespace GeFaST {
 
         // set up error matrix
         QualityEncoding<>* qe = config.build_quality_encoding();
+        char score_shift = qe->get_offset() + qe->get_from(); // subtracted from quality scores before accessing the error matrix
         std::vector<std::vector<double>> error_matrix;
         if (!Dada2Utility::fill_error_matrix(error_matrix, matrix_file, qe->get_accepted_scores().size())) {
 
@@ -418,7 +420,7 @@ namespace GeFaST {
 
             auto quals = ac.quals(ampl_ids[i]);
             for (unsigned int pos = 0; pos < ac.len(ampl_ids[i]); pos++) {
-                qual[pos] = (uint8_t)(quals[pos] - qe->get_offset());
+                qual[pos] = (uint8_t)(quals[pos] - score_shift);
             }
             raws[i] = new RawSequence(seq, ac.len(ampl_ids[i]), qual, ac.ab(ampl_ids[i]), false);
 
@@ -1031,6 +1033,7 @@ namespace GeFaST {
         // set up error matrix & temporary arrays
         lenSeqs_t alphabet_size = (config.alphabet.empty()) ? 4 : config.alphabet.size();
         QualityEncoding<>* qe = config.build_quality_encoding();
+        char score_shift = qe->get_offset() + qe->get_from(); // subtracted from quality scores before accessing the error matrix
         std::vector<std::vector<double>> error_matrix;
         if (!Dada2Utility::fill_error_matrix(error_matrix, matrix_file, qe->get_accepted_scores().size())) {
 
@@ -1104,7 +1107,7 @@ namespace GeFaST {
                         Dada2Utility::nt2int(seq, ac.seq(cur_seed_mem));
                         auto quals = ac.quals(cur_seed_mem);
                         for (lenSeqs_t ppos = 0; ppos < ac.len(cur_seed_mem); ppos++) {
-                            qual[ppos] = (uint8_t)(quals[ppos] - qe->get_offset());
+                            qual[ppos] = (uint8_t)(quals[ppos] - score_shift);
                         }
                         Dada2Utility::RawSequence cur_seed_raw(seq, ac.len(cur_seed_mem), qual, ac.ab(cur_seed_mem), false);
                         if (use_k_mers) {
@@ -1127,7 +1130,7 @@ namespace GeFaST {
                             Dada2Utility::nt2int(seq, ac.seq(partner.id));
                             quals = ac.quals(partner.id);
                             for (lenSeqs_t ppos = 0; ppos < ac.len(partner.id); ppos++) {
-                                qual[ppos] = (uint8_t)(quals[ppos] - qe->get_offset());
+                                qual[ppos] = (uint8_t)(quals[ppos] - score_shift);
                             }
                             Dada2Utility::RawSequence cur_partner_raw(seq, ac.len(partner.id), qual, ac.ab(partner.id), false);
                             if (use_k_mers) {
@@ -1273,6 +1276,7 @@ namespace GeFaST {
         // set up error matrix & temporary arrays
         lenSeqs_t alphabet_size = (config.alphabet.empty()) ? 4 : config.alphabet.size();
         QualityEncoding<>* qe = config.build_quality_encoding();
+        char score_shift = qe->get_offset() + qe->get_from(); // subtracted from quality scores before accessing the error matrix
         std::vector<std::vector<double>> error_matrix;
         if (!Dada2Utility::fill_error_matrix(error_matrix, matrix_file, qe->get_accepted_scores().size())) {
 
@@ -1345,7 +1349,7 @@ namespace GeFaST {
                         Dada2Utility::nt2int(seq, ac.seq(cur_seed_mem));
                         auto quals = ac.quals(cur_seed_mem);
                         for (lenSeqs_t ppos = 0; ppos < ac.len(cur_seed_mem); ppos++) {
-                            qual[ppos] = (uint8_t)(quals[ppos] - qe->get_offset());
+                            qual[ppos] = (uint8_t)(quals[ppos] - score_shift);
                         }
                         Dada2Utility::RawSequence cur_seed_raw(seq, ac.len(cur_seed_mem), qual, ac.ab(cur_seed_mem), false);
                         if (use_k_mers) {
@@ -1372,7 +1376,7 @@ namespace GeFaST {
                                 Dada2Utility::nt2int(seq, ac.seq(partner_id));
                                 quals = ac.quals(partner_id);
                                 for (lenSeqs_t ppos = 0; ppos < ac.len(partner_id); ppos++) {
-                                    qual[ppos] = (uint8_t)(quals[ppos] - qe->get_offset());
+                                    qual[ppos] = (uint8_t)(quals[ppos] - score_shift);
                                 }
                                 Dada2Utility::RawSequence cur_partner_raw(seq, ac.len(partner_id), qual, ac.ab(partner_id), false);
                                 if (use_k_mers) {

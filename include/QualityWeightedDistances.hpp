@@ -240,12 +240,12 @@ namespace GeFaST {
             // precompute the weighted mismatch scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = mismatch(a, b);
 
                 }
@@ -260,7 +260,7 @@ namespace GeFaST {
         ClementScores(const ClementScores& other) : // copy constructor
                 bInner_(other.bInner_), bOuter_(other.bOuter_), qe_(other.qe_), alphabet_size_(other.alphabet_size_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -272,7 +272,7 @@ namespace GeFaST {
         ClementScores(ClementScores&& other) noexcept : // move constructor
                 bInner_(other.bInner_), bOuter_(other.bOuter_), qe_(other.qe_), alphabet_size_(other.alphabet_size_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                weighted_mismatch_scores_(other.weighted_mismatch_scores_), offset_(other.offset_),
+                weighted_mismatch_scores_(other.weighted_mismatch_scores_), score_shift_(other.score_shift_),
                 num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
@@ -297,7 +297,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -327,7 +327,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -364,7 +364,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -385,7 +385,7 @@ namespace GeFaST {
         float gap_extend_; // gap-extension penalty
 
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -398,7 +398,7 @@ namespace GeFaST {
         using ClementScores<Bi, Bo>::qe_;
         using ClementScores<Bi, Bo>::alphabet_size_;
         using ClementScores<Bi, Bo>::mismatch_;
-        using ClementScores<Bi, Bo>::offset_;
+        using ClementScores<Bi, Bo>::score_shift_;
         using ClementScores<Bi, Bo>::num_scores_;
 
         using ClementScores<Bi, Bo>::mismatch;
@@ -413,7 +413,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_match_scores_[index] = match(a, b);
 
                 }
@@ -495,7 +495,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:
@@ -531,7 +531,7 @@ namespace GeFaST {
             // and record the minimum and maximum (mis)match scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             min_match_ = std::numeric_limits<float>::infinity();
             max_match_ = -std::numeric_limits<float>::infinity();
@@ -540,7 +540,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
 
                     auto tmp = match_helper(a, b);
                     min_match_ = std::min(min_match_, tmp);
@@ -562,7 +562,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = (max_mismatch_ - weighted_mismatch_scores_[index]) / (max_mismatch_ - min_mismatch_) * mismatch_;
 
                 }
@@ -579,7 +579,7 @@ namespace GeFaST {
                 scaling_factor_(other.scaling_factor_), mismatch_(other.mismatch_), gap_open_(other.gap_open_),
                 gap_extend_(other.gap_extend_), min_match_(other.min_match_), max_match_(other.max_match_),
                 min_mismatch_(other.min_mismatch_), max_mismatch_(other.max_mismatch_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -593,7 +593,7 @@ namespace GeFaST {
                 scaling_factor_(other.scaling_factor_), mismatch_(other.mismatch_), gap_open_(other.gap_open_),
                 gap_extend_(other.gap_extend_), min_match_(other.min_match_), max_match_(other.max_match_),
                 min_mismatch_(other.min_mismatch_), max_mismatch_(other.max_mismatch_),
-                weighted_mismatch_scores_(other.weighted_mismatch_scores_), offset_(other.offset_),
+                weighted_mismatch_scores_(other.weighted_mismatch_scores_), score_shift_(other.score_shift_),
                 num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
@@ -623,7 +623,7 @@ namespace GeFaST {
             max_match_ = other.max_match_;
             min_mismatch_ = other.min_mismatch_;
             max_mismatch_ = other.max_mismatch_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -658,7 +658,7 @@ namespace GeFaST {
             max_match_ = other.max_match_;
             min_mismatch_ = other.min_mismatch_;
             max_mismatch_ = other.max_mismatch_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -690,7 +690,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -741,7 +741,7 @@ namespace GeFaST {
         float max_mismatch_; // maximum mismatch score in the alternative scoring matrix
 
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -762,7 +762,7 @@ namespace GeFaST {
         using MaldeScoresA<Bi, Bo>::min_mismatch_;
         using MaldeScoresA<Bi, Bo>::max_mismatch_;
         using MaldeScoresA<Bi, Bo>::weighted_mismatch_scores_;
-        using MaldeScoresA<Bi, Bo>::offset_;
+        using MaldeScoresA<Bi, Bo>::score_shift_;
         using MaldeScoresA<Bi, Bo>::num_scores_;
 
         using MaldeScoresA<Bi, Bo>::match_helper;
@@ -785,7 +785,7 @@ namespace GeFaST {
             // and record the minimum and maximum (mis)match scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_match_scores_ = new float[num_scores_ * num_scores_];
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             min_match_ = std::numeric_limits<float>::infinity();
@@ -795,7 +795,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
 
                     weighted_match_scores_[index] = match_helper(a, b);
                     weighted_mismatch_scores_[index] = mismatch_helper(a, b);
@@ -817,7 +817,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
 
                     weighted_match_scores_[index] = (max_match_ - weighted_match_scores_[index]) / (max_match_ - min_match_) * mismatch_;
                     weighted_mismatch_scores_[index] = (max_mismatch_ - weighted_mismatch_scores_[index]) / (max_mismatch_ - min_mismatch_) * mismatch_;
@@ -896,7 +896,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:
@@ -932,12 +932,12 @@ namespace GeFaST {
             // fill matrix of weighted mismatch scores by weighting the mismatch penalty with the combined error probability
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = mismatch(a, b);
 
                 }
@@ -952,7 +952,7 @@ namespace GeFaST {
         MaldeScoresB(const MaldeScoresB& other) : // copy constructor
                 bInner_(other.bInner_), bOuter_(other.bOuter_), qe_(other.qe_), alphabet_size_(other.alphabet_size_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -964,7 +964,7 @@ namespace GeFaST {
         MaldeScoresB(MaldeScoresB&& other) noexcept : // move constructor
                 bInner_(other.bInner_), bOuter_(other.bOuter_), qe_(other.qe_), alphabet_size_(other.alphabet_size_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                weighted_mismatch_scores_(other.eighted_mismatch_scores_), offset_(other.offset_),
+                weighted_mismatch_scores_(other.eighted_mismatch_scores_), score_shift_(other.score_shift_),
                 num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
@@ -989,7 +989,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -1019,7 +1019,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -1056,7 +1056,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -1077,7 +1077,7 @@ namespace GeFaST {
         float gap_extend_; // gap-extension penalty
 
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -1090,7 +1090,7 @@ namespace GeFaST {
         using MaldeScoresB<Bi, Bo>::qe_;
         using MaldeScoresB<Bi, Bo>::alphabet_size_;
         using MaldeScoresB<Bi, Bo>::mismatch_;
-        using MaldeScoresB<Bi, Bo>::offset_;
+        using MaldeScoresB<Bi, Bo>::score_shift_;
         using MaldeScoresB<Bi, Bo>::num_scores_;
 
         using MaldeScoresB<Bi, Bo>::mismatch;
@@ -1105,7 +1105,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_match_scores_[index] = match(a, b);
 
                 }
@@ -1188,7 +1188,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:
@@ -1225,20 +1225,20 @@ namespace GeFaST {
             // and fill matrices of weighted gap costs by weighting the gap penalties with the error probability
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             weighted_gap_open_scores_ = new float[num_scores_];
             weighted_gap_extend_scores_ = new float[num_scores_];
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = mismatch(a, b);
 
                 }
 
-                weighted_gap_open_scores_[a - offset_] = gap_open(a);
-                weighted_gap_extend_scores_[a - offset_] = gap_extend(a);
+                weighted_gap_open_scores_[a - score_shift_] = gap_open(a);
+                weighted_gap_extend_scores_[a - score_shift_] = gap_extend(a);
 
             }
 
@@ -1255,7 +1255,7 @@ namespace GeFaST {
         MaldeScoresC(const MaldeScoresC& other) : // copy constructor
                 bInner_(other.bInner_), bOuter_(other.bOuter_), qe_(other.qe_), alphabet_size_(other.alphabet_size_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -1279,7 +1279,7 @@ namespace GeFaST {
                 weighted_mismatch_scores_(other.weighted_mismatch_scores_),
                 weighted_gap_open_scores_(other.weighted_gap_open_scores_),
                 weighted_gap_extend_scores_(other.weighted_gap_extend_scores_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
             other.weighted_gap_open_scores_ = nullptr;
@@ -1307,7 +1307,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -1348,7 +1348,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -1395,7 +1395,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -1403,11 +1403,11 @@ namespace GeFaST {
         }
 
         inline float lookup_gap_open(char qual_a) {
-            return weighted_gap_open_scores_[qual_a - offset_];
+            return weighted_gap_open_scores_[qual_a - score_shift_];
         }
 
         inline float lookup_gap_extend(char qual_a) {
-            return weighted_gap_extend_scores_[qual_a - offset_];
+            return weighted_gap_extend_scores_[qual_a - score_shift_];
         }
 
     protected:
@@ -1423,7 +1423,7 @@ namespace GeFaST {
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
         float* weighted_gap_open_scores_; // matrix of weighted gap-opening scores as 1-dimensional C-style array
         float* weighted_gap_extend_scores_; // matrix of weighted gap-extension scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -1436,7 +1436,7 @@ namespace GeFaST {
         using MaldeScoresC<Bi, Bo>::qe_;
         using MaldeScoresC<Bi, Bo>::alphabet_size_;
         using MaldeScoresC<Bi, Bo>::mismatch_;
-        using MaldeScoresC<Bi, Bo>::offset_;
+        using MaldeScoresC<Bi, Bo>::score_shift_;
         using MaldeScoresC<Bi, Bo>::num_scores_;
 
         using MaldeScoresC<Bi, Bo>::mismatch;
@@ -1451,7 +1451,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_match_scores_[index] = match(a, b);
 
                 }
@@ -1534,7 +1534,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:
@@ -1573,7 +1573,7 @@ namespace GeFaST {
             // and record the minimum and maximum (mis)match scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             orig_match_ratio_ = std::exp(config.match_reward / scaling_factor_);
             orig_mismatch_ratio_ = std::exp(config.mismatch_penalty / scaling_factor_);
@@ -1584,7 +1584,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
 
                     auto tmp = match_helper(a, b);
                     min_match_ = std::min(min_match_, tmp);
@@ -1602,7 +1602,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = (max_mismatch_ - weighted_mismatch_scores_[index]) / (max_mismatch_ - min_mismatch_) * mismatch_;
 
                 }
@@ -1620,7 +1620,7 @@ namespace GeFaST {
                 gap_extend_(other.gap_extend_), orig_match_ratio_(other.orig_match_ratio_),
                 orig_mismatch_ratio_(other.orig_mismatch_ratio_), min_match_(other.min_match_),
                 max_match_(other.max_match_), min_mismatch_(other.min_mismatch_), max_mismatch_(other.max_mismatch_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -1636,7 +1636,7 @@ namespace GeFaST {
                 orig_mismatch_ratio_(other.orig_mismatch_ratio_), min_match_(other.min_match_),
                 max_match_(other.max_match_), min_mismatch_(other.min_mismatch_), max_mismatch_(other.max_mismatch_),
                 weighted_mismatch_scores_(other.weighted_mismatch_scores_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
 
@@ -1667,7 +1667,7 @@ namespace GeFaST {
             max_match_ = other.max_match_;
             min_mismatch_ = other.min_mismatch_;
             max_mismatch_ = other.max_mismatch_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -1704,7 +1704,7 @@ namespace GeFaST {
             max_match_ = other.max_match_;
             min_mismatch_ = other.min_mismatch_;
             max_mismatch_ = other.max_mismatch_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -1736,7 +1736,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -1788,7 +1788,7 @@ namespace GeFaST {
         float max_mismatch_; // maximum mismatch score in the alternative scoring matrix
 
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -1811,7 +1811,7 @@ namespace GeFaST {
         using FrithScores<Bi, Bo>::min_mismatch_;
         using FrithScores<Bi, Bo>::max_mismatch_;
         using FrithScores<Bi, Bo>::weighted_mismatch_scores_;
-        using FrithScores<Bi, Bo>::offset_;
+        using FrithScores<Bi, Bo>::score_shift_;
         using FrithScores<Bi, Bo>::num_scores_;
 
         using FrithScores<Bi, Bo>::match_helper;
@@ -1839,7 +1839,7 @@ namespace GeFaST {
             // and record the minimum and maximum (mis)match scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_match_scores_ = new float[num_scores_ * num_scores_];
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             orig_match_ratio_ = std::exp(config.match_reward / scaling_factor_);
@@ -1851,7 +1851,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
 
                     weighted_match_scores_[index] = match_helper(a, b);
                     weighted_mismatch_scores_[index] = mismatch_helper(a, b);
@@ -1869,7 +1869,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
 
                     weighted_match_scores_[index] = (max_match_ - weighted_match_scores_[index]) / (max_match_ - min_match_) * mismatch_;
                     weighted_mismatch_scores_[index] = (max_mismatch_ - weighted_mismatch_scores_[index]) / (max_mismatch_ - min_mismatch_) * mismatch_;
@@ -1948,7 +1948,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:
@@ -1986,20 +1986,20 @@ namespace GeFaST {
             // precompute the weighted mismatch, gap-opening and gap-extension scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             weighted_gap_open_scores_ = new float[num_scores_];
             weighted_gap_extend_scores_ = new float[num_scores_];
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = mismatch(a, b);
 
                 }
 
-                weighted_gap_open_scores_[a - offset_] = gap_open(a);
-                weighted_gap_extend_scores_[a - offset_] = gap_extend(a);
+                weighted_gap_open_scores_[a - score_shift_] = gap_open(a);
+                weighted_gap_extend_scores_[a - score_shift_] = gap_extend(a);
 
             }
 
@@ -2016,7 +2016,7 @@ namespace GeFaST {
         KimScoresA(const KimScoresA& other) : // copy constructor
                 bInner_(other.bInner_), bOuter_(other.bOuter_), qe_(other.qe_), alphabet_size_(other.alphabet_size_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -2040,7 +2040,7 @@ namespace GeFaST {
                 weighted_mismatch_scores_(other.weighted_mismatch_scores_),
                 weighted_gap_open_scores_(other.weighted_gap_open_scores_),
                 weighted_gap_extend_scores_(other.weighted_gap_extend_scores_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
             other.weighted_gap_open_scores_ = nullptr;
@@ -2068,7 +2068,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -2109,7 +2109,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -2159,7 +2159,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -2167,11 +2167,11 @@ namespace GeFaST {
         }
 
         inline float lookup_gap_open(char qual_a) {
-            return weighted_gap_open_scores_[qual_a - offset_];
+            return weighted_gap_open_scores_[qual_a - score_shift_];
         }
 
         inline float lookup_gap_extend(char qual_a) {
-            return weighted_gap_extend_scores_[qual_a - offset_];
+            return weighted_gap_extend_scores_[qual_a - score_shift_];
         }
 
     protected:
@@ -2187,7 +2187,7 @@ namespace GeFaST {
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
         float* weighted_gap_open_scores_; // matrix of weighted gap-opening scores as 1-dimensional C-style array
         float* weighted_gap_extend_scores_; // matrix of weighted gap-extension scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -2202,7 +2202,7 @@ namespace GeFaST {
         using KimScoresA<Bi, Bo>::mismatch_;
         using KimScoresA<Bi, Bo>::gap_open_;
         using KimScoresA<Bi, Bo>::gap_extend_;
-        using KimScoresA<Bi, Bo>::offset_;
+        using KimScoresA<Bi, Bo>::score_shift_;
         using KimScoresA<Bi, Bo>::num_scores_;
 
         using KimScoresA<Bi, Bo>::mismatch;
@@ -2217,7 +2217,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_match_scores_[index] = match(a, b);
 
                 }
@@ -2303,7 +2303,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:
@@ -2339,20 +2339,20 @@ namespace GeFaST {
             // precompute the weighted mismatch, gap-opening and gap-extension scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             weighted_gap_open_scores_ = new float[num_scores_];
             weighted_gap_extend_scores_ = new float[num_scores_];
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = mismatch(a, b);
 
                 }
 
-                weighted_gap_open_scores_[a - offset_] = gap_open(a);
-                weighted_gap_extend_scores_[a - offset_] = gap_extend(a);
+                weighted_gap_open_scores_[a - score_shift_] = gap_open(a);
+                weighted_gap_extend_scores_[a - score_shift_] = gap_extend(a);
 
             }
 
@@ -2369,7 +2369,7 @@ namespace GeFaST {
         KimScoresB(const KimScoresB& other) : // copy constructor
                 bInner_(other.bInner_), bOuter_(other.bOuter_), qe_(other.qe_), alphabet_size_(other.alphabet_size_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -2393,7 +2393,7 @@ namespace GeFaST {
                 weighted_mismatch_scores_(other.weighted_mismatch_scores_),
                 weighted_gap_open_scores_(other.weighted_gap_open_scores_),
                 weighted_gap_extend_scores_(other.weighted_gap_extend_scores_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
             other.weighted_gap_open_scores_ = nullptr;
@@ -2421,7 +2421,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -2462,7 +2462,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -2512,7 +2512,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -2520,11 +2520,11 @@ namespace GeFaST {
         }
 
         inline float lookup_gap_open(char qual_a) {
-            return weighted_gap_open_scores_[qual_a - offset_];
+            return weighted_gap_open_scores_[qual_a - score_shift_];
         }
 
         inline float lookup_gap_extend(char qual_a) {
-            return weighted_gap_extend_scores_[qual_a - offset_];
+            return weighted_gap_extend_scores_[qual_a - score_shift_];
         }
 
     protected:
@@ -2540,7 +2540,7 @@ namespace GeFaST {
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
         float* weighted_gap_open_scores_; // matrix of weighted gap-opening scores as 1-dimensional C-style array
         float* weighted_gap_extend_scores_; // matrix of weighted gap-extension scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -2555,7 +2555,7 @@ namespace GeFaST {
         using KimScoresB<Bi, Bo>::mismatch_;
         using KimScoresB<Bi, Bo>::gap_open_;
         using KimScoresB<Bi, Bo>::gap_extend_;
-        using KimScoresB<Bi, Bo>::offset_;
+        using KimScoresB<Bi, Bo>::score_shift_;
         using KimScoresB<Bi, Bo>::num_scores_;
 
         using KimScoresB<Bi, Bo>::mismatch;
@@ -2570,7 +2570,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_match_scores_[index] = match(a, b);
 
                 }
@@ -2656,7 +2656,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:
@@ -2704,20 +2704,20 @@ namespace GeFaST {
             // precompute the weighted mismatch, gap-opening and gap-extension scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             weighted_gap_open_scores_ = new float[num_scores_];
             weighted_gap_extend_scores_ = new float[num_scores_];
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = mismatch(a, b);
 
                 }
 
-                weighted_gap_open_scores_[a - offset_] = gap_open(a);
-                weighted_gap_extend_scores_[a - offset_] = gap_extend(a);
+                weighted_gap_open_scores_[a - score_shift_] = gap_open(a);
+                weighted_gap_extend_scores_[a - score_shift_] = gap_extend(a);
 
             }
 
@@ -2736,7 +2736,7 @@ namespace GeFaST {
                 max_change_match_(other.max_change_match_), max_change_mismatch_(other.max_change_mismatch_),
                 max_change_gap_open_(other.max_change_gap_open_), max_change_gap_extend_(other.max_change_gap_extend_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -2762,7 +2762,7 @@ namespace GeFaST {
                 weighted_mismatch_scores_(other.weighted_mismatch_scores_),
                 weighted_gap_open_scores_(other.weighted_gap_open_scores_),
                 weighted_gap_extend_scores_(other.weighted_gap_extend_scores_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
             other.weighted_gap_open_scores_ = nullptr;
@@ -2794,7 +2794,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -2839,7 +2839,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -2885,7 +2885,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -2893,11 +2893,11 @@ namespace GeFaST {
         }
 
         inline float lookup_gap_open(char qual_a) {
-            return weighted_gap_open_scores_[qual_a - offset_];
+            return weighted_gap_open_scores_[qual_a - score_shift_];
         }
 
         inline float lookup_gap_extend(char qual_a) {
-            return weighted_gap_extend_scores_[qual_a - offset_];
+            return weighted_gap_extend_scores_[qual_a - score_shift_];
         }
 
     protected:
@@ -2917,7 +2917,7 @@ namespace GeFaST {
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
         float* weighted_gap_open_scores_; // matrix of weighted gap-opening scores as 1-dimensional C-style array
         float* weighted_gap_extend_scores_; // matrix of weighted gap-extension scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -2930,7 +2930,7 @@ namespace GeFaST {
         using ConvergeScoresA<Bi, Bo>::qe_;
         using ConvergeScoresA<Bi, Bo>::alphabet_size_;
         using ConvergeScoresA<Bi, Bo>::max_change_match_;
-        using ConvergeScoresA<Bi, Bo>::offset_;
+        using ConvergeScoresA<Bi, Bo>::score_shift_;
         using ConvergeScoresA<Bi, Bo>::num_scores_;
 
         using ConvergeScoresA<Bi, Bo>::mismatch;
@@ -2945,7 +2945,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_match_scores_[index] = match(a, b);
 
                 }
@@ -3027,7 +3027,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:
@@ -3074,20 +3074,20 @@ namespace GeFaST {
             // precompute the weighted mismatch, gap-opening and gap-extension scores
             auto chars = qe_.get_accepted_scores();
             num_scores_ = chars.size();
-            offset_ = qe_.get_offset();
+            score_shift_ = qe_.get_offset() + qe_.get_from();
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             weighted_gap_open_scores_ = new float[num_scores_];
             weighted_gap_extend_scores_ = new float[num_scores_];
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_mismatch_scores_[index] = mismatch(a, b);
 
                 }
 
-                weighted_gap_open_scores_[a - offset_] = gap_open(a);
-                weighted_gap_extend_scores_[a - offset_] = gap_extend(a);
+                weighted_gap_open_scores_[a - score_shift_] = gap_open(a);
+                weighted_gap_extend_scores_[a - score_shift_] = gap_extend(a);
 
             }
 
@@ -3106,7 +3106,7 @@ namespace GeFaST {
                 max_change_match_(other.max_change_match_), max_change_mismatch_(other.max_change_mismatch_),
                 max_change_gap_open_(other.max_change_gap_open_), max_change_gap_extend_(other.max_change_gap_extend_),
                 mismatch_(other.mismatch_), gap_open_(other.gap_open_), gap_extend_(other.gap_extend_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
             for (unsigned long i = 0; i < num_scores_ * num_scores_; i++) {
@@ -3132,7 +3132,7 @@ namespace GeFaST {
                 weighted_mismatch_scores_(other.weighted_mismatch_scores_),
                 weighted_gap_open_scores_(other.weighted_gap_open_scores_),
                 weighted_gap_extend_scores_(other.weighted_gap_extend_scores_),
-                offset_(other.offset_), num_scores_(other.num_scores_) {
+                score_shift_(other.score_shift_), num_scores_(other.num_scores_) {
 
             other.weighted_mismatch_scores_ = nullptr;
             other.weighted_gap_open_scores_ = nullptr;
@@ -3164,7 +3164,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = new float[num_scores_ * num_scores_];
@@ -3209,7 +3209,7 @@ namespace GeFaST {
             mismatch_ = other.mismatch_;
             gap_open_ = other.gap_open_;
             gap_extend_ = other.gap_extend_;
-            offset_ = other.offset_;
+            score_shift_ = other.score_shift_;
             num_scores_ = other.num_scores_;
 
             weighted_mismatch_scores_ = other.weighted_mismatch_scores_;
@@ -3255,7 +3255,7 @@ namespace GeFaST {
         }
 
         inline float lookup_mismatch(char qual_a, char qual_b) {
-            return weighted_mismatch_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_mismatch_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
         inline float lookup_substitute(char a, char qual_a, char b, char qual_b) {
@@ -3263,11 +3263,11 @@ namespace GeFaST {
         }
 
         inline float lookup_gap_open(char qual_a) {
-            return weighted_gap_open_scores_[qual_a - offset_];
+            return weighted_gap_open_scores_[qual_a - score_shift_];
         }
 
         inline float lookup_gap_extend(char qual_a) {
-            return weighted_gap_extend_scores_[qual_a - offset_];
+            return weighted_gap_extend_scores_[qual_a - score_shift_];
         }
 
     protected:
@@ -3287,7 +3287,7 @@ namespace GeFaST {
         float* weighted_mismatch_scores_; // matrix of weighted mismatch scores as 1-dimensional C-style array
         float* weighted_gap_open_scores_; // matrix of weighted gap-opening scores as 1-dimensional C-style array
         float* weighted_gap_extend_scores_; // matrix of weighted gap-extension scores as 1-dimensional C-style array
-        char offset_; // offset of the quality encoding
+        char score_shift_; // (offset + from) of the quality encoding to normalise the quality scores
         unsigned long num_scores_; // number of levels in the quality encoding
 
     };
@@ -3300,7 +3300,7 @@ namespace GeFaST {
         using ConvergeScoresB<Bi, Bo>::qe_;
         using ConvergeScoresB<Bi, Bo>::alphabet_size_;
         using ConvergeScoresB<Bi, Bo>::max_change_match_;
-        using ConvergeScoresB<Bi, Bo>::offset_;
+        using ConvergeScoresB<Bi, Bo>::score_shift_;
         using ConvergeScoresB<Bi, Bo>::num_scores_;
 
         using ConvergeScoresB<Bi, Bo>::mismatch;
@@ -3315,7 +3315,7 @@ namespace GeFaST {
             for (auto a : chars) {
                 for (auto b : chars) {
 
-                    auto index = (a - offset_) * num_scores_ + (b - offset_);
+                    auto index = (a - score_shift_) * num_scores_ + (b - score_shift_);
                     weighted_match_scores_[index] = match(a, b);
 
                 }
@@ -3397,7 +3397,7 @@ namespace GeFaST {
         }
 
         inline float lookup_match(char qual_a, char qual_b) override {
-            return weighted_match_scores_[(qual_a - offset_) * num_scores_ + (qual_b - offset_)];
+            return weighted_match_scores_[(qual_a - score_shift_) * num_scores_ + (qual_b - score_shift_)];
         }
 
     protected:

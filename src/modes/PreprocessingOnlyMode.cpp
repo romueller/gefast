@@ -38,6 +38,8 @@ namespace GeFaST {
         opt_distance = DT_BOUNDED_LEVENSHTEIN;
         opt_amplicon_storage = AS_SIMPLE_LENGTH_POOLS;
 
+        opt_feature = FB_UNKNOWN;
+
         /* Read mode-specific configuration from file */
 
         std::ifstream in_stream(configuration_file);
@@ -54,6 +56,7 @@ namespace GeFaST {
             if (key == "distance") opt_distance = get_distance_option(line.substr(delim_pos + 1));
             if (key == "amplicon_storage") opt_amplicon_storage = get_amplicon_storage_option(line.substr(delim_pos + 1));
 
+            if (key == "representation") opt_feature = get_feature_builder_option(line.substr(delim_pos + 1));
             if (key == "amplicon_collection") opt_amplicon_collection = get_amplicon_collection_option(line.substr(delim_pos + 1));
 
         }
@@ -105,7 +108,9 @@ namespace GeFaST {
     }
 
     AmpliconStorage* PreprocessingOnlyConfiguration::build_amplicon_storage(const DataStatistics<>& ds) const {
-        return AmpliconStorageFactory::create(opt_amplicon_storage, ds, *this);
+        return (opt_feature == FB_UNKNOWN) ?
+              AmpliconStorageFactory::create(opt_amplicon_storage, ds, *this)
+            : AmpliconStorageFactory::create(opt_amplicon_storage, opt_feature, opt_amplicon_collection, ds, *this);
     }
 
     SwarmStorage* PreprocessingOnlyConfiguration::build_swarm_storage(const AmpliconStorage& amplicon_storage) const {
@@ -146,7 +151,8 @@ namespace GeFaST {
         std::set<QualityEncodingOption> valid_qe = {QE_SANGER, QE_ILLUMINA13, QE_ILLUMINA15, QE_ILLUMINA18};
         std::set<AmpliconStorageOption> valid_as = {AS_SIMPLE_LENGTH_POOLS, AS_PREPARED_LENGTH_POOLS, AS_PREPARED_POOLS,
                                                     AS_PREPARED_QGRAM_LENGTH_POOLS, AS_PREPARED_LENGTH_POOLS_QUALITY,
-                                                    AS_PREPARED_POOLS_QUALITY, AS_PREPARED_QGRAM_LENGTH_POOLS_QUALITY};
+                                                    AS_PREPARED_POOLS_QUALITY, AS_PREPARED_QGRAM_LENGTH_POOLS_QUALITY,
+                                                    AS_SIMPLE_FEATURES};
 //        std::set<DistanceOption> valid_dt = {};
 
         if (valid_pp.find(opt_preprocessor) == valid_pp.end()){

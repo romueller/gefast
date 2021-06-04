@@ -319,6 +319,86 @@ namespace GeFaST {
 
     };
 
+
+
+    /*
+     * Computes the Manhattan distance between the features of two amplicons.
+     *
+     * Can only be used with FeatureAmpliconCollection.
+     */
+    class ManhattanDistance : public FeatureDistance {
+
+    public:
+        ManhattanDistance* clone() const override; // deep-copy clone method
+
+        dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+        /*
+         * Compute the Manhattan distance between the features.
+         */
+        dist_t distance(const FeatureAmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+    };
+
+
+    /*
+     * Computes the Euclidean distance between the features of two amplicons.
+     *
+     * Can only be used with FeatureAmpliconCollection.
+     */
+    class EuclideanDistance : public FeatureDistance {
+
+    public:
+        EuclideanDistance* clone() const override; // deep-copy clone method
+
+        dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+        /*
+         * Compute the Euclidean distance between the features.
+         */
+        dist_t distance(const FeatureAmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+    };
+
+
+    /*
+     * Computes the cosine distance between the features of two amplicons as 1 - (cosine similarity).
+     *
+     * Can only be used with FeatureAmpliconCollection.
+     */
+    class CosineDistance : public FeatureDistance {
+
+    public:
+        CosineDistance* clone() const override; // deep-copy clone method
+
+        dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+        /*
+         * Compute the cosine distance between the features.
+         */
+        dist_t distance(const FeatureAmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+    };
+
+    /*
+     * Computes the Pearson distance between the features of two amplicons as 1 - (Pearson correlation).
+     *
+     * Can only be used with FeatureAmpliconCollection.
+     */
+    class PearsonDistance : public FeatureDistance {
+
+    public:
+        PearsonDistance* clone() const override; // deep-copy clone method
+
+        dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+        /*
+         * Compute the Pearson distance between the features.
+         */
+        dist_t distance(const FeatureAmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+    };
+
 }
 
 #endif //GEFAST_DISTANCES_HPP

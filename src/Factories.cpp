@@ -28,6 +28,7 @@
 #include "../include/AmpliconCollections.hpp"
 #include "../include/AmpliconStorages.hpp"
 #include "../include/Distances.hpp"
+#include "../include/FeatureBuilders.hpp"
 #include "../include/Preprocessors.hpp"
 #include "../include/Clusterers.hpp"
 #include "../include/ClusterRefiners.hpp"
@@ -38,6 +39,7 @@
 #include "../include/modes/QualityAlignmentScoreMode.hpp"
 #include "../include/modes/ConsistencyMode.hpp"
 #include "../include/QualityWeightedDistances.hpp"
+#include "../include/SpacePartitioning.hpp"
 
 namespace GeFaST {
 
@@ -69,6 +71,10 @@ namespace GeFaST {
 
             case CF_QUALITY_ALIGNMENT_SCORE:
                 config = new QualityAlignmentScoreConfiguration(argc, argv);
+                break;
+
+            case CF_ALIGNMENT_FREE:
+                config = new AlignmentFreeConfiguration(argc, argv);
                 break;
 
             case CF_CONSISTENCY:
@@ -354,6 +360,141 @@ namespace GeFaST {
             case AS_UNKNOWN: // fallthrough to default for error handling
             default:
                 std::cerr << "ERROR: Unknown AmpliconStorage option." << std::endl;
+
+        }
+
+        return res;
+
+    }
+
+    FeatureAmpliconStorage* AmpliconStorageFactory::create(const AmpliconStorageOption opt, const FeatureBuilderOption fb_opt,
+            const AmpliconCollectionOption ac_opt, const DataStatistics<>& ds, const Configuration& config) {
+
+        FeatureBuilder* fb = nullptr;
+        auto& misc = config.misc;
+
+        switch (fb_opt) {
+
+            case FB_WCV: {
+
+                short k = static_cast<short>(std::stoi(config.misc.find("wcv_word_length")->second)); // existence ensured by AlignmentFreeConfiguration
+                fb = new WordCompBuilder(config.alphabet, k);
+
+                break;
+            }
+
+            case FB_CPF: {
+
+                fb = new CpfBuilder(ds.get_max_length());
+
+                break;
+            }
+
+            case FB_DET: {
+
+                // existence of either parameter ensured by AlignmentFreeConfiguration
+                if (config.misc.find("det_alpha") != config.misc.end()) {
+                    feat_t alpha = std::stof(config.misc.find("det_alpha")->second);
+                    fb = new DetBuilder(config.alphabet, alpha, ds.get_max_length());
+                }
+                if (config.misc.find("det_pref_dist") != config.misc.end()) {
+                    lenSeqs_t pref_dist = std::stoul(config.misc.find("det_pref_dist")->second);
+                    fb = new DetBuilder(config.alphabet, pref_dist, ds.get_max_length());
+                }
+
+                break;
+            }
+
+            case FB_BBC: {
+
+                short max_dist = static_cast<short>(std::stoi(config.misc.find("bbc_max_dist")->second)); // existence ensured by AlignmentFreeConfiguration
+                fb = new BbcBuilder(config.alphabet, max_dist);
+
+                break;
+            }
+
+            case FB_2DW: {
+
+                feat_t alpha = std::stof(config.misc.find("2dw_alpha")->second); // existence ensured by AlignmentFreeConfiguration
+                feat_t beta = std::stof(config.misc.find("2dw_beta")->second); // existence ensured by AlignmentFreeConfiguration
+                fb = new TwoDimWalkBuilder(alpha, beta);
+
+                break;
+            }
+
+            case FB_CGR: {
+
+                fb = new CgrBuilder();
+
+                break;
+            }
+
+            case FB_MCGR: {
+
+                fb = new MultiCgrBuilder();
+
+                break;
+            }
+
+            case FB_3DCGR: {
+
+                fb = new ThreeDimCgrBuilder();
+
+                break;
+            }
+
+            case FB_UNKNOWN: // fallthrough to default for error handling
+            default:
+                std::cerr << "ERROR: Unknown FeatureBuilder option." << std::endl;
+
+        }
+
+        FeatureAmpliconStorage* res = nullptr;
+
+        if (fb != nullptr) {
+
+            switch (opt) {
+
+                // Create a single pool for all amplicons.
+                case AS_SIMPLE_FEATURES: {
+
+                    switch (ac_opt) {
+
+                        case AC_ARRAY: {
+                            std::vector<lenSeqs_t> lengths = ds.get_all_lengths();
+
+                            numSeqs_t cnt = 0;
+                            unsigned long long total_len_sequences = 0;
+                            unsigned long long total_len_headers = 0;
+
+                            for (auto len : lengths) {
+
+                                cnt += ds.get_num_per_length(len);
+                                total_len_sequences += (len + 1) * ds.get_num_per_length(len);
+                                total_len_headers += ds.get_total_length_headers_per_length(len) + ds.get_num_per_length(len);
+
+                            }
+
+                            ArrayFeatVecAmpliconCollection pool(fb, cnt, total_len_headers, total_len_sequences);
+                            res = new SimpleFeatureAmpliconStorage<ArrayFeatVecAmpliconCollection>(pool);
+                            break;
+                        }
+
+                        case AC_SIMPLE: // fallthrough
+                        default:
+                            SimpleFeatVecAmpliconCollection pool(fb);
+                            res = new SimpleFeatureAmpliconStorage<SimpleFeatVecAmpliconCollection>(pool);
+
+                    }
+                    break;
+
+                }
+
+                case AS_UNKNOWN: // fallthrough to default for error handling
+                default:
+                    std::cerr << "ERROR: Unknown AmpliconStorage option." << std::endl;
+
+            }
 
         }
 
@@ -768,6 +909,43 @@ namespace GeFaST {
 
     }
 
+    FeatureDistance* DistanceFactory::create(const DistanceOption opt, const AmpliconStorage& amplicon_storage,
+                                             const dist_t threshold, const AlignmentFreeConfiguration& config) {
+
+        FeatureDistance* res = nullptr;
+
+        switch (opt) {
+
+            case DT_EUCLIDEAN: {
+                res = new EuclideanDistance();
+                break;
+            }
+
+            case DT_MANHATTAN: {
+                res = new ManhattanDistance();
+                break;
+            }
+
+            case DT_COSINE: {
+                res = new CosineDistance();
+                break;
+            }
+
+            case DT_PEARSON: {
+                res = new PearsonDistance();
+                break;
+            }
+
+            case DT_UNKNOWN: // fallthrough to default for error handling
+            default:
+                std::cerr << "ERROR: Unknown Distance option." << std::endl;
+
+        }
+
+        return res;
+
+    }
+
 
     Preprocessor* PreprocessorFactory::create(const PreprocessorOption opt, const QualityEncoding<>& qe,
             const Configuration& config) {
@@ -1095,6 +1273,59 @@ namespace GeFaST {
 
     }
 
+    AuxiliaryData* AuxiliaryDataFactory::create(const AuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
+                                                const numSeqs_t pool_id, const dist_t threshold, const AlignmentFreeConfiguration& config) {
+
+        AuxiliaryData* res = nullptr;
+
+        switch (opt) {
+
+            // Auxiliary data structures providing the bare minimum to execute the clustering phase.
+            // No filtering of potential partners.
+            case AD_NAIVE_AUXILIARY: {
+                res = new FeatureAuxiliaryData(dynamic_cast<const FeatureAmpliconStorage&>(amplicon_storage), pool_id, threshold, config);
+                break;
+            }
+
+            // Auxiliary data structures employing a space-partitioning structure to efficiently search
+            // for (not yet swarmed) partners of an amplicon using the feature representations of the amplicons.
+            // Can only be used with norm-like distance functions.
+            case AD_KDTREE_AUXILIARY: {
+                auto& fas = dynamic_cast<const FeatureAmpliconStorage&>(amplicon_storage);
+                auto num_features = fas.get_pool(pool_id).num_features();
+
+                switch (config.get_opt_distance()) {
+
+                    case DT_MANHATTAN: {
+                        res = new SpacePartitioningAuxiliaryData<KdTree<manhattan_norm_tag>>(
+                                fas, pool_id, threshold, config);
+                        break;
+                    }
+
+                    case DT_EUCLIDEAN: {
+                        res = new SpacePartitioningAuxiliaryData<KdTree<euclidean_norm_tag>>(
+                                fas, pool_id, threshold, config);
+                        break;
+                    }
+
+                    default:
+                        // should be caught by check(...) of AlignmentFreeConfiguration
+                        std::cerr << "ERROR: Selected 'distance' option is not compatible with the space-partitioning structure." << std::endl;
+
+                }
+                break;
+            }
+
+            case AD_UNKNOWN: // fallthrough to default for error handling
+            default:
+                std::cerr << "ERROR: Unknown AuxiliaryData option." << std::endl;
+
+        }
+
+        return res;
+
+    }
+
     AuxiliaryData* AuxiliaryDataFactory::create(const RefinementAuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
             const SwarmStorage& swarm_storage, const numSeqs_t pool_id, const dist_t threshold, const Configuration& config) {
 
@@ -1158,6 +1389,60 @@ namespace GeFaST {
 
             default:
                 res = create(opt, amplicon_storage, swarm_storage, pool_id, threshold, config);
+
+        }
+
+        return res;
+
+    }
+
+    AuxiliaryData* AuxiliaryDataFactory::create(const RefinementAuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
+                                                const SwarmStorage& swarm_storage, const numSeqs_t pool_id, const dist_t threshold,
+                                                const AlignmentFreeConfiguration& config) {
+
+        AuxiliaryData* res = nullptr;
+
+        switch (opt) {
+
+            // Auxiliary data structures providing the bare minimum to execute the refinement phase.
+            // No filtering of potential partners.
+            case RD_NAIVE_AUXILIARY: {
+                res = new FeatureAuxiliaryData(dynamic_cast<const FeatureAmpliconStorage&>(amplicon_storage), swarm_storage, pool_id, threshold, config);
+                break;
+            }
+
+            // Auxiliary data structures employing a space-partitioning structure to efficiently search
+            // for (not yet swarmed) partners of an amplicon using the feature representations of the amplicons.
+            // Can only be used with norm-like distance functions.
+            case RD_KDTREE_AUXILIARY: {
+                auto& fas = dynamic_cast<const FeatureAmpliconStorage&>(amplicon_storage);
+                auto num_features = fas.get_pool(pool_id).num_features();
+
+                switch (config.get_opt_distance()) {
+
+                    case DT_MANHATTAN: {
+                        res = new SpacePartitioningAuxiliaryData<KdTree<manhattan_norm_tag>>(
+                                fas, swarm_storage, pool_id, threshold, config);
+                        break;
+                    }
+
+                    case DT_EUCLIDEAN: {
+                        res = new SpacePartitioningAuxiliaryData<KdTree<euclidean_norm_tag>>(
+                                fas, swarm_storage, pool_id, threshold, config);
+                        break;
+                    }
+
+                    default:
+                        // should be caught by check(...) of AlignmentFreeConfiguration
+                        std::cerr << "ERROR: Selected 'distance' option is not compatible with the space-partitioning structure." << std::endl;
+
+                }
+                break;
+            }
+
+            case RD_UNKNOWN: // fallthrough to default for error handling
+            default:
+                std::cerr << "ERROR: Unknown AuxiliaryData option." << std::endl;
 
         }
 

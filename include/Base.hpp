@@ -1164,6 +1164,126 @@ namespace GeFaST {
 
     };
 
+
+    /* === Components related to alignment-free methods === */
+
+    /*
+     * Abstract class for storing a collection of amplicons with further features.
+     *
+     * Provides additional access to these features.
+     */
+    struct FeatureAmpliconCollection : public AmpliconCollection {
+
+        virtual ~FeatureAmpliconCollection() = default;
+
+        FeatureAmpliconCollection* clone() const override = 0; // deep-copy clone method
+
+
+        /*
+         * Return the features of the i-th amplicon of the collection.
+         */
+        virtual const feat_t* features(const numSeqs_t i) const = 0;
+
+        /*
+         * Return the features of all amplicons of the collection.
+         */
+        virtual const feat_t* all_features() const = 0;
+
+        /*
+         * Return the number of features per amplicon.
+         */
+        virtual size_t num_features() const = 0;
+
+    protected:
+        FeatureAmpliconCollection() = default;
+
+        FeatureAmpliconCollection(const FeatureAmpliconCollection& other) = default; // copy constructor
+
+        FeatureAmpliconCollection(FeatureAmpliconCollection&& other) = default; // move constructor
+
+        FeatureAmpliconCollection& operator=(const FeatureAmpliconCollection& other) = default; // copy assignment operator
+
+        FeatureAmpliconCollection& operator=(FeatureAmpliconCollection&& other) = default; // move assignment operator
+
+    };
+
+    /*
+     * Abstract amplicon storage class for amplicons with further features.
+     *
+     * Essentially a covariant version of AmpliconStorage.
+     */
+    class FeatureAmpliconStorage : public AmpliconStorage {
+
+    public:
+        virtual ~FeatureAmpliconStorage() = default;
+
+        FeatureAmpliconStorage* clone() const override = 0; // deep-copy clone method
+
+        /*
+         * Retrieve i-th pool from the storage.
+         */
+        virtual FeatureAmpliconCollection& get_pool(const numSeqs_t i) override = 0;
+
+        /*
+         * Retrieve i-th pool from the storage.
+         */
+        virtual const FeatureAmpliconCollection& get_pool(const numSeqs_t i) const override = 0;
+
+    protected:
+        FeatureAmpliconStorage() = default;
+
+        FeatureAmpliconStorage(const FeatureAmpliconStorage& other) = default; // copy constructor
+
+        FeatureAmpliconStorage(FeatureAmpliconStorage&& other) = default; // move constructor
+
+        FeatureAmpliconStorage& operator=(const FeatureAmpliconStorage& other) = default; // copy assignment operator
+
+        FeatureAmpliconStorage& operator=(FeatureAmpliconStorage&& other) = default; // move assignment operator
+
+    };
+
+
+    /*
+     * Abstract class for determining the feature representation (as a "vector") of an amplicon.
+     */
+    class FeatureBuilder {
+
+    public:
+        virtual ~FeatureBuilder() = default;
+
+        virtual FeatureBuilder* clone() const = 0; // deep-copy clone method
+
+        /*
+         * Return the number of features per amplicon.
+         */
+        virtual size_t num_features() = 0;
+
+        /*
+         * Determine the feature representation of the provided amplicon (sequence).
+         *
+         * The last two versions avoid constructing a new "vector" for each call.
+         */
+        virtual std::vector<feat_t> get_features(const std::string& seq) = 0;
+        virtual void get_features(const std::string& seq, std::vector<feat_t>& features) = 0;
+        virtual void get_features(const std::string& seq, feat_t* features) = 0;
+
+    };
+
+
+    /*
+     * Abstract distance-function class when the distance is based on feature representations.
+     *
+     * Essentially a covariant version of Distance.
+     */
+    class FeatureDistance : public Distance {
+
+    public:
+        FeatureDistance* clone() const override = 0;
+
+        virtual dist_t distance(const FeatureAmpliconCollection& fac, const numSeqs_t i, const numSeqs_t j) = 0;
+
+    };
+
 }
 
 #endif //GEFAST_BASE_HPP

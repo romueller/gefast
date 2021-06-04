@@ -316,7 +316,7 @@ namespace GeFaST {
             ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
             threshold_(other.threshold_), num_extra_segments_(other.num_extra_segments_),
             break_swarms_(other.break_swarms_), indices_(other.indices_) {
-std::cout<<"<<<<<<<<<<<CC>>>>>>>>>>>>"<<std::endl;
+
         for (auto& kv : other.substrs_archive_) {
 
             auto tmp = new Substrings[threshold_ + num_extra_segments_];
@@ -332,7 +332,7 @@ std::cout<<"<<<<<<<<<<<CC>>>>>>>>>>>>"<<std::endl;
             threshold_(other.threshold_), num_extra_segments_(other.num_extra_segments_),
             break_swarms_(other.break_swarms_), indices_(std::move(other.indices_)),
             substrs_archive_(std::move(other.substrs_archive_)) {
-std::cout<<"<<<<<<<<<<<MC>>>>>>>>>>>>"<<std::endl;
+
         other.dist_fun_ = nullptr;
 
     }
@@ -1184,6 +1184,112 @@ std::cout<<"<<<<<<<<<<<MC>>>>>>>>>>>>"<<std::endl;
             }
 
         }
+
+    }
+
+
+
+
+
+    /* === FeatureAuxiliaryData === */
+
+    FeatureAuxiliaryData::FeatureAuxiliaryData(const FeatureAmpliconStorage& amplicon_storage, const numSeqs_t pool_id,
+                                               const dist_t threshold, const AlignmentFreeConfiguration& config) :
+            ac_(amplicon_storage.get_pool(pool_id)) {
+
+        for (numSeqs_t i = 0; i < amplicon_storage.get_pool(pool_id).size(); i++) {
+            unswarmed_.insert(i);
+        }
+
+        dist_fun_ = config.build_distance_function(amplicon_storage, threshold);
+        threshold_ = threshold;
+        break_swarms_ = config.break_swarms;
+
+    }
+
+    FeatureAuxiliaryData::FeatureAuxiliaryData(const FeatureAmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage,
+                                               const numSeqs_t pool_id, const dist_t threshold, const AlignmentFreeConfiguration& config) :
+            ac_(amplicon_storage.get_pool(pool_id)) {
+
+        auto& swarms = swarm_storage.get_swarms(pool_id);
+
+        // index all amplicons of light swarms
+        for (numSeqs_t s = 0; s < swarms.size(); s++) {
+
+            auto& swarm = swarms.get(s);
+
+            if (swarm.mass() < config.boundary) {
+
+                for (numSeqs_t i = 0; i < swarm.size(); i++) {
+                    unswarmed_.insert(swarm.member(i));
+                }
+
+            }
+
+        }
+
+        dist_fun_ = config.build_distance_function(amplicon_storage, threshold);
+        threshold_ = threshold;
+        break_swarms_ = false;
+
+    }
+
+    FeatureAuxiliaryData::~FeatureAuxiliaryData() {
+        delete dist_fun_;
+    }
+
+    FeatureAuxiliaryData::FeatureAuxiliaryData(const FeatureAuxiliaryData& other) : // copy constructor
+            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
+            threshold_(other.threshold_), break_swarms_(other.break_swarms_), unswarmed_(other.unswarmed_) {
+
+        // nothing else to do
+
+    }
+
+    FeatureAuxiliaryData::FeatureAuxiliaryData(FeatureAuxiliaryData&& other) noexcept : // move constructor
+            ac_(other.ac_), dist_fun_(other.dist_fun_), different_seqs_(std::move(other.different_seqs_)),
+            threshold_(other.threshold_), break_swarms_(other.break_swarms_), unswarmed_(std::move(other.unswarmed_)) {
+
+        other.dist_fun_ = nullptr;
+
+    }
+
+    FeatureAuxiliaryData* FeatureAuxiliaryData::clone() const {
+        return new FeatureAuxiliaryData(*this);
+    }
+
+    void FeatureAuxiliaryData::tick_off_amplicon(numSeqs_t ampl_id) {
+        unswarmed_.erase(ampl_id);
+    }
+
+    bool FeatureAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
+        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
+    }
+
+    void FeatureAuxiliaryData::clear_amplicon_records() {
+        different_seqs_.clear();
+    }
+
+    std::vector<AuxiliaryData::Partner> FeatureAuxiliaryData::find_partners(numSeqs_t ampl_id) {
+
+        std::vector<Partner> partners;
+        numSeqs_t ampl_ab = ac_.ab(ampl_id);
+
+        for (auto partner_id : unswarmed_) {
+
+            if (!break_swarms_ || (ampl_ab >= ac_.ab(partner_id))) {
+
+                auto dist = dist_fun_->distance(ac_, ampl_id, partner_id);
+
+                if (dist <= threshold_) {
+                    partners.emplace_back(partner_id, dist);
+                }
+
+            }
+
+        }
+
+        return partners;
 
     }
 

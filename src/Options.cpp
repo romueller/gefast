@@ -36,6 +36,7 @@ namespace GeFaST {
             {"qlev", CF_QUALITY_LEVENSHTEIN},
             {"as", CF_ALIGNMENT_SCORE},
             {"qas", CF_QUALITY_ALIGNMENT_SCORE},
+            {"af", CF_ALIGNMENT_FREE},
             {"cons", CF_CONSISTENCY}
     };
 
@@ -57,7 +58,8 @@ namespace GeFaST {
             {"prepared", AS_PREPARED_POOLS},
             {"prepared-quality", AS_PREPARED_POOLS_QUALITY},
             {"prepared-qgram-length", AS_PREPARED_QGRAM_LENGTH_POOLS},
-            {"prepared-qgram-length-quality", AS_PREPARED_QGRAM_LENGTH_POOLS_QUALITY}
+            {"prepared-qgram-length-quality", AS_PREPARED_QGRAM_LENGTH_POOLS_QUALITY},
+            {"simple-features", AS_SIMPLE_FEATURES}
     };
 
     AmpliconStorageOption get_amplicon_storage_option(const std::string& type) {
@@ -123,7 +125,11 @@ namespace GeFaST {
             {"banded-score-kim-a", DT_QWBS_KIM_A},
             {"banded-score-kim-b", DT_QWBS_KIM_B},
             {"banded-score-converge-a", DT_QWBS_CONVERGE_A},
-            {"banded-score-converge-b", DT_QWBS_CONVERGE_B}
+            {"banded-score-converge-b", DT_QWBS_CONVERGE_B},
+            {"euclidean", DT_EUCLIDEAN},
+            {"manhattan", DT_MANHATTAN},
+            {"cosine", DT_COSINE},
+            {"pearson", DT_PEARSON}
     };
 
     DistanceOption get_distance_option(const std::string &type) {
@@ -277,7 +283,8 @@ namespace GeFaST {
             {"naive", AD_NAIVE_AUXILIARY},
             {"one-way", AD_SEGMENT_FILTER},
             {"two-way", AD_2W_SEGMENT_FILTER},
-            {"score", AD_SCORE_SEGMENT_FILTER}
+            {"score", AD_SCORE_SEGMENT_FILTER},
+            {"kdtree", AD_KDTREE_AUXILIARY}
     };
 
     AuxiliaryDataOption get_auxiliary_data_option(const std::string& type) {
@@ -296,7 +303,8 @@ namespace GeFaST {
             {"naive", RD_NAIVE_AUXILIARY},
             {"one-way", RD_SEGMENT_FILTER},
             {"two-way", RD_2W_SEGMENT_FILTER},
-            {"score", RD_SCORE_SEGMENT_FILTER}
+            {"score", RD_SCORE_SEGMENT_FILTER},
+            {"kdtree", RD_KDTREE_AUXILIARY}
     };
 
     RefinementAuxiliaryDataOption get_refinement_auxiliary_data_option(const std::string &type) {
@@ -306,6 +314,30 @@ namespace GeFaST {
     std::string get_refinement_auxiliary_data_label(const RefinementAuxiliaryDataOption opt) {
         return std::find_if(refinement_auxiliary_data_map.begin(), refinement_auxiliary_data_map.end(),
                 [opt](const std::map<std::string, RefinementAuxiliaryDataOption>::value_type& p) {return p.second == opt;})->first;
+    }
+
+
+    /* === FeatureBuilder === */
+
+    std::map<std::string, FeatureBuilderOption> feature_builder_map = {
+            {"wcv", FB_WCV},
+            {"cpf", FB_CPF},
+            {"det", FB_DET},
+            {"bbc", FB_BBC},
+            {"2d-w", FB_2DW},
+            {"cgr", FB_CGR},
+            {"mcgr", FB_MCGR},
+            {"3d-cgr", FB_3DCGR}
+    };
+
+
+    FeatureBuilderOption get_feature_builder_option(const std::string &type) {
+        return feature_builder_map[type];
+    }
+
+    std::string get_feature_builder_label(const FeatureBuilderOption opt) {
+        return std::find_if(feature_builder_map.begin(), feature_builder_map.end(),
+                            [opt](const std::map<std::string, FeatureBuilderOption>::value_type& p) {return p.second == opt;})->first;
     }
 
 }

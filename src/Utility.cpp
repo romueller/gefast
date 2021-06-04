@@ -55,6 +55,7 @@ namespace GeFaST {
         std::cout << "Modes:" << std::endl;
         std::cout << " lev     Cluster amplicons based on the number of edit operations in optimal pairwise alignments." << std::endl;
         std::cout << " as      Cluster amplicons based on the score of optimal pairwise alignments." << std::endl;
+        std::cout << " af      Cluster amplicons based on distances, which consider numeric features derived from the sequences." << std::endl;
         std::cout << " qlev    Cluster amplicons based on the number of edit operations in optimal pairwise alignments considering the quality scores associated with the sequences." << std::endl;
         std::cout << " qas     Cluster amplicons based on the score of optimal pairwise alignments considering the quality scores associated with the sequences" << std::endl;
         std::cout << " cons    Cluster amplicons using a notion of consistency considering the quality and abundance of amplicons." << std::endl;

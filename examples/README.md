@@ -71,6 +71,35 @@ GeFaST as reads.fastq as/as.conf
 The corresponding output files are stored in the `as/` subdirectory.
 
 
+### Alignment-free (af) mode
+
+*Scenario:*  
+Sequences (provided in FASTA format) should be clustered based on the word-composition vectors representing them.
+The feature vectors are built using a word length of 4 and two sequences are considered similar when their Euclidean distance is at most 3.2.
+All main output files should be generated afterwards.
+
+The corresponding configuration contains the following entries:
+```sh
+threshold=3.2
+distance=euclidean
+representation=wcv
+misc=wcv_word_length:4
+
+output_internal=af/internal.txt
+output_otus=af/otus.txt
+output_statistics=af/statistics.txt
+output_seeds=af/seeds.fasta
+```
+
+When the sequences and the configuration are stored in `reads.fasta` and `af/af.conf`, respectively,
+the following command performs the clustering described above:
+```sh
+GeFaST af reads.fasta af/af.conf
+```
+
+The corresponding output files are stored in the `af/` subdirectory.
+
+
 ### Quality Levenshtein (qlev) mode
 
 *Scenario:*  

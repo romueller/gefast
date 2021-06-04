@@ -21,27 +21,26 @@
  * PO box 100131, DE-33501 Bielefeld, Germany
  */
 
-#ifndef GEFAST_PREPROCESSINGONLYMODE_HPP
-#define GEFAST_PREPROCESSINGONLYMODE_HPP
+#ifndef GEFAST_ALIGNMENTFREEMODE_HPP
+#define GEFAST_ALIGNMENTFREEMODE_HPP
 
 #include "../Base.hpp"
+#include "../Distances.hpp"
 
 namespace GeFaST {
 
     /*
-     * Configuration of GeFaST's preprocessing-only mode (prep).
+     * Configuration of GeFaST's alignment-free mode (af).
      *
-     * Performs only the preprocessing step as expected.
-     * The clustering phases and output generation are skipped.
-     *
-     * Allows generation of preprocessing results for, e.g.,
-     * debugging purposes, analyses or later reuse.
+     * Computes the distance between amplicons as the distance between their features.
+     * Several functions for the distance are available.
      */
-    struct PreprocessingOnlyConfiguration : public Configuration {
+    struct AlignmentFreeConfiguration : public Configuration {
 
-        PreprocessingOnlyConfiguration(int argc, const char* argv[]);
 
-        PreprocessingOnlyConfiguration* clone() const override; // deep-copy clone method
+        AlignmentFreeConfiguration(int argc, const char* argv[]);
+
+        AlignmentFreeConfiguration* clone() const override; // deep-copy clone method
 
 
         Preprocessor* build_preprocessor() const override;
@@ -54,31 +53,43 @@ namespace GeFaST {
 
         OutputGenerator* build_output_generator() const override;
 
-        AmpliconStorage* build_amplicon_storage(const DataStatistics<>& ds) const override;
+        // covariant return type compared to Configuration
+        FeatureAmpliconStorage* build_amplicon_storage(const DataStatistics<>& ds) const override;
 
         SwarmStorage* build_swarm_storage(const AmpliconStorage& amplicon_storage) const override;
 
         AuxiliaryData* build_auxiliary_data(const AmpliconStorage& amplicon_storage, const numSeqs_t pool_id,
-                const dist_t threshold) const override;
+                                            const dist_t threshold) const override;
 
         AuxiliaryData* build_auxiliary_data(const AmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage,
-                const numSeqs_t pool_id, const dist_t threshold) const override;
+                                            const numSeqs_t pool_id, const dist_t threshold) const override;
 
-        Distance* build_distance_function(const AmpliconStorage &amplicon_storage, const dist_t threshold) const override;
+        // covariant return type compared to Configuration
+        FeatureDistance* build_distance_function(const AmpliconStorage &amplicon_storage, const dist_t threshold) const override;
 
 
         void print(std::ostream& stream) const override;
 
+        DistanceOption get_opt_distance() const;
+
+
+        /* Mode-specific configuration parameters */
+
+        // currently none (except opt_feature, see below)
+
+
+    protected:
         /*
          * Check whether the configuration obeys the restrictions of the mode.
          */
-        void check() const;
+        void check(int argc, const char* argv[]) const;
 
 
+        // additional data structure options
         FeatureBuilderOption opt_feature; // features used to represent amplicons
 
     };
 
 }
 
-#endif //GEFAST_PREPROCESSINGONLYMODE_HPP
+#endif //GEFAST_ALIGNMENTFREEMODE_HPP

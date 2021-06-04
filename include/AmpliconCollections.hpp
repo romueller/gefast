@@ -456,6 +456,178 @@ namespace GeFaST {
 
     };
 
+
+
+
+    /*
+     * Simple amplicon-collection class also storing features for each amplicon.
+     *
+     * Identifiers and strings are stored as STL strings in two STL vectors.
+     * Abundance values and features are stored in further STL vectors.
+     * The features of one amplicon are not grouped in a nested vector
+     * but can accessed as a group because the number of features is fixed.
+     */
+    class SimpleFeatVecAmpliconCollection : public FeatureAmpliconCollection {
+
+    public:
+        // SimpleFeatVecAmpliconCollection takes ownership of FeatureBuilder
+        SimpleFeatVecAmpliconCollection(FeatureBuilder* fb);
+
+        ~SimpleFeatVecAmpliconCollection();
+
+        SimpleFeatVecAmpliconCollection(const SimpleFeatVecAmpliconCollection& other); // copy constructor
+
+        SimpleFeatVecAmpliconCollection(SimpleFeatVecAmpliconCollection&& other) noexcept; // move constructor
+
+        SimpleFeatVecAmpliconCollection& operator=(const SimpleFeatVecAmpliconCollection& other); // copy assignment operator
+
+        SimpleFeatVecAmpliconCollection& operator=(SimpleFeatVecAmpliconCollection&& other) noexcept; // move assignment operator
+
+        SimpleFeatVecAmpliconCollection* clone() const override; // deep-copy clone method
+
+
+        void emplace_back(const Defline& dl, const std::string& seq, const ExtraInfo& extra) override;
+
+        numSeqs_t size() const override;
+
+        inline const char* id(const numSeqs_t i) const override;
+
+        inline const char* seq(const numSeqs_t i) const override;
+
+        inline lenSeqs_t len(const numSeqs_t i) const override;
+
+        inline numSeqs_t ab(const numSeqs_t i) const override;
+
+        inline const char* quals(const numSeqs_t i) const override;
+
+
+        const feat_t* features(const numSeqs_t i) const override;
+
+        const feat_t* all_features() const override;
+
+        size_t num_features() const override;
+
+        /*
+         * Sort the amplicons by abundance (decreasing) and
+         * use the lexicographical rank (ascending) of the identifiers as the tie-breaker.
+         */
+        void sort();
+
+        /*
+         * Append the amplicons in the stored order in FASTA format to the specified file.
+         */
+        void print(const std::string& file, const Configuration& config) const;
+
+    protected:
+        SimpleFeatVecAmpliconCollection() = default;
+
+        std::vector<std::string> ids_; // amplicon identifiers
+        std::vector<std::string> seqs_; // amplicon sequences
+        std::vector<numSeqs_t> abunds_; // amplicon abundances
+        std::vector<feat_t> features_; // amplicon features
+
+        FeatureBuilder* fb_; // determines the features representing an amplicon while adding it
+        size_t num_features_; // number of features per amplicon
+
+    };
+
+
+    /*
+     * More (space-)efficient version of an amplicon collection,
+     * also storing features for each amplicon.
+     *
+     * Identifiers and sequences are stored as C-strings in two large C-style arrays.
+     * The individual strings are accessed via stored pointers into the C-style arrays.
+     * Lengths, abundance values and features are also stored in C-style arrays.
+     * The features of one amplicon are accessed by pointing to the first stored feature for that amplicon
+     * based on the fixed number of features per amplicon.
+     */
+    class ArrayFeatVecAmpliconCollection : public FeatureAmpliconCollection {
+
+    public:
+        // ArrayFeatVecAmpliconCollection takes ownership of FeatureBuilder
+        ArrayFeatVecAmpliconCollection(FeatureBuilder* fb, const numSeqs_t capacity, const unsigned long long capacity_headers,
+                                       const unsigned long long capacity_sequences);
+
+        virtual ~ArrayFeatVecAmpliconCollection();
+
+        ArrayFeatVecAmpliconCollection(const ArrayFeatVecAmpliconCollection& other); // copy constructor
+
+        ArrayFeatVecAmpliconCollection(ArrayFeatVecAmpliconCollection&& other) noexcept; // move constructor
+
+        ArrayFeatVecAmpliconCollection& operator=(const ArrayFeatVecAmpliconCollection& other); // copy assignment operator
+
+        ArrayFeatVecAmpliconCollection& operator=(ArrayFeatVecAmpliconCollection&& other) noexcept; // move assignment operator
+
+        ArrayFeatVecAmpliconCollection* clone() const override; // deep-copy clone method
+
+
+        void emplace_back(const Defline& dl, const std::string& seq, const ExtraInfo& extra) override;
+
+        numSeqs_t size() const override;
+
+        inline const char* id(const numSeqs_t i) const override;
+
+        inline const char* seq(const numSeqs_t i) const override;
+
+        inline lenSeqs_t len(const numSeqs_t i) const override;
+
+        inline numSeqs_t ab(const numSeqs_t i) const override;
+
+        inline const char* quals(const numSeqs_t i) const override;
+
+
+        const feat_t* features(const numSeqs_t i) const override;
+
+        const feat_t* all_features() const override;
+
+        size_t num_features() const override;
+
+        /*
+         * Sort the amplicons by abundance (decreasing) and
+         * use the lexicographical rank (ascending) of the identifiers as the tie-breaker.
+         */
+        void sort();
+
+        /*
+         * Append amplicon to the collection, extending its capacity if necessary.
+         *
+         * Ideally, the amplicon collection is initialised with sufficient space (see the constructor)
+         * but if the number of amplicons gets too large or the space for the identifiers resp. sequences
+         * becomes insufficient, the capacity of the array is doubled.
+         */
+        void extend_arrays(const Defline& dl, const std::string& seq);
+
+        /*
+         * Append the amplicons in the stored order in FASTA format to the specified file.
+         */
+        void print(const std::string& file, const Configuration& config) const;
+
+    protected:
+        ArrayFeatVecAmpliconCollection() = default;
+
+        char* headers_; // overall identifiers array, each string ends with a \0
+        char* next_header_; // position at which the next identifier would be inserted
+        unsigned long long capacity_headers_; // capacity of headers_
+
+        char* sequences_; // overall sequences array, each string ends with a \0
+        char* next_sequence_; // position at which the next sequence would be inserted
+        unsigned long long capacity_sequences_; // capacity of sequences_
+
+        char** header_pointers_; // array of pointers into headers_ marking the start positions of the individual identifiers
+        char** seq_pointers_; // array of pointers into sequences_ marking the start positions of the individual sequences
+        numSeqs_t* abundances_; // array of abundances
+        lenSeqs_t* lengths_; // array of lengths
+        numSeqs_t size_; // current number of amplicons in the collection
+        numSeqs_t capacity_; // capacity of the collection (in terms of the number of amplicons)
+
+        feat_t* features_; // amplicon features
+
+        FeatureBuilder* fb_; // determines the features representing an amplicon while adding it
+        size_t num_features_; // number of features per amplicon
+
+    };
+
 }
 
 #endif //GEFAST_AMPLICONCOLLECTIONS_HPP

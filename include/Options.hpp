@@ -47,6 +47,7 @@ namespace GeFaST {
      *  - SwarmStorage              SS_
      *  - AuxiliaryData             AD_
      *  - RefinementAuxiliaryData   RD_
+     *  - FeatureBuilder            FB_
      *
      * Categories which allow a choice by the user or
      * which are printed as part of the configuration print
@@ -67,6 +68,7 @@ namespace GeFaST {
         CF_QUALITY_LEVENSHTEIN,
         CF_ALIGNMENT_SCORE,
         CF_QUALITY_ALIGNMENT_SCORE,
+        CF_ALIGNMENT_FREE,
         CF_CONSISTENCY
     };
 
@@ -86,7 +88,8 @@ namespace GeFaST {
         AS_PREPARED_POOLS,
         AS_PREPARED_POOLS_QUALITY,
         AS_PREPARED_QGRAM_LENGTH_POOLS,
-        AS_PREPARED_QGRAM_LENGTH_POOLS_QUALITY
+        AS_PREPARED_QGRAM_LENGTH_POOLS_QUALITY,
+        AS_SIMPLE_FEATURES
     };
 
     extern std::map<std::string, AmpliconStorageOption> ampl_storage_map;
@@ -146,7 +149,11 @@ namespace GeFaST {
         DT_QWBS_KIM_A,
         DT_QWBS_KIM_B,
         DT_QWBS_CONVERGE_A,
-        DT_QWBS_CONVERGE_B
+        DT_QWBS_CONVERGE_B,
+        DT_MANHATTAN,
+        DT_EUCLIDEAN,
+        DT_COSINE,
+        DT_PEARSON
     };
 
     extern std::map<std::string, DistanceOption> distance_map;
@@ -276,7 +283,8 @@ namespace GeFaST {
         AD_NAIVE_AUXILIARY,
         AD_SEGMENT_FILTER,
         AD_2W_SEGMENT_FILTER,
-        AD_SCORE_SEGMENT_FILTER
+        AD_SCORE_SEGMENT_FILTER,
+        AD_KDTREE_AUXILIARY
     };
 
     extern std::map<std::string, AuxiliaryDataOption> auxiliary_data_map;
@@ -292,13 +300,34 @@ namespace GeFaST {
         RD_NAIVE_AUXILIARY,
         RD_SEGMENT_FILTER,
         RD_2W_SEGMENT_FILTER,
-        RD_SCORE_SEGMENT_FILTER
+        RD_SCORE_SEGMENT_FILTER,
+        RD_KDTREE_AUXILIARY
     };
 
     extern std::map<std::string, RefinementAuxiliaryDataOption> refinement_auxiliary_data_map;
 
     RefinementAuxiliaryDataOption get_refinement_auxiliary_data_option(const std::string &type);
     std::string get_refinement_auxiliary_data_label(const RefinementAuxiliaryDataOption opt);
+
+
+    /* === FeatureBuilder === */
+
+    enum FeatureBuilderOption {
+        FB_UNKNOWN,
+        FB_WCV,
+        FB_CPF,
+        FB_DET,
+        FB_BBC,
+        FB_2DW,
+        FB_CGR,
+        FB_MCGR,
+        FB_3DCGR
+    };
+
+    extern std::map<std::string, FeatureBuilderOption> feature_builder_map;
+
+    FeatureBuilderOption get_feature_builder_option(const std::string& type);
+    std::string get_feature_builder_label(const FeatureBuilderOption opt);
 
 }
 

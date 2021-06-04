@@ -1724,4 +1724,587 @@ namespace GeFaST {
 
     }
 
+
+    /* === SimpleFeatVecAmpliconCollection === */
+
+    SimpleFeatVecAmpliconCollection::SimpleFeatVecAmpliconCollection(FeatureBuilder* fb) : fb_(fb), num_features_(fb->num_features()) {
+        // nothing else to do
+    }
+
+    SimpleFeatVecAmpliconCollection::~SimpleFeatVecAmpliconCollection() {
+        delete fb_;
+    }
+
+    SimpleFeatVecAmpliconCollection::SimpleFeatVecAmpliconCollection(const SimpleFeatVecAmpliconCollection& other) : // copy constructor
+            num_features_(other.num_features_), fb_(other.fb_->clone()), ids_(other.ids_),
+            seqs_(other.seqs_), abunds_(other.abunds_), features_(other.features_) {
+
+        // nothing else to do
+
+    }
+
+    SimpleFeatVecAmpliconCollection::SimpleFeatVecAmpliconCollection(SimpleFeatVecAmpliconCollection&& other) noexcept : // move constructor
+            num_features_(other.num_features_), fb_(other.fb_), ids_(std::move(other.ids_)),
+            seqs_(std::move(other.seqs_)), abunds_(std::move(other.abunds_)), features_(std::move(other.features_)) {
+
+        other.fb_ = nullptr;
+
+    }
+
+    SimpleFeatVecAmpliconCollection& SimpleFeatVecAmpliconCollection::operator=(const SimpleFeatVecAmpliconCollection& other) { // copy assignment operator
+
+        // check for self-assignment
+        if (&other == this) {
+            return *this;
+        }
+
+        // release old resources
+        delete fb_;
+
+        // copy new resources
+        num_features_ = other.num_features_;
+
+        fb_ = other.fb_->clone();
+        ids_ = other.ids_;
+        seqs_ = other.seqs_;
+        abunds_ = other.abunds_;
+        features_ = other.features_;
+
+        return *this;
+
+    }
+
+    SimpleFeatVecAmpliconCollection& SimpleFeatVecAmpliconCollection::operator=(SimpleFeatVecAmpliconCollection&& other) noexcept { // move assignment operator
+
+        // check for self-assignment
+        if (&other == this) {
+            return *this;
+        }
+
+        // release old resources
+        delete fb_;
+
+        // copy / transfer new resources
+        num_features_ = other.num_features_;
+
+        fb_ = other.fb_; other.fb_ = nullptr;
+        ids_ = other.ids_;
+        seqs_ = other.seqs_;
+        abunds_ = other.abunds_;
+        features_ = other.features_;
+
+        return *this;
+
+    }
+
+    SimpleFeatVecAmpliconCollection* SimpleFeatVecAmpliconCollection::clone() const {
+        return new SimpleFeatVecAmpliconCollection(*this);
+    }
+
+    void SimpleFeatVecAmpliconCollection::emplace_back(const Defline& dl, const std::string& seq, const ExtraInfo& extra) {
+
+        ids_.push_back(dl.id);
+        seqs_.push_back(seq);
+        abunds_.push_back(dl.abundance);
+        auto feats = fb_->get_features(seq);
+        features_.insert(features_.end(), feats.begin(), feats.end());
+
+    }
+
+    numSeqs_t SimpleFeatVecAmpliconCollection::size() const {
+        return ids_.size();
+    }
+
+    const char* SimpleFeatVecAmpliconCollection::id(const numSeqs_t i) const {
+        return ids_[i].c_str();
+    }
+
+    const char* SimpleFeatVecAmpliconCollection::seq(const numSeqs_t i) const {
+        return seqs_[i].c_str();
+    }
+
+    lenSeqs_t SimpleFeatVecAmpliconCollection::len(const numSeqs_t i) const {
+        return seqs_[i].length();
+    }
+
+    numSeqs_t SimpleFeatVecAmpliconCollection::ab(const numSeqs_t i) const {
+        return abunds_[i];
+    }
+
+    const char* SimpleFeatVecAmpliconCollection::quals(const numSeqs_t i) const {
+        return nullptr;
+    }
+
+    const feat_t* SimpleFeatVecAmpliconCollection::features(const numSeqs_t i) const {
+        return features_.data() + i * num_features_;
+    }
+
+    const feat_t* SimpleFeatVecAmpliconCollection::all_features() const {
+        return features_.data();
+    }
+
+    size_t SimpleFeatVecAmpliconCollection::num_features() const {
+        return num_features_;
+    }
+
+
+    void SimpleFeatVecAmpliconCollection::sort() {
+
+        std::vector<numSeqs_t> permutation(size());
+        std::iota(permutation.begin(), permutation.end(), 0);
+
+        std::sort(permutation.begin(), permutation.end(),
+                  [&](const numSeqs_t ampl_a, const numSeqs_t ampl_b) {
+                      return (abunds_[ampl_a] > abunds_[ampl_b]) ||
+                             ((abunds_[ampl_a] == abunds_[ampl_b]) &&
+                              (strcmp(ids_[ampl_a].c_str(), ids_[ampl_b].c_str()) < 0));
+                  }
+        );
+
+        std::vector<bool> done(size());
+        for (numSeqs_t i = 0; i < size(); ++i) {
+
+            if (!done[i]) {
+
+                done[i] = true;
+                numSeqs_t prev_j = i;
+                numSeqs_t j = permutation[i];
+
+                while (i != j) {
+
+                    std::swap(ids_[prev_j], ids_[j]);
+                    std::swap(seqs_[prev_j], seqs_[j]);
+                    std::swap(abunds_[prev_j], abunds_[j]);
+                    std::swap_ranges(features_.begin() + prev_j * num_features_,
+                                     features_.begin() + (prev_j + 1) * num_features_,
+                                     features_.begin() + j * num_features_);
+                    done[j] = true;
+                    prev_j = j;
+                    j = permutation[j];
+
+                }
+            }
+
+        }
+
+    }
+
+    void SimpleFeatVecAmpliconCollection::print(const std::string& file, const Configuration& config) const {
+
+        std::ofstream out_stream(file, std::ios_base::app);
+        std::stringstream str_stream;
+
+        for (numSeqs_t i = 0; i < ids_.size(); i++) {
+
+            str_stream << ">" << ids_[i] << config.separator << abunds_[i] << std::endl << seqs_[i] << std::endl;
+            for (size_t j = 0; j < num_features_; j++) {
+                str_stream << ((j > 0) ? " " : "") << features_[i * num_features_ + j];
+            }
+            str_stream << std::endl;
+            out_stream << str_stream.rdbuf();
+            str_stream.str(std::string());
+
+        }
+
+        out_stream.close();
+
+    }
+
+
+    /* === ArrayFeatVecAmpliconCollection === */
+
+    ArrayFeatVecAmpliconCollection::ArrayFeatVecAmpliconCollection(FeatureBuilder* fb, const numSeqs_t capacity,
+                                                                   const unsigned long long capacity_headers,
+                                                                   const unsigned long long capacity_sequences) :
+            fb_(fb), num_features_(fb->num_features()) {
+
+        capacity_headers_ = capacity_headers + 1;
+        headers_ = new char[capacity_headers_];
+        next_header_ = headers_;
+
+        capacity_sequences_ = capacity_sequences + 1;
+        sequences_ = new char[capacity_sequences_];
+        next_sequence_ = sequences_;
+
+        capacity_ = capacity + 1; // +1 to have space for a sentinel after the currently last entry
+        header_pointers_ = new char*[capacity_];
+        seq_pointers_ = new char*[capacity_];
+        abundances_ = new numSeqs_t[capacity_];
+        lengths_ = new lenSeqs_t[capacity_];
+        size_ = 0;
+
+        features_ = new feat_t[capacity_ * num_features_];
+
+    }
+
+    ArrayFeatVecAmpliconCollection::~ArrayFeatVecAmpliconCollection() {
+
+        delete[] features_;
+        delete[] lengths_;
+        delete[] abundances_;
+        delete[] seq_pointers_;
+        delete[] header_pointers_;
+        delete[] sequences_;
+        delete[] headers_;
+        delete fb_;
+
+    }
+
+    ArrayFeatVecAmpliconCollection::ArrayFeatVecAmpliconCollection(const ArrayFeatVecAmpliconCollection& other) { // copy constructor
+
+        capacity_ = other.capacity_;
+        size_ = other.size_;
+        num_features_ = other.num_features_;
+        fb_ = other.fb_->clone();
+
+        capacity_headers_ = other.capacity_headers_;
+        headers_ = new char[capacity_headers_];
+        memcpy(headers_, other.headers_, sizeof(char) * capacity_headers_);
+        header_pointers_ = new char*[capacity_];
+        for (auto i = 0; i <= size_; i++) { // <= to copy the sentinel
+            header_pointers_[i] = headers_ + (other.header_pointers_[i] - other.headers_);
+        }
+        next_header_ = headers_ + (other.next_header_ - other.headers_);
+
+        capacity_sequences_ = other.capacity_sequences_;
+        sequences_ = new char[capacity_sequences_];
+        memcpy(sequences_, other.sequences_, sizeof(char) * capacity_sequences_);
+        seq_pointers_ = new char*[capacity_];
+        for (auto i = 0; i <= size_; i++) { // <= to copy the sentinel
+            seq_pointers_[i] = sequences_ + (other.seq_pointers_[i] - other.sequences_);
+        }
+        next_sequence_ = sequences_ + (other.next_sequence_ - other.sequences_);
+
+        features_ = new feat_t[capacity_ * num_features_];
+        memcpy(features_, other.features_, sizeof(feat_t) * capacity_ * num_features_);
+
+        abundances_ = new numSeqs_t[capacity_];
+        for (auto i = 0; i < size_; i++) {
+            abundances_[i] = other.abundances_[i];
+        }
+
+        lengths_ = new lenSeqs_t[capacity_];
+        for (auto i = 0; i < size_; i++) {
+            lengths_[i] = other.lengths_[i];
+        }
+
+    }
+
+    ArrayFeatVecAmpliconCollection::ArrayFeatVecAmpliconCollection(ArrayFeatVecAmpliconCollection&& other) noexcept { // move constructor
+
+        capacity_ = other.capacity_;
+        capacity_headers_ = other.capacity_headers_;
+        capacity_sequences_ = other.capacity_sequences_;
+        size_ = other.size_;
+        next_header_ = other.next_header_;
+        next_sequence_ = other.next_sequence_;
+        num_features_ = other.num_features_;
+
+        fb_ = other.fb_; other.fb_ = nullptr;
+        headers_ = other.headers_; other.headers_ = nullptr;
+        sequences_ = other.sequences_; other.sequences_ = nullptr;
+        header_pointers_ = other.header_pointers_; other.header_pointers_ = nullptr;
+        seq_pointers_ = other.seq_pointers_; other.seq_pointers_ = nullptr;
+        features_ = other.features_; other.features_ = nullptr;
+        abundances_ = other.abundances_; other.abundances_ = nullptr;
+        lengths_ = other.lengths_; other.lengths_ = nullptr;
+
+    }
+
+    ArrayFeatVecAmpliconCollection& ArrayFeatVecAmpliconCollection::operator=(const ArrayFeatVecAmpliconCollection& other) { // copy assignment operator
+
+        // check for self-assignment
+        if (&other == this) {
+            return *this;
+        }
+
+        // release old resources
+        delete[] features_;
+        delete[] lengths_;
+        delete[] abundances_;
+        delete[] seq_pointers_;
+        delete[] header_pointers_;
+        delete[] sequences_;
+        delete[] headers_;
+        delete fb_;
+
+        // copy new resources
+        capacity_ = other.capacity_;
+        size_ = other.size_;
+        num_features_ = other.num_features_;
+        fb_ = other.fb_->clone();
+
+        capacity_headers_ = other.capacity_headers_;
+        headers_ = new char[capacity_headers_];
+        memcpy(headers_, other.headers_, sizeof(char) * capacity_headers_);
+        header_pointers_ = new char*[capacity_];
+        for (auto i = 0; i <= size_; i++) { // <= to copy the sentinel
+            header_pointers_[i] = headers_ + (other.header_pointers_[i] - other.headers_);
+        }
+        next_header_ = headers_ + (other.next_header_ - other.headers_);
+
+        capacity_sequences_ = other.capacity_sequences_;
+        sequences_ = new char[capacity_sequences_];
+        memcpy(sequences_, other.sequences_, sizeof(char) * capacity_sequences_);
+        seq_pointers_ = new char*[capacity_];
+        for (auto i = 0; i <= size_; i++) { // <= to copy the sentinel
+            seq_pointers_[i] = sequences_ + (other.seq_pointers_[i] - other.sequences_);
+        }
+        next_sequence_ = sequences_ + (other.next_sequence_ - other.sequences_);
+
+        features_ = new feat_t[capacity_ * num_features_];
+        memcpy(features_, other.features_, sizeof(feat_t) * capacity_ * num_features_);
+
+        abundances_ = new numSeqs_t[capacity_];
+        for (auto i = 0; i < size_; i++) {
+            abundances_[i] = other.abundances_[i];
+        }
+
+        lengths_ = new lenSeqs_t[capacity_];
+        for (auto i = 0; i < size_; i++) {
+            lengths_[i] = other.lengths_[i];
+        }
+
+        return *this;
+
+    }
+
+    ArrayFeatVecAmpliconCollection& ArrayFeatVecAmpliconCollection::operator=(ArrayFeatVecAmpliconCollection&& other) noexcept { // move assignment operator
+
+        // check for self-assignment
+        if (&other == this) {
+            return *this;
+        }
+
+        // release old resources
+        delete[] features_;
+        delete[] lengths_;
+        delete[] abundances_;
+        delete[] seq_pointers_;
+        delete[] header_pointers_;
+        delete[] sequences_;
+        delete[] headers_;
+        delete fb_;
+
+        // copy / transfer new resources
+        capacity_ = other.capacity_;
+        capacity_headers_ = other.capacity_headers_;
+        capacity_sequences_ = other.capacity_sequences_;
+        size_ = other.size_;
+        next_header_ = other.next_header_;
+        next_sequence_ = other.next_sequence_;
+        num_features_ = other.num_features_;
+
+        fb_ = other.fb_; other.fb_ = nullptr;
+        headers_ = other.headers_; other.headers_ = nullptr;
+        sequences_ = other.sequences_; other.sequences_ = nullptr;
+        header_pointers_ = other.header_pointers_; other.header_pointers_ = nullptr;
+        seq_pointers_ = other.seq_pointers_; other.seq_pointers_ = nullptr;
+        features_ = other.features_; other.features_ = nullptr;
+        abundances_ = other.abundances_; other.abundances_ = nullptr;
+        lengths_ = other.lengths_; other.lengths_ = nullptr;
+
+        return *this;
+
+    }
+
+    ArrayFeatVecAmpliconCollection* ArrayFeatVecAmpliconCollection::clone() const {
+        return new ArrayFeatVecAmpliconCollection(*this);
+    }
+
+    void ArrayFeatVecAmpliconCollection::emplace_back(const Defline& dl, const std::string& seq, const ExtraInfo& extra) {
+
+        extend_arrays(dl, seq);
+
+        header_pointers_[size_] = next_header_;
+        strcpy(next_header_, dl.id.c_str());
+        next_header_ += dl.id.length() + 1;
+
+        seq_pointers_[size_] = next_sequence_;
+        strcpy(next_sequence_, seq.c_str());
+        next_sequence_ += seq.length() + 1;
+
+        fb_->get_features(seq, features_ + size_ * num_features_);
+
+        abundances_[size_] = dl.abundance;
+        lengths_[size_] = seq.length();
+
+        size_++;
+        header_pointers_[size_] = next_header_; // sentinel for length calculations
+        seq_pointers_[size_] = next_sequence_; // sentinel for length calculations
+
+    }
+
+    numSeqs_t ArrayFeatVecAmpliconCollection::size() const {
+        return size_;
+    }
+
+    const char* ArrayFeatVecAmpliconCollection::id(const numSeqs_t i) const {
+        return header_pointers_[i];
+    }
+
+    const char* ArrayFeatVecAmpliconCollection::seq(const numSeqs_t i) const {
+        return seq_pointers_[i];
+    }
+
+    lenSeqs_t ArrayFeatVecAmpliconCollection::len(const numSeqs_t i) const {
+        return lengths_[i];
+    }
+
+    numSeqs_t ArrayFeatVecAmpliconCollection::ab(const numSeqs_t i) const {
+        return abundances_[i];
+    }
+
+    const char* ArrayFeatVecAmpliconCollection::quals(const numSeqs_t i) const {
+        return nullptr;
+    }
+
+    const feat_t* ArrayFeatVecAmpliconCollection::features(const numSeqs_t i) const {
+        return features_ + i * num_features_;
+    }
+
+    const feat_t* ArrayFeatVecAmpliconCollection::all_features() const {
+        return features_;
+    }
+
+    size_t ArrayFeatVecAmpliconCollection::num_features() const {
+        return num_features_;
+    }
+
+    void ArrayFeatVecAmpliconCollection::sort() {
+
+        std::vector<numSeqs_t> permutation(size());
+        std::iota(permutation.begin(), permutation.end(), 0);
+
+        std::sort(permutation.begin(), permutation.end(),
+                  [&](const numSeqs_t ampl_a, const numSeqs_t ampl_b) {
+                      return (abundances_[ampl_a] > abundances_[ampl_b]) ||
+                             ((abundances_[ampl_a] == abundances_[ampl_b]) &&
+                              (strcmp(header_pointers_[ampl_a], header_pointers_[ampl_b]) < 0));
+                  }
+        );
+
+        std::vector<bool> done(size());
+        for (numSeqs_t i = 0; i < size(); ++i) {
+
+            if (!done[i]) {
+
+                done[i] = true;
+                numSeqs_t prev_j = i;
+                numSeqs_t j = permutation[i];
+
+                while (i != j) {
+
+                    std::swap(header_pointers_[prev_j], header_pointers_[j]);
+                    std::swap(seq_pointers_[prev_j], seq_pointers_[j]);
+                    std::swap_ranges(features_ + prev_j * num_features_,
+                                     features_ + (prev_j + 1) * num_features_,
+                                     features_ + j * num_features_);
+                    std::swap(abundances_[prev_j], abundances_[j]);
+                    std::swap(lengths_[prev_j], lengths_[j]);
+                    done[j] = true;
+                    prev_j = j;
+                    j = permutation[j];
+
+                }
+            }
+
+        }
+
+    }
+
+    void ArrayFeatVecAmpliconCollection::extend_arrays(const Defline& dl, const std::string& seq) {
+
+        unsigned long long len = next_header_ - headers_;
+        if (len + dl.id.length() + 1 > capacity_headers_) {
+
+            char* tmp1 = new char[2 * capacity_headers_];
+            memcpy(tmp1, headers_, len * sizeof(char));
+            char** tmp2 = new char*[capacity_];
+            for (auto i = 0; i < size_; i++) {
+                tmp2[i] = tmp1 + (header_pointers_[i] - headers_);
+            }
+            delete[] headers_;
+            delete[] header_pointers_;
+            headers_ = tmp1;
+            next_header_ = headers_ + len;
+            header_pointers_ = tmp2;
+
+            capacity_headers_ = std::max(len + dl.id.length() + 1, 2 * capacity_headers_);
+
+        }
+
+        len = next_sequence_ - sequences_;
+        if (len + seq.length() + 1 > capacity_sequences_) {
+
+            char* tmp1 = new char[2 * capacity_sequences_];
+            memcpy(tmp1, sequences_, len * sizeof(char));
+            char** tmp2 = new char*[capacity_];
+            for (auto i = 0; i < size_; i++) {
+                tmp2[i] = tmp1 + (seq_pointers_[i] - sequences_);
+            }
+            delete[] sequences_;
+            delete[] seq_pointers_;
+            sequences_ = tmp1;
+            next_sequence_ = sequences_ + len;
+            seq_pointers_ = tmp2;
+
+            capacity_sequences_ = std::max(len + seq.length() + 1, 2 * capacity_sequences_);
+
+        }
+
+        if (size_ + 1 == capacity_) {
+
+            char** tmp1 = new char*[2 * capacity_];
+            memcpy(tmp1, header_pointers_, capacity_ * sizeof(char*));
+            delete[] header_pointers_;
+            header_pointers_ = tmp1;
+
+            tmp1 = new char*[2 * capacity_];
+            memcpy(tmp1, seq_pointers_, capacity_ * sizeof(char*));
+            delete[] seq_pointers_;
+            seq_pointers_ = tmp1;
+
+            numSeqs_t* tmp2 = new numSeqs_t[2 * capacity_];
+            memcpy(tmp2, abundances_, capacity_ * sizeof(numSeqs_t));
+            delete[] abundances_;
+            abundances_ = tmp2;
+
+            lenSeqs_t* tmp3 = new lenSeqs_t[2 * capacity_];
+            memcpy(tmp3, lengths_, capacity_ * sizeof(lenSeqs_t));
+            delete[] lengths_;
+            lengths_ = tmp3;
+
+            feat_t* tmp4 = new feat_t[2 * capacity_ * num_features_];
+            memcpy(tmp4, features_, capacity_ * num_features_);
+            delete[] features_;
+            features_ = tmp4;
+
+            capacity_ *= 2;
+
+        }
+
+    }
+
+    void ArrayFeatVecAmpliconCollection::print(const std::string& file, const Configuration& config) const {
+
+        std::ofstream out_stream(file, std::ios_base::app);
+        std::stringstream str_stream;
+
+        for (numSeqs_t i = 0; i < size_; i++) {
+
+            str_stream << ">" << header_pointers_[i] << config.separator << abundances_[i] << std::endl << seq_pointers_[i] << std::endl;
+            for (size_t j = 0; j < num_features_; j++) {
+                str_stream << ((j > 0) ? " " : "") << features_[i * num_features_ + j];
+            }
+            str_stream << std::endl;
+            out_stream << str_stream.rdbuf();
+            str_stream.str(std::string());
+
+        }
+
+        out_stream.close();
+
+    }
+
 }

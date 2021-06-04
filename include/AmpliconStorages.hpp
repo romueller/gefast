@@ -119,6 +119,82 @@ namespace GeFaST {
 
     };
 
+
+    /*
+     * Class for managing amplicons stored in a single AmpliconCollection instance (pool)
+     * representing overall collection of amplicons.
+     *
+     * Instances are constructed via an AmpliconStorageFactory.
+     */
+    template<typename C>
+    class SimpleFeatureAmpliconStorage : public FeatureAmpliconStorage {
+
+        friend class AmpliconStorageFactory;
+
+    public:
+        SimpleFeatureAmpliconStorage(const C& pool) : pool_(pool) {
+            // nothing else to do
+        }
+
+        SimpleFeatureAmpliconStorage* clone() const override { // deep-copy clone method
+            return new SimpleFeatureAmpliconStorage(*this);
+        }
+
+
+        void add_amplicon(const Defline& dl, const std::string& seq, const ExtraInfo& extra) override {
+
+            pool_.emplace_back(dl, seq, extra);
+            max_len_ = std::max(max_len_, seq.length());
+
+        }
+
+        FeatureAmpliconCollection& get_pool(const numSeqs_t i) override {
+            return pool_;
+        }
+
+        const FeatureAmpliconCollection& get_pool(const numSeqs_t i) const override {
+            return pool_;
+        }
+
+        numSeqs_t num_pools() const override {
+            return 1;
+        }
+
+        numSeqs_t num_amplicons() const override {
+            return pool_.size();
+        }
+
+        numSeqs_t size_pool(numSeqs_t i) const override {
+            return pool_.size();
+        }
+
+        lenSeqs_t max_length() const override {
+            return max_len_;
+        }
+
+        void finalise() override {
+            pool_.sort();
+        }
+
+        void print(const std::string& file, const Configuration& config) const override {
+
+            // clear file if it already exists
+            std::ofstream out_stream(file);
+            out_stream.close();
+
+            // print contents of the pool in one file
+            pool_.print(file, config);
+
+        }
+
+    protected:
+        SimpleFeatureAmpliconStorage() = default;
+
+        C pool_; // single amplicon underlying the amplicon storage
+        lenSeqs_t max_len_ = 0; // maximum length of the amplicons in the pool
+
+    };
+
 }
 
 #endif //GEFAST_AMPLICONSTORAGES_HPP

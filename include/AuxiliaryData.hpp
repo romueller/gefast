@@ -24,6 +24,7 @@
 #ifndef GEFAST_AUXILIARYDATA_HPP
 #define GEFAST_AUXILIARYDATA_HPP
 
+#include "modes/AlignmentFreeMode.hpp"
 #include "Base.hpp"
 #include "Distances.hpp"
 #include "Relations.hpp"
@@ -390,6 +391,194 @@ namespace GeFaST {
 
         SwarmingIndices indices_; // inverted indices of the segment filter
         std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*> substrs_archive_; // substrings archive for more efficient segment filter
+
+    };
+
+
+    /*
+     * Simple support for realising the clustering phase when working with features.
+     *
+     * Keeps recorded sequences in a set of strings and maintains
+     * a set of amplicons not yet included in a swarm.
+     *
+     */
+    class FeatureAuxiliaryData : public AuxiliaryData {
+
+    public:
+        FeatureAuxiliaryData(const FeatureAmpliconStorage& amplicon_storage, const numSeqs_t pool_id, const dist_t threshold,
+                             const AlignmentFreeConfiguration& config);
+
+        FeatureAuxiliaryData(const FeatureAmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage,
+                             const numSeqs_t pool_id, const dist_t threshold, const AlignmentFreeConfiguration& config);
+
+        virtual ~FeatureAuxiliaryData();
+
+        FeatureAuxiliaryData(const FeatureAuxiliaryData& other); // copy constructor
+
+        FeatureAuxiliaryData(FeatureAuxiliaryData&& other) noexcept; // move constructor
+
+        FeatureAuxiliaryData& operator=(const FeatureAuxiliaryData& other) = delete; // copy assignment operator
+
+        FeatureAuxiliaryData& operator=(FeatureAuxiliaryData&& other) = delete; // move assignment operator
+
+        FeatureAuxiliaryData* clone() const override; // deep-copy clone method
+
+        void tick_off_amplicon(numSeqs_t ampl_id) override;
+
+        bool record_amplicon(numSeqs_t ampl_id) override;
+
+        void clear_amplicon_records() override;
+
+        std::vector<Partner> find_partners(numSeqs_t ampl_id) override;
+
+    protected:
+        const FeatureAmpliconCollection& ac_; // amplicon collection which is supported
+        Distance* dist_fun_; // distance function used to find partners
+        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
+
+        dist_t threshold_; // threshold applied during search for partners / similar amplicons
+        bool break_swarms_; // flag indicating whether swarm breaking should be applied
+
+        std::set<numSeqs_t> unswarmed_; // pool-internal integer ids of amplicons not yet included in a swarm
+
+    };
+
+
+    /*
+     * Support for clustering phases employing a space-partitioning structure to efficiently search
+     * for (not yet swarmed) partners of an amplicon using the feature representations of the amplicons.
+     *
+     * Keeps recorded sequences in a set of strings.
+     */
+    template<typename T>
+    class SpacePartitioningAuxiliaryData : public AuxiliaryData {
+
+    public:
+        /*
+         * Prepare the auxiliary data for the clustering phase (space-partitioning structure on all amplicons).
+         */
+        SpacePartitioningAuxiliaryData(const FeatureAmpliconStorage& amplicon_storage, const numSeqs_t pool_id,
+                                       const dist_t threshold, const AlignmentFreeConfiguration& config)
+                : ac_(amplicon_storage.get_pool(pool_id)), swarmed_(ac_.size(), false) {
+
+            threshold_ = threshold;
+            break_swarms_ = config.break_swarms;
+            dist_fun_ = config.build_distance_function(amplicon_storage, threshold);
+            sps_ = new T(amplicon_storage.get_pool(pool_id));
+
+        }
+
+        /*
+         * Prepare the auxiliary data for the refinement phase (space-partitioning structure on amplicons from light swarms).
+         */
+        SpacePartitioningAuxiliaryData(const FeatureAmpliconStorage& amplicon_storage, const SwarmStorage& swarm_storage,
+                                       const numSeqs_t pool_id, const dist_t threshold, const AlignmentFreeConfiguration& config) :
+                ac_(amplicon_storage.get_pool(pool_id)), swarmed_(ac_.size(), false) {
+
+            threshold_ = threshold;
+            break_swarms_ = false;
+            dist_fun_ = config.build_distance_function(amplicon_storage, threshold);
+
+            std::vector<numSeqs_t> light_amplicons;
+            auto& swarms = swarm_storage.get_swarms(pool_id);
+            for (numSeqs_t s = 0; s < swarms.size(); s++) {
+
+                auto& swarm = swarms.get(s);
+                if (swarm.mass() < config.boundary && !swarm.is_attached()) { // check whether attached in case refinement is iterated
+
+                    for (numSeqs_t i = 0; i < swarm.size(); i++) {
+                        light_amplicons.push_back(swarm.member(i));
+                    }
+
+                }
+            }
+
+            sps_ = new T(amplicon_storage.get_pool(pool_id), light_amplicons);
+
+        }
+
+        ~SpacePartitioningAuxiliaryData() {
+
+            delete sps_;
+            delete dist_fun_;
+
+        }
+
+        SpacePartitioningAuxiliaryData(const SpacePartitioningAuxiliaryData& other) : ac_(other.ac_) { // copy constructor
+
+            dist_fun_ = other.dist_fun_->clone();
+            different_seqs_ = other.different_seqs_;
+            threshold_ = other.threshold_;
+            break_swarms_ = other.break_swarms_;
+
+            swarmed_ = other.swarmed_;
+            sps_ = other.sps_->clone();
+
+
+        }
+
+        SpacePartitioningAuxiliaryData(SpacePartitioningAuxiliaryData&& other) noexcept : ac_(other.ac_) { // move constructor
+
+            dist_fun_ = other.dist_fun_; other.dist_fun_ = nullptr;
+            different_seqs_ = other.different_seqs_;
+            threshold_ = other.threshold_;
+            break_swarms_ = other.break_swarms_;
+
+            swarmed_ = other.swarmed_;
+            sps_ = other.sps_; other.sps_ = nullptr;
+
+        }
+
+        SpacePartitioningAuxiliaryData& operator=(const SpacePartitioningAuxiliaryData& other) = delete; // copy assignment operator
+
+        SpacePartitioningAuxiliaryData& operator=(SpacePartitioningAuxiliaryData&& other) = delete; // move assignment operator
+
+        SpacePartitioningAuxiliaryData* clone() const override { // deep-copy clone method
+            return new SpacePartitioningAuxiliaryData(*this);
+        }
+
+        void tick_off_amplicon(numSeqs_t ampl_id) override {
+            swarmed_[ampl_id] = true;
+        }
+
+        bool record_amplicon(numSeqs_t ampl_id) override {
+            return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
+        }
+
+        void clear_amplicon_records() override {
+            different_seqs_.clear();
+        }
+
+        std::vector<Partner> find_partners(numSeqs_t ampl_id) override {
+
+            std::vector<Partner> partners = sps_->range_partner(ampl_id, threshold_);
+
+            // exclude amplicons that are already part of a swarm
+            auto end_keep = std::remove_if(partners.begin(), partners.end(), [this](Partner& p) {return swarmed_[p.id];});
+
+            if (break_swarms_) { // also exclude amplicons with a higher abundance (if requested)
+
+                numSeqs_t max_abund = ac_.ab(ampl_id);
+                end_keep = std::remove_if(partners.begin(), end_keep, [this, max_abund](Partner& p) {return ac_.ab(p.id) > max_abund;});
+
+            }
+
+            partners.erase(end_keep, partners.end());
+
+            return partners;
+
+        }
+
+    protected:
+        const FeatureAmpliconCollection& ac_; // amplicon collection which is supported
+        Distance* dist_fun_; // distance function used to find partners
+        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
+
+        dist_t threshold_; // threshold applied to partner search
+        bool break_swarms_; // flag indicating whether swarm breaking should be applied
+
+        std::vector<bool> swarmed_; // flags indicating which amplicons are already included in a swarm
+        T* sps_; // spatial partitioning structure used to efficiently query for partners
 
     };
 

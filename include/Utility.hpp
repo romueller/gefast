@@ -36,7 +36,7 @@
 namespace GeFaST {
 
     // version number of current implementation of GeFaST
-    const std::string VERSION = "2.0.1";
+    const std::string VERSION = "2.1.0";
 
     // output separators
     const char SEP_INTERNALS = '\t'; // between columns in output_internal
@@ -54,6 +54,9 @@ namespace GeFaST {
 
     // type for everything related to the distance between two amplicons
     typedef float dist_t;
+
+    // type for everything related to the feature values
+    typedef float feat_t;
 
 
 

@@ -27,6 +27,7 @@
 #include <map>
 
 #include "Base.hpp"
+#include "modes/AlignmentFreeMode.hpp"
 #include "modes/AlignmentScoreMode.hpp"
 #include "modes/LevenshteinMode.hpp"
 #include "modes/QualityAlignmentScoreMode.hpp"
@@ -72,6 +73,14 @@ namespace GeFaST {
          */
         static AmpliconStorage* create(const AmpliconStorageOption opt, const DataStatistics<>& ds, const Configuration& config);
 
+        /*
+         * Create an amplicon storage which is empty but prepared for the insertion of amplicons with features
+         * corresponding to the information given by the DataStatistics instance.
+         */
+        static FeatureAmpliconStorage* create(const AmpliconStorageOption opt, const FeatureBuilderOption fb_opt,
+                                              const AmpliconCollectionOption ac_opt, const DataStatistics<>& ds,
+                                              const Configuration& config);
+
     };
 
 
@@ -115,6 +124,12 @@ namespace GeFaST {
          */
         static Distance* create(const DistanceOption opt, const AmpliconStorage& amplicon_storage, const dist_t threshold,
                 const QualityLevenshteinConfiguration& config);
+
+        /*
+         * Create a distance function for computing the distance between amplicons as the distance between the features representing them.
+         */
+        static FeatureDistance* create(const DistanceOption opt, const AmpliconStorage& amplicon_storage, const dist_t threshold,
+                const AlignmentFreeConfiguration& config);
 
     };
 
@@ -231,6 +246,12 @@ namespace GeFaST {
                 const numSeqs_t pool_id, const dist_t threshold, const lenSeqs_t num_extra_segments, const Configuration& config);
 
         /*
+         * Create the auxiliary data for a specific amplicon pool (including features) and threshold suitable for the clustering phase.
+         */
+        static AuxiliaryData* create(const AuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
+                const numSeqs_t pool_id, const dist_t threshold, const AlignmentFreeConfiguration& config);
+
+        /*
          * Create the auxiliary data for a specific amplicon pool and threshold suitable for the refinement phase.
          */
         static AuxiliaryData* create(const RefinementAuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
@@ -243,6 +264,13 @@ namespace GeFaST {
         static AuxiliaryData* create(const RefinementAuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
                 const SwarmStorage& swarm_storage, const numSeqs_t pool_id, const dist_t threshold,
                 const lenSeqs_t num_extra_segments, const Configuration& config);
+
+        /*
+         * Create the auxiliary data for a specific amplicon pool (including features) and threshold suitable for the clustering phase.
+         */
+        static AuxiliaryData* create(const RefinementAuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
+                                     const SwarmStorage& swarm_storage, const numSeqs_t pool_id, const dist_t threshold,
+                                     const AlignmentFreeConfiguration& config);
 
     };
 

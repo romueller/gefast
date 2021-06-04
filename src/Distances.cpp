@@ -882,4 +882,131 @@ namespace GeFaST {
         return (ac.qgram_diff(i, j) <= max_operations_) ? dist_fun_->distance(ac, i, j) : (threshold_ + 1);
     }
 
+
+    /* === ManhattanDistance === */
+
+    ManhattanDistance* ManhattanDistance::clone() const { // deep-copy clone method
+        return new ManhattanDistance();
+    }
+
+    dist_t ManhattanDistance::distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
+        return distance(dynamic_cast<const FeatureAmpliconCollection&>(ac), i, j);
+    }
+
+    dist_t ManhattanDistance::distance(const FeatureAmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
+
+        auto num_features = ac.num_features();
+        auto features_i = ac.features(i);
+        auto features_j = ac.features(j);
+
+        dist_t res = 0;
+        for (size_t k = 0; k < num_features; k++) {
+            res += std::abs(features_i[k] - features_j[k]);
+        }
+
+        return res;
+
+    }
+
+
+    /* === EuclideanDistance === */
+
+    EuclideanDistance* EuclideanDistance::clone() const { // deep-copy clone method
+        return new EuclideanDistance();
+    }
+
+    dist_t EuclideanDistance::distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
+        return distance(dynamic_cast<const FeatureAmpliconCollection&>(ac), i, j);
+    }
+
+    dist_t EuclideanDistance::distance(const FeatureAmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
+
+        auto num_features = ac.num_features();
+        auto features_i = ac.features(i);
+        auto features_j = ac.features(j);
+
+        dist_t res = 0;
+        for (size_t k = 0; k < num_features; k++) {
+            res += pow(features_i[k] - features_j[k], 2);
+        }
+
+        return std::sqrt(res);
+
+    }
+
+
+    /* === CosineDistance === */
+
+    CosineDistance* CosineDistance::clone() const { // deep-copy clone method
+        return new CosineDistance();
+    }
+
+    dist_t CosineDistance::distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
+        return distance(dynamic_cast<const FeatureAmpliconCollection&>(ac), i, j);
+    }
+
+    dist_t CosineDistance::distance(const FeatureAmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
+
+        auto num_features = ac.num_features();
+        auto features_i = ac.features(i);
+        auto features_j = ac.features(j);
+
+        dist_t prod = 0;
+        dist_t norm_i = 0;
+        dist_t norm_j = 0;
+        for (size_t k = 0; k < num_features; k++) {
+
+            prod += features_i[k] * features_j[k];
+            norm_i += features_i[k] * features_i[k];
+            norm_j += features_j[k] * features_j[k];
+
+        }
+
+        return static_cast<dist_t>(1.0) - prod / std::sqrt(norm_i * norm_j); // simplified to single sqrt
+
+    }
+
+
+    /* === PearsonDistance === */
+
+    PearsonDistance* PearsonDistance::clone() const { // deep-copy clone method
+        return new PearsonDistance();
+    }
+
+    dist_t PearsonDistance::distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
+        return distance(dynamic_cast<const FeatureAmpliconCollection&>(ac), i, j);
+    }
+
+    dist_t PearsonDistance::distance(const FeatureAmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
+
+        auto num_features = ac.num_features();
+        auto features_i = ac.features(i);
+        auto features_j = ac.features(j);
+
+        dist_t mean_i = 0;
+        dist_t mean_j = 0;
+        for (size_t k = 0; k < num_features; k++) {
+
+            mean_i += features_i[k];
+            mean_j += features_j[k];
+
+        }
+        mean_i /= static_cast<dist_t>(num_features);
+        mean_j /= static_cast<dist_t>(num_features);
+
+        dist_t prod = 0;
+        dist_t norm_i = 0;
+        dist_t norm_j = 0;
+        for (size_t k = 0; k < num_features; k++) {
+
+            prod += (features_i[k] - mean_i) * (features_j[k] - mean_j);
+            norm_i += (features_i[k] - mean_i) * (features_i[k] - mean_i);
+            norm_j += (features_j[k] - mean_j) * (features_j[k] - mean_j);
+
+        }
+
+        return (static_cast<dist_t>(1.0) - prod / std::sqrt(norm_i * norm_j)) / static_cast<dist_t>(2.0); // simplified to single sqrt
+
+    }
+
 }

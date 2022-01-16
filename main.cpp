@@ -89,6 +89,12 @@ namespace GeFaST {
             amplicon_storage->print(config->keep_preprocessed, *config);
         }
 
+#if PRINT_MEMORY
+        amplicon_storage->show_memory();
+        for (auto p = 0; p < amplicon_storage->num_pools(); p++) {
+            amplicon_storage->get_pool(p).show_memory(p);
+        }
+#endif
 
         if (amplicon_storage->num_amplicons() > 0) {
 
@@ -100,6 +106,13 @@ namespace GeFaST {
             SwarmStorage* swarm_storage = clusterer->cluster(*amplicon_storage, *config);
 
             std::cout << " >> Number of swarms: " << swarm_storage->num_swarms() << std::endl;
+
+#if PRINT_MEMORY
+            swarm_storage->show_memory();
+            for (auto p = 0; p < swarm_storage->num_pools(); p++) {
+                swarm_storage->get_swarms(p).show_memory(p);
+            }
+#endif
 
             /* ===== Cluster refinement ===== */
 

@@ -46,6 +46,10 @@ namespace GeFaST {
             AuxiliaryData* aux = config.build_auxiliary_data(amplicon_storage, p, config.main_threshold);
             std::vector<bool> swarmed(ac.size(), false); // swarmed amplicons are already included in a cluster
 
+#if PRINT_MEMORY
+            aux->show_memory(p);
+#endif
+
             // open new swarm for the amplicon with the highest abundance that is not yet included in a swarm
             // (corresponds to next unswarmed amplicon due to sorting of amplicons in the pool)
             for (numSeqs_t seed = 0; seed < ac.size(); seed++) {
@@ -114,6 +118,8 @@ namespace GeFaST {
 
             delete aux;
 
+            swarms.finalise();
+
         }
 
         return swarm_storage;
@@ -127,9 +133,9 @@ namespace GeFaST {
 
     SwarmStorage* Dereplicator::cluster(const AmpliconStorage& amplicon_storage, const Configuration& config) {
 
-        struct lessCharArray {
-            bool operator()(const char* lhs, const char* rhs) const {
-                return strcmp(lhs, rhs) < 0;
+        struct lessSequenceWrapper {
+            bool operator()(const std::unique_ptr<SequenceWrapper>& lhs, const std::unique_ptr<SequenceWrapper>& rhs) const {
+                return *lhs < *rhs;
             }
         };
 
@@ -140,7 +146,7 @@ namespace GeFaST {
         for (numSeqs_t p = 0; p < amplicon_storage.num_pools(); p++) {
 
             auto& ac = amplicon_storage.get_pool(p);
-            std::map<const char*, std::vector<numSeqs_t>, lessCharArray> groups;
+            std::map<std::unique_ptr<SequenceWrapper>, std::vector<numSeqs_t>, lessSequenceWrapper> groups;
 
             // group amplicons based on their sequence
             for (numSeqs_t i = 0; i < ac.size(); i++) {
@@ -280,7 +286,8 @@ namespace GeFaST {
             RawSequence** raws = new RawSequence*[ac.size()];
             for (numSeqs_t i = 0; i < ac.size(); i++) {
 
-                Dada2Utility::nt2int(seq, ac.seq(i));
+                std::string src_seq = ac.seq_str(i);
+                Dada2Utility::nt2int(seq, src_seq.c_str());
 
                 auto quals = ac.quals(i);
                 for (lenSeqs_t pos = 0; pos < ac.len(i); pos++) {
@@ -416,7 +423,8 @@ namespace GeFaST {
         // construct a raw for each input sequence, store in raws[index]
         for (numSeqs_t i = 0; i < ampl_ids.size(); i++) {
 
-            Dada2Utility::nt2int(seq, ac.seq(ampl_ids[i]));
+            std::string src_seq = ac.seq_str(ampl_ids[i]);
+            Dada2Utility::nt2int(seq, src_seq.c_str());
 
             auto quals = ac.quals(ampl_ids[i]);
             for (unsigned int pos = 0; pos < ac.len(ampl_ids[i]); pos++) {
@@ -1104,7 +1112,8 @@ namespace GeFaST {
                         numSeqs_t cur_seed_mem = cur_seed->member();
 
                         // construct a raw for the current (sub)seed
-                        Dada2Utility::nt2int(seq, ac.seq(cur_seed_mem));
+                        std::string seed_src_seq = ac.seq_str(cur_seed_mem);
+                        Dada2Utility::nt2int(seq, seed_src_seq.c_str());
                         auto quals = ac.quals(cur_seed_mem);
                         for (lenSeqs_t ppos = 0; ppos < ac.len(cur_seed_mem); ppos++) {
                             qual[ppos] = (uint8_t)(quals[ppos] - score_shift);
@@ -1127,7 +1136,8 @@ namespace GeFaST {
                         // in order to prevent the algorithm from queueing it more than once coming from different amplicons.
                         for (auto& partner : aux->find_partners(cur_seed_mem)) {
 
-                            Dada2Utility::nt2int(seq, ac.seq(partner.id));
+                            std::string mem_src_seq = ac.seq_str(partner.id);
+                            Dada2Utility::nt2int(seq, mem_src_seq.c_str());
                             quals = ac.quals(partner.id);
                             for (lenSeqs_t ppos = 0; ppos < ac.len(partner.id); ppos++) {
                                 qual[ppos] = (uint8_t)(quals[ppos] - score_shift);
@@ -1346,7 +1356,8 @@ namespace GeFaST {
                         numSeqs_t cur_seed_mem = cur_seed->member();
 
                         // construct a raw for the current (sub)seed
-                        Dada2Utility::nt2int(seq, ac.seq(cur_seed_mem));
+                        std::string seed_src_seq = ac.seq_str(cur_seed_mem);
+                        Dada2Utility::nt2int(seq, seed_src_seq.c_str());
                         auto quals = ac.quals(cur_seed_mem);
                         for (lenSeqs_t ppos = 0; ppos < ac.len(cur_seed_mem); ppos++) {
                             qual[ppos] = (uint8_t)(quals[ppos] - score_shift);
@@ -1373,7 +1384,8 @@ namespace GeFaST {
 
                             if (ac.ab(partner_id) <= ac.ab(cur_seed_mem)) {
 
-                                Dada2Utility::nt2int(seq, ac.seq(partner_id));
+                                std::string mem_src_seq = ac.seq_str(partner_id);
+                                Dada2Utility::nt2int(seq, mem_src_seq.c_str());
                                 quals = ac.quals(partner_id);
                                 for (lenSeqs_t ppos = 0; ppos < ac.len(partner_id); ppos++) {
                                     qual[ppos] = (uint8_t)(quals[ppos] - score_shift);

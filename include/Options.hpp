@@ -69,7 +69,8 @@ namespace GeFaST {
         CF_ALIGNMENT_SCORE,
         CF_QUALITY_ALIGNMENT_SCORE,
         CF_ALIGNMENT_FREE,
-        CF_CONSISTENCY
+        CF_CONSISTENCY,
+        CF_SPACE_LEVENSHTEIN
     };
 
     extern std::map<std::string, ConfigurationOption> config_map;
@@ -89,7 +90,8 @@ namespace GeFaST {
         AS_PREPARED_POOLS_QUALITY,
         AS_PREPARED_QGRAM_LENGTH_POOLS,
         AS_PREPARED_QGRAM_LENGTH_POOLS_QUALITY,
-        AS_SIMPLE_FEATURES
+        AS_SIMPLE_FEATURES,
+        AS_SPACE_FLEXIBLE
     };
 
     extern std::map<std::string, AmpliconStorageOption> ampl_storage_map;
@@ -106,7 +108,24 @@ namespace GeFaST {
         AC_ARRAY,
         AC_ARRAY_QUALITY,
         AC_ARRAY_QGRAM,
-        AC_ARRAY_QGRAM_QUALITY
+        AC_ARRAY_QGRAM_QUALITY,
+        AC_SPACE_REFERENCE,
+        AC_SPACE_ID_PREF,
+        AC_SPACE_ID_PREF_DACS,
+        AC_SPACE_ID_HUFF,
+        AC_SPACE_ID_HUFF_DACS,
+        AC_SPACE_SEQ,
+        AC_SPACE_SEQ_DACS,
+        AC_SPACE_AB,
+        AC_SPACE_AB_BITS,
+        AC_SPACE_LEN,
+        AC_SPACE_LEN_OFFSET,
+        AC_SPACE_AB_SPLIT,
+        AC_SPACE_AB_BITS_SPLIT,
+        AC_SPACE_LEN_SPLIT,
+        AC_SPACE_LEN_OFFSET_SPLIT,
+        AC_SPACE_QGRAM_DACS,
+        AC_SPACE_FULL
     };
 
     extern std::map<std::string, AmpliconCollectionOption> ampl_collection_map;
@@ -267,7 +286,9 @@ namespace GeFaST {
         SS_SIMPLE_PER_POOL,
         SS_SIMPLE_COMB_PER_POOL,
         SS_FORWARDING_PER_POOL,
-        SS_FORWARDING_COMB_PER_POOL
+        SS_FORWARDING_COMB_PER_POOL,
+        SS_FORWARDING_DACS_PER_POOL,
+        SS_FORWARDING_FULL_DACS_PER_POOL
     };
 
     extern std::map<std::string, SwarmStorageOption> swarm_storage_map;
@@ -284,7 +305,13 @@ namespace GeFaST {
         AD_SEGMENT_FILTER,
         AD_2W_SEGMENT_FILTER,
         AD_SCORE_SEGMENT_FILTER,
-        AD_KDTREE_AUXILIARY
+        AD_KDTREE_AUXILIARY,
+        AD_SPACE_SEGMENT_FILTER_NAIVE,
+        AD_SPACE_SEGMENT_FILTER_BASIC,
+        AD_SPACE_SEGMENT_FILTER_HYBRID,
+        AD_SPACE_SEGMENT_FILTER_RECT,
+        AD_SPACE_SEGMENT_FILTER_PART,
+        AD_SPACE_SEGMENT_FILTER_VARI
     };
 
     extern std::map<std::string, AuxiliaryDataOption> auxiliary_data_map;
@@ -301,7 +328,13 @@ namespace GeFaST {
         RD_SEGMENT_FILTER,
         RD_2W_SEGMENT_FILTER,
         RD_SCORE_SEGMENT_FILTER,
-        RD_KDTREE_AUXILIARY
+        RD_KDTREE_AUXILIARY,
+        RD_SPACE_SEGMENT_FILTER_NAIVE,
+        RD_SPACE_SEGMENT_FILTER_BASIC,
+        RD_SPACE_SEGMENT_FILTER_HYBRID,
+        RD_SPACE_SEGMENT_FILTER_RECT,
+        RD_SPACE_SEGMENT_FILTER_PART,
+        RD_SPACE_SEGMENT_FILTER_VARI
     };
 
     extern std::map<std::string, RefinementAuxiliaryDataOption> refinement_auxiliary_data_map;

@@ -87,6 +87,43 @@ namespace GeFaST {
             return swarms_per_pool_[p].size();
         }
 
+        size_t size_in_bytes() const override {
+
+            size_t allocated_swarms = 0;
+            for (auto& s : swarms_per_pool_) {
+                allocated_swarms += s.size_in_bytes();
+            }
+
+            return sizeof(SimpleSwarmStorage) // SimpleSwarmStorage itself
+                + allocated_swarms // swarms_per_pool_ (actually existing swarm collections)
+                + sizeof(S) * (swarms_per_pool_.capacity() - swarms_per_pool_.size()); // swarms_per_pool_ (allocated, empty swarm collections in vector)
+
+        }
+
+        void show_memory() const override {
+
+            size_t allocated_swarms = 0;
+            for (auto& s : swarms_per_pool_) {
+                allocated_swarms += s.size_in_bytes();
+            }
+
+            std::cout << "##################################################" << std::endl;
+            std::cout << "# SimpleSwarmStorage" << std::endl;
+            std::cout << "# " << std::endl;
+            std::cout << "# sizeof(SimpleSwarmStorage<S>): " << sizeof(SimpleSwarmStorage<S>) << " bytes" << std::endl;
+            std::cout << "# sizeof(std::vector<S>): " << sizeof(std::vector<S>) << " bytes" << std::endl;
+            std::cout << "# sizeof(S): " << sizeof(S) << " bytes" << std::endl;
+            std::cout << "# " << std::endl;
+            std::cout << "# Total size: " << size_in_bytes() << " bytes" << std::endl;
+            std::cout << "# swarms_per_pool_ (actual swarm collections): " << allocated_swarms << " bytes" << std::endl;
+            std::cout << "# swarms_per_pool_ (additional reserved space in vector): " << sizeof(S) * (swarms_per_pool_.capacity() - swarms_per_pool_.size()) << " bytes" << std::endl;
+            std::cout << "# " << std::endl;
+            std::cout << "# Size of swarm collections:" << std::endl;
+            for (auto p = 0; p < num_pools(); p++) std::cout << "# " << p << ": " << get_swarms(p).size_in_bytes() << " bytes" << std::endl;
+            std::cout << "##################################################" << std::endl;
+
+        }
+
     protected:
         std::vector<S> swarms_per_pool_; // collection of swarms / clusters per pool
 

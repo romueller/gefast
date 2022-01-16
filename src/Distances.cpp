@@ -69,7 +69,7 @@ namespace GeFaST {
     const char IN_P = 1;
     const char IN_Q = 2;
 
-    AlignmentInformation compute_gotoh_cigar_row(const char* s, const lenSeqs_t len_s, const char* t,
+    AlignmentInformation compute_gotoh_cigar_row(const SequenceWrapper& s, const lenSeqs_t len_s, const SequenceWrapper& t,
             const lenSeqs_t len_t, const ScoringFunction& scoring, lenSeqs_t* d_row, lenSeqs_t* p_row, char* backtrack) {
 
         lenSeqs_t width = len_t + 1;
@@ -291,11 +291,16 @@ namespace GeFaST {
     }
 
     dist_t BoundedLevenshteinDistance::distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
-        return compute_length_aware_row(ac.seq(i), ac.len(i), ac.seq(j), ac.len(j));
+        return compute_length_aware_row(*ac.seq(i), ac.len(i), *ac.seq(j), ac.len(j));
     }
 
-    lenSeqs_t BoundedLevenshteinDistance::compute_length_aware_row(const char* s, const lenSeqs_t len_s,
-            const char* t, const lenSeqs_t len_t) {
+    size_t BoundedLevenshteinDistance::size_in_bytes() const {
+        return sizeof(BoundedLevenshteinDistance) // BoundedLevenshteinDistance itself
+            + sizeof(lenSeqs_t) * row_length_; // matrix_row_
+    }
+
+    lenSeqs_t BoundedLevenshteinDistance::compute_length_aware_row(const SequenceWrapper& s, const lenSeqs_t len_s,
+            const SequenceWrapper& t, const lenSeqs_t len_t) {
 
         // long computation not necessary if lengths differ too much
         if (((len_s > len_t) ? (len_s - len_t) : (len_t - len_s)) > threshold_) {
@@ -303,13 +308,13 @@ namespace GeFaST {
         }
 
         if (threshold_ == 0) {
-            return lenSeqs_t(s != t);
+            return lenSeqs_t(!(s == t));
         }
 
 
-        const char* shorter = (len_s < len_t) ? s : t;
+        const SequenceWrapper& shorter = (len_s < len_t) ? s : t;
         lenSeqs_t len_shorter = std::min(len_s, len_t);
-        const char* longer = (len_s >= len_t) ? s : t;
+        const SequenceWrapper& longer = (len_s >= len_t) ? s : t;
         lenSeqs_t len_longer = std::max(len_s, len_t);
         lenSeqs_t diff = len_longer - len_shorter;
 
@@ -429,11 +434,19 @@ namespace GeFaST {
     }
 
     dist_t BoundedScoreLevenshteinDistance::distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
-        return compute_gotoh_length_aware_early_row(ac.seq(i), ac.len(i), ac.seq(j), ac.len(j));
+        return compute_gotoh_length_aware_early_row(*ac.seq(i), ac.len(i), *ac.seq(j), ac.len(j));
     }
 
-    lenSeqs_t BoundedScoreLevenshteinDistance::compute_gotoh_length_aware_early_row(const char* s, const lenSeqs_t len_s,
-            const char* t, const lenSeqs_t len_t) {
+    size_t BoundedScoreLevenshteinDistance::size_in_bytes() const {
+        return sizeof(BoundedScoreLevenshteinDistance) // BoundedScoreLevenshteinDistance itself
+            + sizeof(lenSeqs_t) * row_length_ // d_row_
+            + sizeof(lenSeqs_t) * row_length_ // p_row_
+            + sizeof(lenSeqs_t) * row_length_ // cnt_diffs_row_
+            + sizeof(lenSeqs_t) * row_length_; // cnt_diffs_p_row_
+    }
+
+    lenSeqs_t BoundedScoreLevenshteinDistance::compute_gotoh_length_aware_early_row(const SequenceWrapper& s, const lenSeqs_t len_s,
+            const SequenceWrapper& t, const lenSeqs_t len_t) {
 
         // long computation not necessary if lengths differ too much
         if (((len_s > len_t) ? (len_s - len_t) : (len_t - len_s)) > threshold_) {
@@ -441,12 +454,12 @@ namespace GeFaST {
         }
 
         if (threshold_ == 0) {
-            return lenSeqs_t(s != t);
+            return lenSeqs_t(!(s == t));
         }
 
-        const char* shorter = (len_s < len_t) ? s : t;
+        const SequenceWrapper& shorter = (len_s < len_t) ? s : t;
         lenSeqs_t len_shorter = std::min(len_s, len_t);
-        const char* longer = (len_s >= len_t) ? s : t;
+        const SequenceWrapper& longer = (len_s >= len_t) ? s : t;
         lenSeqs_t len_longer = std::max(len_s, len_t);
         lenSeqs_t delta = len_longer - len_shorter;
 
@@ -608,6 +621,11 @@ namespace GeFaST {
         return (ac.qgram_diff(i, j) <= threshold_) ? dist_fun_->distance(ac, i, j) : (threshold_ + 1);
     }
 
+    size_t QgramBoundedLevenshteinDistance::size_in_bytes() const {
+        return sizeof(QgramBoundedLevenshteinDistance) // QgramBoundedLevenshteinDistance itself
+            + dist_fun_->size_in_bytes(); // dist_fun_
+    }
+
 
 
     /* === BoundedScoreDistance === */
@@ -649,15 +667,22 @@ namespace GeFaST {
     }
 
     dist_t BoundedScoreDistance::distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
-        return compute_bounded_gotoh_score(ac.seq(i), ac.len(i), ac.seq(j), ac.len(j));
+        return compute_bounded_gotoh_score(*ac.seq(i), ac.len(i), *ac.seq(j), ac.len(j));
     }
 
-    lenSeqs_t BoundedScoreDistance::compute_bounded_gotoh_score(const char* s, const lenSeqs_t len_s,
-            const char* t, const lenSeqs_t len_t) {
+    size_t BoundedScoreDistance::size_in_bytes() const {
 
-        const char* shorter = (len_s < len_t) ? s : t;
+        std::cerr << "ERROR: BoundedScoreDistance is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    lenSeqs_t BoundedScoreDistance::compute_bounded_gotoh_score(const SequenceWrapper& s, const lenSeqs_t len_s,
+            const SequenceWrapper& t, const lenSeqs_t len_t) {
+
+        const SequenceWrapper& shorter = (len_s < len_t) ? s : t;
         lenSeqs_t len_shorter = std::min(len_s, len_t);
-        const char* longer = (len_s >= len_t) ? s : t;
+        const SequenceWrapper& longer = (len_s >= len_t) ? s : t;
         lenSeqs_t len_longer = std::max(len_s, len_t);
 
         // initialise necessary section of first row
@@ -762,15 +787,22 @@ namespace GeFaST {
     }
 
     dist_t BoundedBandedScoreDistance::distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) {
-        return compute_bounded_banded_gotoh_score(ac.seq(i), ac.len(i), ac.seq(j), ac.len(j));
+        return compute_bounded_banded_gotoh_score(*ac.seq(i), ac.len(i), *ac.seq(j), ac.len(j));
     }
 
-    lenSeqs_t BoundedBandedScoreDistance::compute_bounded_banded_gotoh_score(const char* s, const lenSeqs_t len_s,
-            const char* t, const lenSeqs_t len_t) {
+    size_t BoundedBandedScoreDistance::size_in_bytes() const {
 
-        const char* shorter = (len_s < len_t) ? s : t;
+        std::cerr << "ERROR: BoundedBandedScoreDistance is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    lenSeqs_t BoundedBandedScoreDistance::compute_bounded_banded_gotoh_score(const SequenceWrapper& s, const lenSeqs_t len_s,
+            const SequenceWrapper& t, const lenSeqs_t len_t) {
+
+        const SequenceWrapper& shorter = (len_s < len_t) ? s : t;
         lenSeqs_t len_shorter = std::min(len_s, len_t);
-        const char* longer = (len_s >= len_t) ? s : t;
+        const SequenceWrapper& longer = (len_s >= len_t) ? s : t;
         lenSeqs_t len_longer = std::max(len_s, len_t);
 
         // initialise necessary section of first row
@@ -882,6 +914,13 @@ namespace GeFaST {
         return (ac.qgram_diff(i, j) <= max_operations_) ? dist_fun_->distance(ac, i, j) : (threshold_ + 1);
     }
 
+    size_t QgramBoundedScoreDistance::size_in_bytes() const {
+
+        std::cerr << "ERROR: QgramBoundedScoreDistance is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
 
     /* === ManhattanDistance === */
 
@@ -908,6 +947,13 @@ namespace GeFaST {
 
     }
 
+    size_t ManhattanDistance::size_in_bytes() const {
+
+        std::cerr << "ERROR: ManhattanDistance is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
 
     /* === EuclideanDistance === */
 
@@ -931,6 +977,13 @@ namespace GeFaST {
         }
 
         return std::sqrt(res);
+
+    }
+
+    size_t EuclideanDistance::size_in_bytes() const {
+
+        std::cerr << "ERROR: EuclideanDistance is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
 
     }
 
@@ -963,6 +1016,13 @@ namespace GeFaST {
         }
 
         return static_cast<dist_t>(1.0) - prod / std::sqrt(norm_i * norm_j); // simplified to single sqrt
+
+    }
+
+    size_t CosineDistance::size_in_bytes() const {
+
+        std::cerr << "ERROR: CosineDistance is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
 
     }
 
@@ -1006,6 +1066,13 @@ namespace GeFaST {
         }
 
         return (static_cast<dist_t>(1.0) - prod / std::sqrt(norm_i * norm_j)) / static_cast<dist_t>(2.0); // simplified to single sqrt
+
+    }
+
+    size_t PearsonDistance::size_in_bytes() const {
+
+        std::cerr << "ERROR: PearsonDistance is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
 
     }
 

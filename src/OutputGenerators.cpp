@@ -57,8 +57,8 @@ namespace GeFaST {
                     // swarm-internal links (1st round = main swarm, further rounds = grafted swarms)
                     for (numSeqs_t i = 1; i < swarm->size(); i++) {
 
-                        str_stream << ac.id(swarm->parent(i)) << config.sep_internals
-                            << ac.id(swarm->member(i)) << config.sep_internals
+                        str_stream << ac.id_str(swarm->parent(i)) << config.sep_internals
+                            << ac.id_str(swarm->member(i)) << config.sep_internals
                             << swarm->parent_dist(i) << config.sep_internals
                             << swarm_id << config.sep_internals << swarm->gen(i) << std::endl;
                         out_stream << str_stream.rdbuf();
@@ -69,8 +69,8 @@ namespace GeFaST {
                     // if there are grafted swarms, first print the grafting link and then the internal links (above)
                     if (graftings != nullptr && next < graftings->num_links()) {
 
-                        str_stream << ac.id(main_swarm->member(graftings->get_parent(next))) << config.sep_internals
-                            << ac.id(graftings->get_child_swarm(next)->member(graftings->get_child(next))) << config.sep_internals
+                        str_stream << ac.id_str(main_swarm->member(graftings->get_parent(next))) << config.sep_internals
+                            << ac.id_str(graftings->get_child_swarm(next)->member(graftings->get_child(next))) << config.sep_internals
                             << graftings->get_distance(next) << config.sep_internals
                             << swarm_id << config.sep_internals << (main_swarm->gen(graftings->get_parent(next)) + 1) << std::endl;
 
@@ -113,10 +113,10 @@ namespace GeFaST {
                 do {
 
                     // swarm members (1st round = main swarm, further rounds = grafted swarms)
-                    str_stream << ac.id(swarm->seed()) << config.separator << ac.ab(swarm->seed());
+                    str_stream << ac.id_str(swarm->seed()) << config.separator << ac.ab(swarm->seed());
 
                     for (numSeqs_t i = 1; i < swarm->size(); i++) {
-                        str_stream << config.sep_otus << ac.id(swarm->member(i)) << config.separator << ac.ab(swarm->member(i));
+                        str_stream << config.sep_otus << ac.id_str(swarm->member(i)) << config.separator << ac.ab(swarm->member(i));
                     }
 
                     str_stream << std::flush;
@@ -177,10 +177,10 @@ namespace GeFaST {
                 do {
 
                     // swarm members (1st round = main swarm, further rounds = grafted swarms)
-                    str_stream << ac.id(swarm->seed()) << config.separator << ac.ab(swarm->seed());
+                    str_stream << ac.id_str(swarm->seed()) << config.separator << ac.ab(swarm->seed());
 
                     for (numSeqs_t i = 1; i < swarm->size(); i++) {
-                        str_stream << config.sep_mothur << ac.id(swarm->member(i)) << config.separator << ac.ab(swarm->member(i));
+                        str_stream << config.sep_mothur << ac.id_str(swarm->member(i)) << config.separator << ac.ab(swarm->member(i));
                     }
 
                     out_stream << str_stream.rdbuf();
@@ -228,7 +228,7 @@ namespace GeFaST {
             if (!swarm.is_attached()) {
 
                 str_stream << swarm.total_num_different() << config.sep_statistics << swarm.total_mass() << config.sep_statistics
-                    << ac.id(swarm.seed()) << config.sep_statistics << ac.ab(swarm.seed()) << config.sep_statistics
+                    << ac.id_str(swarm.seed()) << config.sep_statistics << ac.ab(swarm.seed()) << config.sep_statistics
                     << swarm.total_num_singletons() << config.sep_statistics << swarm.max_gen() << config.sep_statistics
                     << swarm.max_rad() << std::endl;
                 out_stream << str_stream.rdbuf();
@@ -257,8 +257,8 @@ namespace GeFaST {
 
             if (!swarm.is_attached()) {
 
-                str_stream << '>' << ac.id(swarm.seed()) << config.separator << swarm.mass() << std::endl
-                    << ac.seq(swarm.seed()) << std::endl;
+                str_stream << '>' << ac.id_str(swarm.seed()) << config.separator << swarm.mass() << std::endl
+                    << ac.seq_str(swarm.seed()) << std::endl;
                 out_stream << str_stream.rdbuf();
                 str_stream.str(std::string());
 
@@ -298,11 +298,11 @@ namespace GeFaST {
 
                 str_stream << 'C' << config.sep_uclust << swarm_id << config.sep_uclust << swarm->total_size() << config.sep_uclust
                     << '*' << config.sep_uclust << '*' << config.sep_uclust << '*' << config.sep_uclust << '*' << config.sep_uclust
-                    << '*' << config.sep_uclust << ac.id(swarm->seed()) << config.separator << ac.ab(swarm->seed()) << config.sep_uclust
+                    << '*' << config.sep_uclust << ac.id_str(swarm->seed()) << config.separator << ac.ab(swarm->seed()) << config.sep_uclust
                     << '*' << '\n';
                 str_stream << 'S' << config.sep_uclust << swarm_id << config.sep_uclust << ac.len(swarm->seed()) << config.sep_uclust
                     << '*' << config.sep_uclust << '*' << config.sep_uclust << '*' << config.sep_uclust << '*' << config.sep_uclust
-                    << '*' << config.sep_uclust << ac.id(swarm->seed()) << config.separator << ac.ab(swarm->seed()) << config.sep_uclust
+                    << '*' << config.sep_uclust << ac.id_str(swarm->seed()) << config.separator << ac.ab(swarm->seed()) << config.sep_uclust
                     << '*' << '\n';
                 out_stream << str_stream.rdbuf();
                 str_stream.str(std::string());
@@ -312,15 +312,15 @@ namespace GeFaST {
                     // H lines (1st round = main swarm, further rounds = grafted swarms)
                     for (numSeqs_t i = 1; i < swarm->size(); i++) {
 
-                        auto ai = compute_gotoh_cigar_row(ac.seq(seed), ac.len(seed), ac.seq(swarm->member(i)),
+                        auto ai = compute_gotoh_cigar_row(*ac.seq(seed), ac.len(seed), *ac.seq(swarm->member(i)),
                                 ac.len(swarm->member(i)), sf, d_row, p_row, backtrack);
 
                         str_stream << 'H' << config.sep_uclust << swarm_id << config.sep_uclust
                             << ac.len(swarm->member(i)) << config.sep_uclust << (100.0 * (ai.length - ai.num_diffs) / ai.length)
                             << config.sep_uclust << '+' << config.sep_uclust << '0' << config.sep_uclust << '0' << config.sep_uclust
                             << ((ai.num_diffs == 0) ? "=" : ai.cigar) << config.sep_uclust
-                            << ac.id(swarm->member(i)) << config.separator << ac.ab(swarm->member(i)) << config.sep_uclust
-                            << ac.id(seed) << config.separator << ac.ab(seed) << '\n';
+                            << ac.id_str(swarm->member(i)) << config.separator << ac.ab(swarm->member(i)) << config.sep_uclust
+                            << ac.id_str(seed) << config.separator << ac.ab(seed) << '\n';
                         out_stream << str_stream.rdbuf();
                         str_stream.str(std::string());
 
@@ -407,7 +407,7 @@ namespace GeFaST {
 
                 for (numSeqs_t i = 1; i < swarm.size(); i++) {
 
-                    str_internals << ac.id(swarm.seed()) << config.sep_internals << ac.id(swarm.member(i)) << config.sep_internals
+                    str_internals << ac.id_str(swarm.seed()) << config.sep_internals << ac.id_str(swarm.member(i)) << config.sep_internals
                         << 0 << config.sep_internals << (swarm_id + 1) << config.sep_internals << 0 << std::endl;
                     out_internals << str_internals.rdbuf();
                     str_internals.str(std::string());
@@ -420,10 +420,10 @@ namespace GeFaST {
 
                 if (config.mothur) {
 
-                    str_otus << config.sep_mothur_otu << ac.id(swarm.seed()) << config.separator << ac.ab(swarm.seed());
+                    str_otus << config.sep_mothur_otu << ac.id_str(swarm.seed()) << config.separator << ac.ab(swarm.seed());
 
                     for (numSeqs_t i = 1; i < swarm.size(); i++) {
-                        str_otus << config.sep_mothur << ac.id(swarm.member(i)) << config.separator << ac.ab(swarm.member(i));
+                        str_otus << config.sep_mothur << ac.id_str(swarm.member(i)) << config.separator << ac.ab(swarm.member(i));
                     }
 
                     out_otus << str_otus.rdbuf();
@@ -431,10 +431,10 @@ namespace GeFaST {
 
                 } else {
 
-                    str_otus << ac.id(swarm.seed()) << config.separator << ac.ab(swarm.seed());
+                    str_otus << ac.id_str(swarm.seed()) << config.separator << ac.ab(swarm.seed());
 
                     for (numSeqs_t i = 1; i < swarm.size(); i++) {
-                        str_otus << config.sep_otus << ac.id(swarm.member(i)) << config.separator << ac.ab(swarm.member(i));
+                        str_otus << config.sep_otus << ac.id_str(swarm.member(i)) << config.separator << ac.ab(swarm.member(i));
                     }
 
                     str_otus << std::endl;
@@ -448,7 +448,7 @@ namespace GeFaST {
             if (!config.output_statistics.empty()) {
 
                 str_statistics << swarm.num_different() << config.sep_statistics << swarm.mass() << config.sep_statistics
-                    << ac.id(swarm.seed()) << config.sep_statistics << ac.ab(swarm.seed()) << config.sep_statistics
+                    << ac.id_str(swarm.seed()) << config.sep_statistics << ac.ab(swarm.seed()) << config.sep_statistics
                     << swarm.num_singletons() << config.sep_statistics << 0 << config.sep_statistics << 0 << std::endl;
                 out_statistics << str_statistics.rdbuf();
                 str_statistics.str(std::string());
@@ -457,8 +457,8 @@ namespace GeFaST {
 
             if (!config.output_seeds.empty()) {
 
-                str_seeds << '>' << ac.id(swarm.seed()) << config.separator << swarm.mass() << std::endl <<
-                    ac.seq(swarm.seed()) << std::endl;
+                str_seeds << '>' << ac.id_str(swarm.seed()) << config.separator << swarm.mass() << std::endl <<
+                    ac.seq_str(swarm.seed()) << std::endl;
                 out_seeds << str_seeds.rdbuf();
                 str_seeds.str(std::string());
 
@@ -468,11 +468,11 @@ namespace GeFaST {
 
                 str_uclust << 'C' << config.sep_uclust << swarm_id << config.sep_uclust << swarm.size() << config.sep_uclust
                     << '*' << config.sep_uclust << '*' << config.sep_uclust << '*' << config.sep_uclust << '*' << config.sep_uclust
-                    << '*' << config.sep_uclust << ac.id(swarm.seed()) << config.separator << ac.ab(swarm.seed()) << config.sep_uclust
+                    << '*' << config.sep_uclust << ac.id_str(swarm.seed()) << config.separator << ac.ab(swarm.seed()) << config.sep_uclust
                     << '*' << '\n';
                 str_uclust << 'S' << config.sep_uclust << swarm_id << config.sep_uclust << ac.len(swarm.seed()) << config.sep_uclust
                     << '*' << config.sep_uclust << '*' << config.sep_uclust << '*' << config.sep_uclust << '*' << config.sep_uclust
-                    << '*' << config.sep_uclust << ac.id(swarm.seed()) << config.separator << ac.ab(swarm.seed()) << config.sep_uclust
+                    << '*' << config.sep_uclust << ac.id_str(swarm.seed()) << config.separator << ac.ab(swarm.seed()) << config.sep_uclust
                     << '*' << '\n';
                 out_uclust << str_uclust.rdbuf() << std::flush;
                 str_uclust.str(std::string());
@@ -482,8 +482,8 @@ namespace GeFaST {
                     str_uclust << 'H' << config.sep_uclust << swarm_id << config.sep_uclust
                         << ac.len(swarm.member(i)) << config.sep_uclust << "100.0" << config.sep_uclust
                         << '+' << config.sep_uclust << '0' << config.sep_uclust << '0' << config.sep_uclust
-                        << '=' << config.sep_uclust << ac.id(swarm.member(i)) << config.separator
-                        << ac.ab(swarm.member(i)) << config.sep_uclust << ac.id(swarm.seed()) << config.separator
+                        << '=' << config.sep_uclust << ac.id_str(swarm.member(i)) << config.separator
+                        << ac.ab(swarm.member(i)) << config.sep_uclust << ac.id_str(swarm.seed()) << config.separator
                         << ac.ab(swarm.seed()) << '\n';
 
                     out_uclust << str_uclust.rdbuf() << std::flush;

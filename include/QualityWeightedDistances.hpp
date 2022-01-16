@@ -3446,7 +3446,14 @@ namespace GeFaST {
         }
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override {
-            return compute_weighted_gotoh(ac.seq(i), ac.len(i), ac.quals(i), ac.seq(j), ac.len(j), ac.quals(j));
+            return compute_weighted_gotoh(*ac.seq(i), ac.len(i), ac.quals(i), *ac.seq(j), ac.len(j), ac.quals(j));
+        }
+
+        size_t size_in_bytes() const override {
+
+            std::cerr << "ERROR: BoundedQualityLevenshteinDistance is currently not part of the space-efficiency analysis." << std::endl;
+            return 0;
+
         }
 
     protected:
@@ -3475,8 +3482,8 @@ namespace GeFaST {
         BoundedQualityLevenshteinDistance& operator=(BoundedQualityLevenshteinDistance&& other) = delete; // move assignment operator
 
 
-        virtual dist_t compute_weighted_gotoh(const char* s, const lenSeqs_t len_s, const char* quals_s,
-                const char* t, const lenSeqs_t len_t, const char* quals_t) {
+        virtual dist_t compute_weighted_gotoh(const SequenceWrapper& s, const lenSeqs_t len_s, const char* quals_s,
+                const SequenceWrapper& t, const lenSeqs_t len_t, const char* quals_t) {
 
             // long computation not necessary if lengths differ too much
             if (((len_s > len_t) ? (len_s - len_t) : (len_t - len_s)) > threshold_) {
@@ -3484,13 +3491,13 @@ namespace GeFaST {
             }
 
             if (threshold_ == 0) {
-                return lenSeqs_t(s != t);
+                return lenSeqs_t(!(s == t));
             }
 
-            const char* shorter = (len_s < len_t) ? s : t;
+            const SequenceWrapper& shorter = (len_s < len_t) ? s : t;
             const char* quals_shorter = (len_s < len_t) ? quals_s : quals_t;
             lenSeqs_t len_shorter = std::min(len_s, len_t);
-            const char* longer = (len_s >= len_t) ? s : t;
+            const SequenceWrapper& longer = (len_s >= len_t) ? s : t;
             const char* quals_longer = (len_s >= len_t) ? quals_s : quals_t;
             lenSeqs_t len_longer = std::max(len_s, len_t);
             lenSeqs_t delta = len_longer - len_shorter;
@@ -3660,7 +3667,14 @@ namespace GeFaST {
         }
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override {
-            return compute_weighted_gotoh(ac.seq(i), ac.len(i), ac.quals(i), ac.seq(j), ac.len(j), ac.quals(j));
+            return compute_weighted_gotoh(*ac.seq(i), ac.len(i), ac.quals(i), *ac.seq(j), ac.len(j), ac.quals(j));
+        }
+
+        size_t size_in_bytes() const override {
+
+            std::cerr << "ERROR: BoundedQualityAlignmentScore is currently not part of the space-efficiency analysis." << std::endl;
+            return 0;
+
         }
 
     protected:
@@ -3685,13 +3699,13 @@ namespace GeFaST {
         BoundedQualityAlignmentScore& operator=(BoundedQualityAlignmentScore&& other) = delete; // move assignment operator
 
 
-        virtual dist_t compute_weighted_gotoh(const char* s, const lenSeqs_t len_s, const char* quals_s,
-                const char* t, const lenSeqs_t len_t, const char* quals_t) {
+        virtual dist_t compute_weighted_gotoh(const SequenceWrapper& s, const lenSeqs_t len_s, const char* quals_s,
+                const SequenceWrapper& t, const lenSeqs_t len_t, const char* quals_t) {
 
-            const char* shorter = (len_s < len_t) ? s : t;
+            const SequenceWrapper& shorter = (len_s < len_t) ? s : t;
             const char* quals_shorter = (len_s < len_t) ? quals_s : quals_t;
             lenSeqs_t len_shorter = std::min(len_s, len_t);
-            const char* longer = (len_s >= len_t) ? s : t;
+            const SequenceWrapper& longer = (len_s >= len_t) ? s : t;
             const char* quals_longer = (len_s >= len_t) ? quals_s : quals_t;
             lenSeqs_t len_longer = std::max(len_s, len_t);
 
@@ -3796,7 +3810,14 @@ namespace GeFaST {
         }
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override {
-            return compute_weighted_gotoh(ac.seq(i), ac.len(i), ac.quals(i), ac.seq(j), ac.len(j), ac.quals(j));
+            return compute_weighted_gotoh(*ac.seq(i), ac.len(i), ac.quals(i), *ac.seq(j), ac.len(j), ac.quals(j));
+        }
+
+        size_t size_in_bytes() const override {
+
+            std::cerr << "ERROR: BoundedBandedQualityAlignmentScore is currently not part of the space-efficiency analysis." << std::endl;
+            return 0;
+
         }
 
     protected:
@@ -3821,13 +3842,13 @@ namespace GeFaST {
         BoundedBandedQualityAlignmentScore& operator=(BoundedBandedQualityAlignmentScore&& other) = delete; // move assignment operator
 
 
-        virtual dist_t compute_weighted_gotoh(const char* s, const lenSeqs_t len_s, const char* quals_s,
-                const char* t, const lenSeqs_t len_t, const char* quals_t) {
+        virtual dist_t compute_weighted_gotoh(const SequenceWrapper& s, const lenSeqs_t len_s, const char* quals_s,
+                const SequenceWrapper& t, const lenSeqs_t len_t, const char* quals_t) {
 
-            const char* shorter = (len_s < len_t) ? s : t;
+            const SequenceWrapper& shorter = (len_s < len_t) ? s : t;
             const char* quals_shorter = (len_s < len_t) ? quals_s : quals_t;
             lenSeqs_t len_shorter = std::min(len_s, len_t);
-            const char* longer = (len_s >= len_t) ? s : t;
+            const SequenceWrapper& longer = (len_s >= len_t) ? s : t;
             const char* quals_longer = (len_s >= len_t) ? quals_s : quals_t;
             lenSeqs_t len_longer = std::max(len_s, len_t);
 

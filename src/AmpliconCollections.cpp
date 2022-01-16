@@ -24,6 +24,7 @@
 #include <iomanip>
 
 #include "../include/AmpliconCollections.hpp"
+#include "../include/space/Basics.hpp"
 
 namespace GeFaST {
 
@@ -45,12 +46,20 @@ namespace GeFaST {
         return ids_.size();
     }
 
-    const char* SimpleAmpliconCollection::id(const numSeqs_t i) const {
-        return ids_[i].c_str();
+    std::unique_ptr<SequenceWrapper> SimpleAmpliconCollection::id(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(ids_[i].c_str(), ids_[i].length()));
     }
 
-    const char* SimpleAmpliconCollection::seq(const numSeqs_t i) const {
-        return seqs_[i].c_str();
+    std::string SimpleAmpliconCollection::id_str(const numSeqs_t i) const {
+        return ids_[i];
+    }
+
+    std::unique_ptr<SequenceWrapper> SimpleAmpliconCollection::seq(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(seqs_[i].c_str(), seqs_[i].length()));
+    }
+
+    std::string SimpleAmpliconCollection::seq_str(const numSeqs_t i) const {
+        return seqs_[i];
     }
 
     lenSeqs_t SimpleAmpliconCollection::len(const numSeqs_t i) const {
@@ -67,6 +76,17 @@ namespace GeFaST {
 
     unsigned long SimpleAmpliconCollection::qgram_diff(const numSeqs_t i, const numSeqs_t j) const {
         return 0;
+    }
+
+    size_t SimpleAmpliconCollection::size_in_bytes() const {
+
+        std::cerr << "ERROR: SimpleAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void SimpleAmpliconCollection::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: SimpleAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
     }
 
     void SimpleAmpliconCollection::sort() {
@@ -325,12 +345,20 @@ namespace GeFaST {
         return size_;
     }
 
-    const char* ArrayAmpliconCollection::id(const numSeqs_t i) const {
-        return header_pointers_[i];
+    std::unique_ptr<SequenceWrapper> ArrayAmpliconCollection::id(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(header_pointers_[i], strlen(header_pointers_[i])));
     }
 
-    const char* ArrayAmpliconCollection::seq(const numSeqs_t i) const {
-        return seq_pointers_[i];
+    std::string ArrayAmpliconCollection::id_str(const numSeqs_t i) const {
+        return std::string(header_pointers_[i]);
+    }
+
+    std::unique_ptr<SequenceWrapper> ArrayAmpliconCollection::seq(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(seq_pointers_[i], lengths_[i]));
+    }
+
+    std::string ArrayAmpliconCollection::seq_str(const numSeqs_t i) const {
+        return std::string(seq_pointers_[i]);
     }
 
     lenSeqs_t ArrayAmpliconCollection::len(const numSeqs_t i) const {
@@ -347,6 +375,17 @@ namespace GeFaST {
 
     unsigned long ArrayAmpliconCollection::qgram_diff(const numSeqs_t i, const numSeqs_t j) const {
         return 0;
+    }
+
+    size_t ArrayAmpliconCollection::size_in_bytes() const {
+
+        std::cerr << "ERROR: ArrayAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void ArrayAmpliconCollection::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: ArrayAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
     }
 
     void ArrayAmpliconCollection::sort() {
@@ -719,12 +758,20 @@ namespace GeFaST {
         return size_;
     }
 
-    const char* ArrayQualityAmpliconCollection::id(const numSeqs_t i) const {
-        return header_pointers_[i];
+    std::unique_ptr<SequenceWrapper> ArrayQualityAmpliconCollection::id(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(header_pointers_[i], strlen(header_pointers_[i])));
     }
 
-    const char* ArrayQualityAmpliconCollection::seq(const numSeqs_t i) const {
-        return seq_pointers_[i];
+    std::string ArrayQualityAmpliconCollection::id_str(const numSeqs_t i) const {
+        return std::string(header_pointers_[i]);
+    }
+
+    std::unique_ptr<SequenceWrapper> ArrayQualityAmpliconCollection::seq(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(seq_pointers_[i], lengths_[i]));
+    }
+
+    std::string ArrayQualityAmpliconCollection::seq_str(const numSeqs_t i) const {
+        return std::string(seq_pointers_[i]);
     }
 
     lenSeqs_t ArrayQualityAmpliconCollection::len(const numSeqs_t i) const {
@@ -737,6 +784,17 @@ namespace GeFaST {
 
     const char* ArrayQualityAmpliconCollection::quals(const numSeqs_t i) const {
         return qualities_ + (seq_pointers_[i] - sequences_);
+    }
+
+    size_t ArrayQualityAmpliconCollection::size_in_bytes() const {
+
+        std::cerr << "ERROR: ArrayQualityAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void ArrayQualityAmpliconCollection::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: ArrayQualityAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
     }
 
 
@@ -1117,12 +1175,20 @@ namespace GeFaST {
         return size_;
     }
 
-    const char* ArrayQgramAmpliconCollection::id(const numSeqs_t i) const {
-        return header_pointers_[i];
+    std::unique_ptr<SequenceWrapper> ArrayQgramAmpliconCollection::id(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(header_pointers_[i], strlen(header_pointers_[i])));
     }
 
-    const char* ArrayQgramAmpliconCollection::seq(const numSeqs_t i) const {
-        return seq_pointers_[i];
+    std::string ArrayQgramAmpliconCollection::id_str(const numSeqs_t i) const {
+        return std::string(header_pointers_[i]);
+    }
+
+    std::unique_ptr<SequenceWrapper> ArrayQgramAmpliconCollection::seq(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(seq_pointers_[i], lengths_[i]));
+    }
+
+    std::string ArrayQgramAmpliconCollection::seq_str(const numSeqs_t i) const {
+        return std::string(seq_pointers_[i]);
     }
 
     lenSeqs_t ArrayQgramAmpliconCollection::len(const numSeqs_t i) const {
@@ -1280,6 +1346,50 @@ namespace GeFaST {
         unsigned long diff_qgrams = compare_qgram_vectors(qgrams_ + qgram_offsets_[i], qgrams_ + qgram_offsets_[j]);
         unsigned long min_diff = (diff_qgrams + 2 * QGRAM_LENGTH - 1) / (2 * QGRAM_LENGTH);
         return min_diff;
+
+    }
+
+    size_t ArrayQgramAmpliconCollection::size_in_bytes() const {
+        return sizeof(ArrayQgramAmpliconCollection) // ArrayQgramAmpliconCollection itself
+            + sizeof(char) * capacity_headers_ // headers_
+            + sizeof(char) * capacity_sequences_ // sequences_
+            + sizeof(char*) * capacity_ // header_pointers_
+            + sizeof(char*) * capacity_ // seq_pointers_
+            + sizeof(numSeqs_t) * capacity_ // abundances_
+            + sizeof(lenSeqs_t) * capacity_ // lengths_
+            + sizeof(unsigned char) * capacity_ * QGRAM_VECTOR_BYTES // qgrams_
+            + sizeof(numSeqs_t) * capacity_; // qgram_offsets_
+    }
+
+    void ArrayQgramAmpliconCollection::show_memory(numSeqs_t pid) const {
+
+        std::cout << "##################################################" << std::endl;
+        std::cout << "# ArrayQgramAmpliconCollection " << std::endl;
+        std::cout << "#  - pid: " << pid << std::endl;
+        std::cout << "#  - size: " << size() << std::endl;
+        std::cout << "# " << std::endl;
+        std::cout << "# sizeof(ArrayQgramAmpliconCollection): " << sizeof(ArrayQgramAmpliconCollection) << " bytes" << std::endl;
+        std::cout << "# sizeof(char): " << sizeof(char) << " bytes" << std::endl;
+        std::cout << "# sizeof(char*): " << sizeof(char*) << " bytes" << std::endl;
+        std::cout << "# sizeof(char**): " << sizeof(char**) << " bytes" << std::endl;
+        std::cout << "# sizeof(unsigned long long): " << sizeof(unsigned long long) << " bytes" << std::endl;
+        std::cout << "# sizeof(numSeqs_t): " << sizeof(numSeqs_t) << " bytes" << std::endl;
+        std::cout << "# sizeof(numSeqs_t*): " << sizeof(numSeqs_t*) << " bytes" << std::endl;
+        std::cout << "# sizeof(lenSeqs_t): " << sizeof(lenSeqs_t) << " bytes" << std::endl;
+        std::cout << "# sizeof(lenSeqs_t*): " << sizeof(lenSeqs_t*) << " bytes" << std::endl;
+        std::cout << "# sizeof(unsigned char): " << sizeof(unsigned char) << " bytes" << std::endl;
+        std::cout << "# sizeof(unsigned char*): " << sizeof(unsigned char*) << " bytes" << std::endl;
+        std::cout << "# " << std::endl;
+        std::cout << "# Total size: " << size_in_bytes() << " bytes" << std::endl;
+        std::cout << "# headers_: " << sizeof(char) * capacity_headers_ << " bytes" << std::endl;
+        std::cout << "# header_pointers_: " << sizeof(char*) * capacity_ << " bytes" << std::endl;
+        std::cout << "# sequences_: " << sizeof(char) * capacity_sequences_ << " bytes" << std::endl;
+        std::cout << "# seq_pointers_: " << sizeof(char*) * capacity_ << " bytes" << std::endl;
+        std::cout << "# abundances_: " << sizeof(numSeqs_t) * capacity_ << " bytes" << std::endl;
+        std::cout << "# lengths_: " << sizeof(lenSeqs_t) * capacity_ << " bytes" << std::endl;
+        std::cout << "# qgrams_: " << sizeof(unsigned char) * capacity_ * QGRAM_VECTOR_BYTES << " bytes" << std::endl;
+        std::cout << "# qgram_offsets_: " << sizeof(numSeqs_t) * capacity_ << " bytes" << std::endl;
+        std::cout << "##################################################" << std::endl;
 
     }
 
@@ -1552,12 +1662,20 @@ namespace GeFaST {
         return size_;
     }
 
-    const char* ArrayQgramQualityAmpliconCollection::id(const numSeqs_t i) const {
-        return header_pointers_[i];
+    std::unique_ptr<SequenceWrapper> ArrayQgramQualityAmpliconCollection::id(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(header_pointers_[i], strlen(header_pointers_[i])));
     }
 
-    const char* ArrayQgramQualityAmpliconCollection::seq(const numSeqs_t i) const {
-        return seq_pointers_[i];
+    std::string ArrayQgramQualityAmpliconCollection::id_str(const numSeqs_t i) const {
+        return std::string(header_pointers_[i]);
+    }
+
+    std::unique_ptr<SequenceWrapper> ArrayQgramQualityAmpliconCollection::seq(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(seq_pointers_[i], lengths_[i]));
+    }
+
+    std::string ArrayQgramQualityAmpliconCollection::seq_str(const numSeqs_t i) const {
+        return std::string(seq_pointers_[i]);
     }
 
     lenSeqs_t ArrayQgramQualityAmpliconCollection::len(const numSeqs_t i) const {
@@ -1724,6 +1842,17 @@ namespace GeFaST {
 
     }
 
+    size_t ArrayQgramQualityAmpliconCollection::size_in_bytes() const {
+
+        std::cerr << "ERROR: ArrayQgramQualityAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void ArrayQgramQualityAmpliconCollection::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: ArrayQgramQualityAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
+    }
+
 
     /* === SimpleFeatVecAmpliconCollection === */
 
@@ -1815,12 +1944,20 @@ namespace GeFaST {
         return ids_.size();
     }
 
-    const char* SimpleFeatVecAmpliconCollection::id(const numSeqs_t i) const {
-        return ids_[i].c_str();
+    std::unique_ptr<SequenceWrapper> SimpleFeatVecAmpliconCollection::id(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(ids_[i].c_str(), ids_[i].length()));
     }
 
-    const char* SimpleFeatVecAmpliconCollection::seq(const numSeqs_t i) const {
-        return seqs_[i].c_str();
+    std::string SimpleFeatVecAmpliconCollection::id_str(const numSeqs_t i) const {
+        return ids_[i];
+    }
+
+    std::unique_ptr<SequenceWrapper> SimpleFeatVecAmpliconCollection::seq(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(seqs_[i].c_str(), seqs_[i].length()));
+    }
+
+    std::string SimpleFeatVecAmpliconCollection::seq_str(const numSeqs_t i) const {
+        return seqs_[i];
     }
 
     lenSeqs_t SimpleFeatVecAmpliconCollection::len(const numSeqs_t i) const {
@@ -1845,6 +1982,17 @@ namespace GeFaST {
 
     size_t SimpleFeatVecAmpliconCollection::num_features() const {
         return num_features_;
+    }
+
+    size_t SimpleFeatVecAmpliconCollection::size_in_bytes() const {
+
+        std::cerr << "ERROR: SimpleFeatVecAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void SimpleFeatVecAmpliconCollection::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: SimpleFeatVecAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
     }
 
 
@@ -2139,12 +2287,20 @@ namespace GeFaST {
         return size_;
     }
 
-    const char* ArrayFeatVecAmpliconCollection::id(const numSeqs_t i) const {
-        return header_pointers_[i];
+    std::unique_ptr<SequenceWrapper> ArrayFeatVecAmpliconCollection::id(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(header_pointers_[i], strlen(header_pointers_[i])));
     }
 
-    const char* ArrayFeatVecAmpliconCollection::seq(const numSeqs_t i) const {
-        return seq_pointers_[i];
+    std::string ArrayFeatVecAmpliconCollection::id_str(const numSeqs_t i) const {
+        return std::string(header_pointers_[i]);
+    }
+
+    std::unique_ptr<SequenceWrapper> ArrayFeatVecAmpliconCollection::seq(const numSeqs_t i) const {
+        return std::unique_ptr<SequenceWrapper>(new PointerSequenceWrapper(seq_pointers_[i], lengths_[i]));
+    }
+
+    std::string ArrayFeatVecAmpliconCollection::seq_str(const numSeqs_t i) const {
+        return std::string(seq_pointers_[i]);
     }
 
     lenSeqs_t ArrayFeatVecAmpliconCollection::len(const numSeqs_t i) const {
@@ -2169,6 +2325,17 @@ namespace GeFaST {
 
     size_t ArrayFeatVecAmpliconCollection::num_features() const {
         return num_features_;
+    }
+
+    size_t ArrayFeatVecAmpliconCollection::size_in_bytes() const {
+
+        std::cerr << "ERROR: ArrayFeatVecAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void ArrayFeatVecAmpliconCollection::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: ArrayFeatVecAmpliconCollection is currently not part of the space-efficiency analysis." << std::endl;
     }
 
     void ArrayFeatVecAmpliconCollection::sort() {

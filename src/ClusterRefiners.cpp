@@ -55,12 +55,12 @@ namespace GeFaST {
 
     bool CompareGraftCandidatesAbund::compare(const numSeqs_t ampl_a, const numSeqs_t ampl_b) {
         return (ac.ab(ampl_a) > ac.ab(ampl_b))
-            || ((ac.ab(ampl_a) == ac.ab(ampl_b)) && (strcmp(ac.id(ampl_a), ac.id(ampl_b)) < 0));
+            || ((ac.ab(ampl_a) == ac.ab(ampl_b)) && (*ac.id(ampl_a) < *ac.id(ampl_b)));
     }
 
     bool CompareGraftCandidatesAbund::operator()(const GraftCandidate& a, const GraftCandidate& b) {
         return compare(a.parent_swarm->member(a.parent_id), b.parent_swarm->member(b.parent_id))
-            || ((ac.id(a.parent_swarm->member(a.parent_id)) == ac.id(b.parent_swarm->member(b.parent_id)))
+            || ((*ac.id(a.parent_swarm->member(a.parent_id)) == *ac.id(b.parent_swarm->member(b.parent_id)))
                 && compare(a.child_swarm->member(a.child_id), b.child_swarm->member(b.child_id)));
     }
 
@@ -115,7 +115,7 @@ namespace GeFaST {
             const numSeqs_t ampl_a, const numSeqs_t ampl_b) {
 
         return (ac.ab(ampl_a) > ac.ab(ampl_b))
-            || ((ac.ab(ampl_a) == ac.ab(ampl_b)) && (strcmp(ac.id(ampl_a), ac.id(ampl_b)) < 0));
+            || ((ac.ab(ampl_a) == ac.ab(ampl_b)) && (*ac.id(ampl_a) < *ac.id(ampl_b)));
 
     }
 
@@ -262,7 +262,7 @@ namespace GeFaST {
             const numSeqs_t ampl_a, const numSeqs_t ampl_b) {
 
         return (ac.ab(ampl_a) > ac.ab(ampl_b))
-            || ((ac.ab(ampl_a) == ac.ab(ampl_b)) && (strcmp(ac.id(ampl_a), ac.id(ampl_b)) < 0));
+            || ((ac.ab(ampl_a) == ac.ab(ampl_b)) && (*ac.id(ampl_a) < *ac.id(ampl_b)));
 
     }
 
@@ -500,7 +500,8 @@ namespace GeFaST {
 
                 auto& src_swarm = swarms.get(src_sid);
 
-                Dada2Utility::nt2int(tmp_seq, ac.seq(src_swarm.seed()));
+                std::string src_seq = ac.seq_str(src_swarm.seed());
+                Dada2Utility::nt2int(tmp_seq, src_seq.c_str());
                 auto quals = ac.quals(src_swarm.seed());
                 for (lenSeqs_t pos = 0; pos < ac.len(src_swarm.seed()); pos++) {
                     tmp_qual[pos] = (uint8_t)(quals[pos] - score_shift);
@@ -645,8 +646,8 @@ namespace GeFaST {
 
         seed.seq = nullptr;
         seed.seq = new char[seed.length + 1];
-        auto seq = ac.seq(a);
-        Dada2Utility::nt2int(seed.seq, seq);
+        auto seq = ac.seq_str(a);
+        Dada2Utility::nt2int(seed.seq, seq.c_str());
 
         seed.qual = new uint8_t[seed.length];
         auto q = ac.quals(a);
@@ -660,15 +661,15 @@ namespace GeFaST {
             // Add uint8_t kmer index in contiguous memory block
             size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
             seed.kmer8 = new uint8_t[n_kmer];
-            Dada2Utility::assign_kmer8(seed.kmer8, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer8(seed.kmer8, seq.c_str(), Dada2Utility::k_mer_size);
 
             // Add uint16_t kmer index in contiguous memory block
             seed.kmer = new uint16_t[n_kmer];
-            Dada2Utility::assign_kmer(seed.kmer, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer(seed.kmer, seq.c_str(), Dada2Utility::k_mer_size);
 
             // Add uint16_t ordered kmer record in contiguous memory block
             seed.kord = new uint16_t[seed.length];
-            Dada2Utility::assign_kmer_order(seed.kord, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer_order(seed.kord, seq.c_str(), Dada2Utility::k_mer_size);
 
         }
 
@@ -860,7 +861,8 @@ namespace GeFaST {
 
                     numSeqs_t aid = src_swarm.member(m);
 
-                    Dada2Utility::nt2int(tmp_seq, ac.seq(aid));
+                    std::string src_seq = ac.seq_str(aid);
+                    Dada2Utility::nt2int(tmp_seq, src_seq.c_str());
                     auto quals = ac.quals(aid);
                     for (lenSeqs_t pos = 0; pos < ac.len(aid); pos++) {
                         tmp_qual[pos] = (uint8_t)(quals[pos] - score_shift);
@@ -1002,8 +1004,8 @@ namespace GeFaST {
 
         seed.seq = nullptr;
         seed.seq = new char[seed.length + 1];
-        auto seq = ac.seq(a);
-        Dada2Utility::nt2int(seed.seq, seq);
+        auto seq = ac.seq_str(a);
+        Dada2Utility::nt2int(seed.seq, seq.c_str());
 
         seed.qual = new uint8_t[seed.length];
         auto q = ac.quals(a);
@@ -1017,15 +1019,15 @@ namespace GeFaST {
             // Add uint8_t kmer index in contiguous memory block
             size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
             seed.kmer8 = new uint8_t[n_kmer];
-            Dada2Utility::assign_kmer8(seed.kmer8, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer8(seed.kmer8, seq.c_str(), Dada2Utility::k_mer_size);
 
             // Add uint16_t kmer index in contiguous memory block
             seed.kmer = new uint16_t[n_kmer];
-            Dada2Utility::assign_kmer(seed.kmer, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer(seed.kmer, seq.c_str(), Dada2Utility::k_mer_size);
 
             // Add uint16_t ordered kmer record in contiguous memory block
             seed.kord = new uint16_t[seed.length];
-            Dada2Utility::assign_kmer_order(seed.kord, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer_order(seed.kord, seq.c_str(), Dada2Utility::k_mer_size);
 
         }
 
@@ -1209,7 +1211,8 @@ namespace GeFaST {
 
                     numSeqs_t aid = src_swarm.member(m - 1);
 
-                    Dada2Utility::nt2int(tmp_seq, ac.seq(aid));
+                    std::string src_seq = ac.seq_str(aid);
+                    Dada2Utility::nt2int(tmp_seq, src_seq.c_str());
                     auto quals = ac.quals(aid);
                     for (lenSeqs_t pos = 0; pos < ac.len(aid); pos++) {
                         tmp_qual[pos] = (uint8_t)(quals[pos] - score_shift);
@@ -1306,8 +1309,8 @@ namespace GeFaST {
 
         seed.seq = nullptr;
         seed.seq = new char[seed.length + 1];
-        auto seq = ac.seq(a);
-        Dada2Utility::nt2int(seed.seq, seq);
+        auto seq = ac.seq_str(a);
+        Dada2Utility::nt2int(seed.seq, seq.c_str());
 
         seed.qual = new uint8_t[seed.length];
         auto q = ac.quals(a);
@@ -1321,15 +1324,15 @@ namespace GeFaST {
             // Add uint8_t kmer index in contiguous memory block
             size_t n_kmer = 1 << (2 * Dada2Utility::k_mer_size);
             seed.kmer8 = new uint8_t[n_kmer];
-            Dada2Utility::assign_kmer8(seed.kmer8, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer8(seed.kmer8, seq.c_str(), Dada2Utility::k_mer_size);
 
             // Add uint16_t kmer index in contiguous memory block
             seed.kmer = new uint16_t[n_kmer];
-            Dada2Utility::assign_kmer(seed.kmer, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer(seed.kmer, seq.c_str(), Dada2Utility::k_mer_size);
 
             // Add uint16_t ordered kmer record in contiguous memory block
             seed.kord = new uint16_t[seed.length];
-            Dada2Utility::assign_kmer_order(seed.kord, seq, Dada2Utility::k_mer_size);
+            Dada2Utility::assign_kmer_order(seed.kord, seq.c_str(), Dada2Utility::k_mer_size);
 
         }
 
@@ -1496,7 +1499,8 @@ namespace GeFaST {
             RawSequence** raws = new RawSequence*[ac.size()];
             for (numSeqs_t i = 0; i < ac.size(); i++) {
 
-                Dada2Utility::nt2int(seq, ac.seq(i));
+                std::string src_seq = ac.seq_str(i);
+                Dada2Utility::nt2int(seq, src_seq.c_str());
 
                 auto quals = ac.quals(i);
                 for (lenSeqs_t pos = 0; pos < ac.len(i); pos++) {

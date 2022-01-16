@@ -29,6 +29,7 @@
 #include <numeric>
 
 #include "Base.hpp"
+#include "space/Basics.hpp"
 
 namespace GeFaST {
 
@@ -196,6 +197,21 @@ namespace GeFaST {
             }
             swarms_.clear();
 
+        }
+
+        void finalise() override {
+            // nothing to do
+        }
+
+        size_t size_in_bytes() const override {
+
+            std::cerr << "ERROR: SimpleSwarms is currently not part of the space-efficiency analysis." << std::endl;
+            return 0;
+
+        }
+
+        void show_memory(numSeqs_t pid) const override {
+            std::cerr << "ERROR: SimpleSwarms is currently not part of the space-efficiency analysis." << std::endl;
         }
 
     private:
@@ -368,6 +384,10 @@ namespace GeFaST {
 
         }
 
+        void finalise() override {
+            // nothing to do
+        }
+
         numSeqs_t num_members() const override {
             return all_members_.size();
         }
@@ -409,6 +429,54 @@ namespace GeFaST {
             std::swap(all_parent_dists_[i], all_parent_dists_[j]);
             // no swaps necessary for gens_
             std::swap(all_rads_[i], all_rads_[j]);
+
+        }
+
+        size_t size_in_bytes() const override {
+
+            size_t allocated_swarms = 0;
+            for (auto s : swarms_) {
+                allocated_swarms += s->size_in_bytes();
+            }
+
+            return sizeof(SharingSplitSwarms) // SharingSplitSwarms itself
+                + allocated_swarms // swarms_ (content)
+                + vec_pod_size_in_bytes(swarms_) - sizeof(std::vector<Swarm*>) // swarms_ (pointers, do not count size of vector object twice)
+                + vec_pod_size_in_bytes(all_members_) - sizeof(std::vector<numSeqs_t>) // all_members_ (do not count size of vector object twice)
+                + vec_pod_size_in_bytes(all_parents_) - sizeof(std::vector<numSeqs_t>) // all_parents_ (do not count size of vector object twice)
+                + vec_pod_size_in_bytes(all_parent_dists_) - sizeof(std::vector<dist_t>) // all_parent_dists_ (do not count size of vector object twice)
+                + vec_pod_size_in_bytes(all_gens_) - sizeof(std::vector<numSeqs_t>) // all_gens_ (do not count size of vector object twice)
+                + vec_pod_size_in_bytes(all_rads_) - sizeof(std::vector<dist_t>); // all_rads_ (do not count size of vector object twice)
+
+        }
+
+        void show_memory(numSeqs_t pid) const override {
+
+            size_t allocated_swarms = 0;
+            for (auto s : swarms_) {
+                allocated_swarms += s->size_in_bytes();
+            }
+
+            std::cout << "##################################################" << std::endl;
+            std::cout << "# SharingSplitSwarms " << std::endl;
+            std::cout << "#  - pid: " << pid << std::endl;
+            std::cout << "#  - number of swarms: " << size() << std::endl;
+            std::cout << "# " << std::endl;
+            std::cout << "# sizeof(SharingSplitSwarms): " << sizeof(SharingSplitSwarms) << " bytes" << std::endl;
+            std::cout << "# sizeof(Swarm*): " << sizeof(char*) << " bytes" << std::endl;
+            std::cout << "# sizeof(std::vector<Swarm*>): " << sizeof(std::vector<Swarm*>) << " bytes" << std::endl;
+            std::cout << "# sizeof(std::vector<numSeqs_t>): " << sizeof(std::vector<numSeqs_t>) << " bytes" << std::endl;
+            std::cout << "# sizeof(std::vector<dist_t>): " << sizeof(std::vector<dist_t>) << " bytes" << std::endl;
+            std::cout << "# " << std::endl;
+            std::cout << "# Total size: " << size_in_bytes() << " bytes" << std::endl;
+            std::cout << "# swarms_ (content): " << allocated_swarms << " bytes" << std::endl;
+            std::cout << "# swarms_ (pointers): " << vec_pod_size_in_bytes(swarms_) << " bytes" << std::endl;
+            std::cout << "# all_members_: " << vec_pod_size_in_bytes(all_members_) << " bytes" << std::endl;
+            std::cout << "# all_parents_: " << vec_pod_size_in_bytes(all_parents_) << " bytes" << std::endl;
+            std::cout << "# all_parent_dists_: " << vec_pod_size_in_bytes(all_parent_dists_) << " bytes" << std::endl;
+            std::cout << "# all_gens_: " << vec_pod_size_in_bytes(all_gens_) << " bytes" << std::endl;
+            std::cout << "# all_rads_: " << vec_pod_size_in_bytes(all_rads_) << " bytes" << std::endl;
+            std::cout << "##################################################" << std::endl;
 
         }
 
@@ -554,6 +622,10 @@ namespace GeFaST {
 
         }
 
+        void finalise() override {
+            // nothing to do
+        }
+
         inline numSeqs_t num_members() const override {
             return all_members_.size();
         }
@@ -584,6 +656,17 @@ namespace GeFaST {
 
         inline void swap(numSeqs_t i, numSeqs_t j) {
             std::swap(all_members_[i], all_members_[j]);
+        }
+
+        size_t size_in_bytes() const override {
+
+            std::cerr << "ERROR: SharingCombinedSwarms is currently not part of the space-efficiency analysis." << std::endl;
+            return 0;
+
+        }
+
+        void show_memory(numSeqs_t pid) const override {
+            std::cerr << "ERROR: SharingCombinedSwarms is currently not part of the space-efficiency analysis." << std::endl;
         }
 
     private:
@@ -677,6 +760,8 @@ namespace GeFaST {
         lenSeqs_t max_gen() const override;
 
         GraftingInfo* get_grafting_info() const override;
+
+        size_t size_in_bytes() const override;
 
     protected:
         SimpleSwarm() = default;
@@ -800,6 +885,8 @@ namespace GeFaST {
 
         GraftingInfo* get_grafting_info() const override;
 
+        size_t size_in_bytes() const override;
+
     protected:
         SimpleCombinedSwarm() = default;
 
@@ -854,8 +941,8 @@ namespace GeFaST {
 
         ForwardingSwarm(const ForwardingSwarm& other) : // copy constructor
                 swarms_(other.swarms_), start_(other.start_), size_(other.size_), mass_(other.mass_), num_different_(other.num_different_),
-                num_singletons_(other.num_singletons_), max_rad_(other.max_rad_), graftings_(other.graftings_->clone()),
-                attached_(other.attached_) {
+                num_singletons_(other.num_singletons_), max_rad_(other.max_rad_),
+                graftings_(other.graftings_ ? other.graftings_->clone() : nullptr), attached_(other.attached_) {
 
             // nothing else to do
 
@@ -891,7 +978,7 @@ namespace GeFaST {
 
             max_rad_ = other.max_rad_;
 
-            graftings_ = other.graftings_->clone();
+            graftings_ = other.graftings_ ? other.graftings_->clone() : nullptr;
             attached_ = other.attached_;
 
             return *this;
@@ -1002,7 +1089,7 @@ namespace GeFaST {
                       [&](const numSeqs_t a, const numSeqs_t b) {
                           return (ac.ab(swarms_->get_member(start_ + a)) > ac.ab(swarms_->get_member(start_ + b))) ||
                                  ((ac.ab(swarms_->get_member(start_ + a)) == ac.ab(swarms_->get_member(start_ + b))) &&
-                                  (strcmp(ac.id(swarms_->get_member(start_ + a)), ac.id(swarms_->get_member(start_ + b))) < 0));
+                                  (*ac.id(swarms_->get_member(start_ + a)) < *ac.id(swarms_->get_member(start_ + b))));
                       }
             );
 
@@ -1148,11 +1235,16 @@ namespace GeFaST {
             return graftings_;
         }
 
+        size_t size_in_bytes() const override {
+            return sizeof(ForwardingSwarm) // ForwardingSwarm itself (no ownership over swarms_)
+                + ((graftings_ != nullptr) ? graftings_->size_in_bytes() : 0); // graftings_
+        }
+
     protected:
         ForwardingSwarm() = default;
 
         // the information on each swarm member are stored separately but in the same order in multiple containers
-        SharingSwarms* swarms_; // pool-internal integer id of swarm member
+        SharingSwarms* swarms_; // Swarms representation containing all member information
         numSeqs_t start_;
 
         // overall characteristics of the swarm (not considering the grafted amplicons)

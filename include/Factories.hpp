@@ -32,6 +32,7 @@
 #include "modes/LevenshteinMode.hpp"
 #include "modes/QualityAlignmentScoreMode.hpp"
 #include "modes/QualityLevenshteinMode.hpp"
+#include "modes/SpaceLevenshteinMode.hpp"
 
 namespace GeFaST {
 
@@ -72,6 +73,12 @@ namespace GeFaST {
          * to the information given by the DataStatistics instance.
          */
         static AmpliconStorage* create(const AmpliconStorageOption opt, const DataStatistics<>& ds, const Configuration& config);
+
+        /*
+         * Special variant for the investigation of space-efficient data structures.
+         */
+        static AmpliconStorage* create(const AmpliconStorageOption opt, const AmpliconCollectionOption ac_opt,
+                                       const DataStatistics<>& ds, const SpaceLevenshteinConfiguration& config);
 
         /*
          * Create an amplicon storage which is empty but prepared for the insertion of amplicons with features
@@ -130,6 +137,12 @@ namespace GeFaST {
          */
         static FeatureDistance* create(const DistanceOption opt, const AmpliconStorage& amplicon_storage, const dist_t threshold,
                 const AlignmentFreeConfiguration& config);
+
+        /*
+         * Create a distance function for computing the (bounded) distance between amplicon as the number of edit operations between them.
+         */
+        static Distance* create(const DistanceOption opt, const AmpliconStorage& amplicon_storage, const dist_t threshold,
+                const SpaceLevenshteinConfiguration& config);
 
     };
 
@@ -218,6 +231,11 @@ namespace GeFaST {
          */
         static SwarmStorage* create(const SwarmStorageOption opt, const AmpliconStorage& amplicon_storage, const Configuration& config);
 
+        /*
+         * Special variant for the investigation of space-efficient data structures.
+         */
+        static SwarmStorage* create(const SwarmStorageOption opt, const AmpliconStorage& amplicon_storage, const SpaceLevenshteinConfiguration& config);
+
     };
 
 
@@ -246,6 +264,12 @@ namespace GeFaST {
                 const numSeqs_t pool_id, const dist_t threshold, const lenSeqs_t num_extra_segments, const Configuration& config);
 
         /*
+         * Special variant for the investigation of space-efficient data structures.
+         */
+        static AuxiliaryData* create(const AuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
+                const numSeqs_t pool_id, const dist_t threshold, const lenSeqs_t num_extra_segments, const SpaceLevenshteinConfiguration& config);
+
+        /*
          * Create the auxiliary data for a specific amplicon pool (including features) and threshold suitable for the clustering phase.
          */
         static AuxiliaryData* create(const AuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
@@ -264,6 +288,13 @@ namespace GeFaST {
         static AuxiliaryData* create(const RefinementAuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
                 const SwarmStorage& swarm_storage, const numSeqs_t pool_id, const dist_t threshold,
                 const lenSeqs_t num_extra_segments, const Configuration& config);
+
+        /*
+         * Special variant for the investigation of space-efficient data structures.
+         */
+        static AuxiliaryData* create(const RefinementAuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
+                const SwarmStorage& swarm_storage, const numSeqs_t pool_id, const dist_t threshold,
+                const lenSeqs_t num_extra_segments, const SpaceLevenshteinConfiguration& config);
 
         /*
          * Create the auxiliary data for a specific amplicon pool (including features) and threshold suitable for the clustering phase.

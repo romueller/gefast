@@ -53,9 +53,11 @@ namespace GeFaST {
 
         numSeqs_t size() const override;
 
-        inline const char* id(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> id(const numSeqs_t i) const override;
+        inline std::string id_str(const numSeqs_t i) const override;
 
-        inline const char* seq(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> seq(const numSeqs_t i) const override;
+        inline std::string seq_str(const numSeqs_t i) const override;
 
         inline lenSeqs_t len(const numSeqs_t i) const override;
 
@@ -68,6 +70,10 @@ namespace GeFaST {
          * Return 0 in order to avoid falsely rejecting the amplicon pair when checking the q-gram difference.
          */
         unsigned long qgram_diff(const numSeqs_t i, const numSeqs_t j) const override;
+
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
 
         /*
          * Sort the amplicons by abundance (decreasing) and
@@ -118,9 +124,11 @@ namespace GeFaST {
 
         numSeqs_t size() const override;
 
-        inline const char* id(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> id(const numSeqs_t i) const override;
+        inline std::string id_str(const numSeqs_t i) const override;
 
-        inline const char* seq(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> seq(const numSeqs_t i) const override;
+        inline std::string seq_str(const numSeqs_t i) const override;
 
         inline lenSeqs_t len(const numSeqs_t i) const override;
 
@@ -133,6 +141,10 @@ namespace GeFaST {
          * Return 0 in order to avoid falsely rejecting the amplicon pair when checking the q-gram difference.
          */
         unsigned long qgram_diff(const numSeqs_t i, const numSeqs_t j) const override;
+
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
 
         /*
          * Sort the amplicons by abundance (decreasing) and
@@ -208,15 +220,21 @@ namespace GeFaST {
 
         numSeqs_t size() const override;
 
-        inline const char* id(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> id(const numSeqs_t i) const override;
+        inline std::string id_str(const numSeqs_t i) const override;
 
-        inline const char* seq(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> seq(const numSeqs_t i) const override;
+        inline std::string seq_str(const numSeqs_t i) const override;
 
         inline lenSeqs_t len(const numSeqs_t i) const override;
 
         inline numSeqs_t ab(const numSeqs_t i) const override;
 
         inline const char* quals(const numSeqs_t i) const override;
+
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
 
         /*
          * Sort the amplicons by abundance (decreasing) and
@@ -291,9 +309,11 @@ namespace GeFaST {
 
         numSeqs_t size() const override;
 
-        inline const char* id(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> id(const numSeqs_t i) const override;
+        inline std::string id_str(const numSeqs_t i) const override;
 
-        inline const char* seq(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> seq(const numSeqs_t i) const override;
+        inline std::string seq_str(const numSeqs_t i) const override;
 
         inline lenSeqs_t len(const numSeqs_t i) const override;
 
@@ -312,6 +332,10 @@ namespace GeFaST {
          * instead of using actual counts of the q-grams.
          */
         unsigned long qgram_diff(const numSeqs_t i, const numSeqs_t j) const override;
+
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
 
         /*
          * Sort the amplicons by abundance (decreasing) and
@@ -388,9 +412,11 @@ namespace GeFaST {
 
         numSeqs_t size() const override;
 
-        inline const char* id(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> id(const numSeqs_t i) const override;
+        inline std::string id_str(const numSeqs_t i) const override;
 
-        inline const char* seq(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> seq(const numSeqs_t i) const override;
+        inline std::string seq_str(const numSeqs_t i) const override;
 
         inline lenSeqs_t len(const numSeqs_t i) const override;
 
@@ -429,6 +455,10 @@ namespace GeFaST {
          * instead of using actual counts of the q-grams.
          */
         unsigned long qgram_diff(const numSeqs_t i, const numSeqs_t j) const override;
+
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
 
     protected:
         ArrayQgramQualityAmpliconCollection() = default;
@@ -490,9 +520,11 @@ namespace GeFaST {
 
         numSeqs_t size() const override;
 
-        inline const char* id(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> id(const numSeqs_t i) const override;
+        inline std::string id_str(const numSeqs_t i) const override;
 
-        inline const char* seq(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> seq(const numSeqs_t i) const override;
+        inline std::string seq_str(const numSeqs_t i) const override;
 
         inline lenSeqs_t len(const numSeqs_t i) const override;
 
@@ -506,6 +538,10 @@ namespace GeFaST {
         const feat_t* all_features() const override;
 
         size_t num_features() const override;
+
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
 
         /*
          * Sort the amplicons by abundance (decreasing) and
@@ -566,9 +602,11 @@ namespace GeFaST {
 
         numSeqs_t size() const override;
 
-        inline const char* id(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> id(const numSeqs_t i) const override;
+        inline std::string id_str(const numSeqs_t i) const override;
 
-        inline const char* seq(const numSeqs_t i) const override;
+        inline std::unique_ptr<SequenceWrapper> seq(const numSeqs_t i) const override;
+        inline std::string seq_str(const numSeqs_t i) const override;
 
         inline lenSeqs_t len(const numSeqs_t i) const override;
 
@@ -582,6 +620,10 @@ namespace GeFaST {
         const feat_t* all_features() const override;
 
         size_t num_features() const override;
+
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
 
         /*
          * Sort the amplicons by abundance (decreasing) and

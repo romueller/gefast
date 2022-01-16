@@ -71,7 +71,7 @@ namespace GeFaST {
     /*
      * Compute alignment and perform backtracking to determine the CIGAR representation.
      */
-    AlignmentInformation compute_gotoh_cigar_row(const char* s, const lenSeqs_t len_s, const char* t,
+    AlignmentInformation compute_gotoh_cigar_row(const SequenceWrapper& s, const lenSeqs_t len_s, const SequenceWrapper& t,
             const lenSeqs_t len_t, const ScoringFunction& scoring, lenSeqs_t* d_row, lenSeqs_t* p_row, char* backtrack);
 
 
@@ -92,6 +92,8 @@ namespace GeFaST {
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
 
+        size_t size_in_bytes() const override;
+
     protected:
         BoundedLevenshteinDistance(const BoundedLevenshteinDistance& other); // copy constructor
 
@@ -107,7 +109,7 @@ namespace GeFaST {
          * If the Levenshtein distance between s and t is larger than the threshold,
          * the returned distance is threshold + 1.
          */
-        lenSeqs_t compute_length_aware_row(const char* s, const lenSeqs_t len_s, const char* t, const lenSeqs_t len_t);
+        lenSeqs_t compute_length_aware_row(const SequenceWrapper& s, const lenSeqs_t len_s, const SequenceWrapper& t, const lenSeqs_t len_t);
 
         lenSeqs_t* matrix_row_; // single row of the DP-matrix
         lenSeqs_t threshold_; // distance threshold
@@ -134,6 +136,8 @@ namespace GeFaST {
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
 
+        size_t size_in_bytes() const override;
+
     protected:
         BoundedScoreLevenshteinDistance(const BoundedScoreLevenshteinDistance& other); // copy constructor
 
@@ -152,7 +156,7 @@ namespace GeFaST {
          * The method is a one-row adaption of Gotoh's algorithm using ideas similar to the ones
          * for the one-row version of the Needleman-Wunsch algorithm (score only).
          */
-        lenSeqs_t compute_gotoh_length_aware_early_row(const char* s, const lenSeqs_t len_s, const char* t, const lenSeqs_t len_t);
+        lenSeqs_t compute_gotoh_length_aware_early_row(const SequenceWrapper& s, const lenSeqs_t len_s, const SequenceWrapper& t, const lenSeqs_t len_t);
 
         lenSeqs_t* d_row_; // one row of matrix D (cost of alignment of prefixes)
         lenSeqs_t* p_row_; // one row of matrix P (cost of alignment of prefixes that ends with gap in t)
@@ -161,6 +165,49 @@ namespace GeFaST {
         lenSeqs_t* cnt_diffs_p_row_; // number of differences corresponding to alignments based on P
         ScoringFunction scoring_; // used scoring function
         lenSeqs_t threshold_; // distance threshold
+        lenSeqs_t row_length_; // length of matrix row
+
+    };
+
+
+    /*
+     * Computes the (bounded) score of an optimal alignment between two amplicons as their distance.
+     * Uses only linear space as the alignment itself is not of interest.
+     * Returns threshold + 1 (and, if possible, terminates early) when the score is larger than the threshold.
+     */
+    class BoundedScoreDistance : public Distance {
+
+    public:
+        BoundedScoreDistance(lenSeqs_t max_seq_len, lenSeqs_t threshold, int match, int mismatch, int gap_open, int gap_extend);
+
+        virtual ~BoundedScoreDistance();
+
+        BoundedScoreDistance* clone() const override; // deep-copy clone method
+
+        dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+        size_t size_in_bytes() const override;
+
+    protected:
+        BoundedScoreDistance(const BoundedScoreDistance& other); // copy constructor
+
+        BoundedScoreDistance(BoundedScoreDistance&& other) = delete; // move constructor
+
+        BoundedScoreDistance& operator=(const BoundedScoreDistance& other) = delete; // copy assignment operator
+
+        BoundedScoreDistance& operator=(BoundedScoreDistance&& other) = delete; // move assignment operator
+
+        /*
+         * Compute the (bounded) score of an optimal alignment.
+         * If the score of an optimal alignment between s and t is larger than the threshold,
+         * the returned score is threshold + 1.
+         */
+        lenSeqs_t compute_bounded_gotoh_score(const SequenceWrapper& s, const lenSeqs_t len_s, const SequenceWrapper& t, const lenSeqs_t len_t);
+
+        lenSeqs_t* d_row_; // one row of matrix D (cost of alignment of prefixes)
+        lenSeqs_t* p_row_; // one row of matrix P (cost of alignment of prefixes that ends with gap in t)
+        ScoringFunction scoring_; // used scoring function
+        lenSeqs_t threshold_; // score threshold
         lenSeqs_t row_length_; // length of matrix row
 
     };
@@ -182,6 +229,8 @@ namespace GeFaST {
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
 
+        size_t size_in_bytes() const override;
+
     protected:
         QgramBoundedLevenshteinDistance(const QgramBoundedLevenshteinDistance& other); // copy constructor
 
@@ -194,47 +243,6 @@ namespace GeFaST {
     private:
         Distance* dist_fun_; // distance function used when the amplicon pair is not rejected by the q-gram test
         lenSeqs_t threshold_; // distance threshold
-
-    };
-
-
-    /*
-     * Computes the (bounded) score of an optimal alignment between two amplicons as their distance.
-     * Uses only linear space as the alignment itself is not of interest.
-     * Returns threshold + 1 (and, if possible, terminates early) when the score is larger than the threshold.
-     */
-    class BoundedScoreDistance : public Distance {
-
-    public:
-        BoundedScoreDistance(lenSeqs_t max_seq_len, lenSeqs_t threshold, int match, int mismatch, int gap_open, int gap_extend);
-
-        virtual ~BoundedScoreDistance();
-
-        BoundedScoreDistance* clone() const override; // deep-copy clone method
-
-        dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
-
-    protected:
-        BoundedScoreDistance(const BoundedScoreDistance& other); // copy constructor
-
-        BoundedScoreDistance(BoundedScoreDistance&& other) = delete; // move constructor
-
-        BoundedScoreDistance& operator=(const BoundedScoreDistance& other) = delete; // copy assignment operator
-
-        BoundedScoreDistance& operator=(BoundedScoreDistance&& other) = delete; // move assignment operator
-
-        /*
-         * Compute the (bounded) score of an optimal alignment.
-         * If the score of an optimal alignment between s and t is larger than the threshold,
-         * the returned score is threshold + 1.
-         */
-        lenSeqs_t compute_bounded_gotoh_score(const char* s, const lenSeqs_t len_s, const char* t, const lenSeqs_t len_t);
-
-        lenSeqs_t* d_row_; // one row of matrix D (cost of alignment of prefixes)
-        lenSeqs_t* p_row_; // one row of matrix P (cost of alignment of prefixes that ends with gap in t)
-        ScoringFunction scoring_; // used scoring function
-        lenSeqs_t threshold_; // score threshold
-        lenSeqs_t row_length_; // length of matrix row
 
     };
 
@@ -257,6 +265,8 @@ namespace GeFaST {
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
 
+        size_t size_in_bytes() const override;
+
     protected:
         BoundedBandedScoreDistance(const BoundedBandedScoreDistance& other); // copy constructor
 
@@ -272,7 +282,7 @@ namespace GeFaST {
          * the returned score is threshold + 1.
          * Restricts the alignment to 2 * bands_per_side + 1 diagonals of the DP-matrix.
          */
-        lenSeqs_t compute_bounded_banded_gotoh_score(const char* s, const lenSeqs_t len_s, const char* t, const lenSeqs_t len_t);
+        lenSeqs_t compute_bounded_banded_gotoh_score(const SequenceWrapper& s, const lenSeqs_t len_s, const SequenceWrapper& t, const lenSeqs_t len_t);
 
         lenSeqs_t* d_row_; // one row of matrix D (cost of alignment of prefixes)
         lenSeqs_t* p_row_; // one row of matrix P (cost of alignment of prefixes that ends with gap in t)
@@ -302,6 +312,8 @@ namespace GeFaST {
         QgramBoundedScoreDistance* clone() const override; // deep-copy clone method
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+        size_t size_in_bytes() const override;
 
     protected:
         QgramBoundedScoreDistance(const QgramBoundedScoreDistance& other); // copy constructor
@@ -333,6 +345,8 @@ namespace GeFaST {
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
 
+        size_t size_in_bytes() const override;
+
         /*
          * Compute the Manhattan distance between the features.
          */
@@ -352,6 +366,8 @@ namespace GeFaST {
         EuclideanDistance* clone() const override; // deep-copy clone method
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+        size_t size_in_bytes() const override;
 
         /*
          * Compute the Euclidean distance between the features.
@@ -373,6 +389,8 @@ namespace GeFaST {
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
 
+        size_t size_in_bytes() const override;
+
         /*
          * Compute the cosine distance between the features.
          */
@@ -391,6 +409,8 @@ namespace GeFaST {
         PearsonDistance* clone() const override; // deep-copy clone method
 
         dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) override;
+
+        size_t size_in_bytes() const override;
 
         /*
          * Compute the Pearson distance between the features.

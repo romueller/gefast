@@ -5,7 +5,7 @@ BUILD=build
 OBJ_DIR=$(BUILD)/objects
 TARGET=GeFaST
 INCLUDE=
-SRC=main.cpp $(wildcard src/*.cpp) $(wildcard src/modes/*.cpp)
+SRC=main.cpp $(wildcard src/*.cpp) $(wildcard src/modes/*.cpp) $(wildcard src/space/*.cpp) $(wildcard src/space/*/*.cpp)
 
 OBJECTS=$(SRC:%.cpp=$(OBJ_DIR)/%.o)
 

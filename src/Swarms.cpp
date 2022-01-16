@@ -24,6 +24,7 @@
 #include <numeric>
 
 #include "../include/Swarms.hpp"
+#include "../include/space/Basics.hpp"
 
 namespace GeFaST {
 
@@ -55,8 +56,8 @@ namespace GeFaST {
     SimpleSwarm::SimpleSwarm(const SimpleSwarm& other) : // copy constructor
             members_(other.members_), parents_(other.parents_), parent_dists_(other.parent_dists_),
             gens_(other.gens_), rads_(other.rads_), mass_(other.mass_), num_different_(other.num_different_),
-            num_singletons_(other.num_singletons_), max_rad_(other.max_rad_), graftings_(other.graftings_->clone()),
-            attached_(other.attached_) {
+            num_singletons_(other.num_singletons_), max_rad_(other.max_rad_),
+            graftings_(other.graftings_ ? other.graftings_->clone() : nullptr), attached_(other.attached_) {
 
         // nothing else to do
 
@@ -95,7 +96,7 @@ namespace GeFaST {
 
         max_rad_ = other.max_rad_;
 
-        graftings_ = other.graftings_->clone();
+        graftings_ = other.graftings_ ? other.graftings_->clone() : nullptr;
         attached_ = other.attached_;
 
         return *this;
@@ -211,7 +212,7 @@ namespace GeFaST {
                   [&](const numSeqs_t a, const numSeqs_t b) {
                       return (ac.ab(members_[a]) > ac.ab(members_[b])) ||
                              ((ac.ab(members_[a]) == ac.ab(members_[b])) &&
-                              (strcmp(ac.id(members_[a]), ac.id(members_[b])) < 0));
+                              (*ac.id(members_[a]) < *ac.id(members_[b])));
                   }
         );
 
@@ -365,6 +366,13 @@ namespace GeFaST {
         return graftings_;
     }
 
+    size_t SimpleSwarm::size_in_bytes() const {
+
+        std::cerr << "ERROR: SimpleSwarm is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
 
     /* === SimpleCombinedSwarm === */
 
@@ -389,8 +397,8 @@ namespace GeFaST {
 
     SimpleCombinedSwarm::SimpleCombinedSwarm(const SimpleCombinedSwarm& other) : // copy constructor
             members_(other.members_), mass_(other.mass_), num_different_(other.num_different_),
-            num_singletons_(other.num_singletons_), max_rad_(other.max_rad_), graftings_(other.graftings_->clone()),
-            attached_(other.attached_) {
+            num_singletons_(other.num_singletons_), max_rad_(other.max_rad_),
+            graftings_(other.graftings_ ? other.graftings_->clone() : nullptr), attached_(other.attached_) {
 
         // nothing else to do
 
@@ -423,7 +431,7 @@ namespace GeFaST {
 
         max_rad_ = other.max_rad_;
 
-        graftings_ = other.graftings_->clone();
+        graftings_ = other.graftings_ ? other.graftings_->clone() : nullptr;
         attached_ = other.attached_;
 
         return *this;
@@ -535,7 +543,7 @@ namespace GeFaST {
                   [&](const numSeqs_t a, const numSeqs_t b) {
                       return (ac.ab(members_[a].member) > ac.ab(members_[b].member)) ||
                              ((ac.ab(members_[a].member) == ac.ab(members_[b].member)) &&
-                              (strcmp(ac.id(members_[a].member), ac.id(members_[b].member)) < 0));
+                              (*ac.id(members_[a].member) < *ac.id(members_[b].member)));
                   }
         );
 
@@ -676,6 +684,13 @@ namespace GeFaST {
 
     GraftingInfo* SimpleCombinedSwarm::get_grafting_info() const {
         return graftings_;
+    }
+
+    size_t SimpleCombinedSwarm::size_in_bytes() const {
+
+        std::cerr << "ERROR: SimpleCombinedSwarm is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
     }
 
 }

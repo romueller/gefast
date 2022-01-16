@@ -308,7 +308,7 @@ namespace GeFaST {
                         } else {
 
                             different_reads[seq].initialise(dl, seq, line, quality_encoding_);
-                            ds.record(dl.id.length(), seq.length());
+                            ds.record(dl.id, seq, dl.abundance);
 
                         }
 
@@ -424,7 +424,7 @@ namespace GeFaST {
 
                 if (iter->second.abundance < min_abundance || iter->second.abundance > max_abundance) {
 
-                    ds.unrecord(iter->second.id.length(), iter->first.length());
+                    ds.unrecord(iter->second.id, iter->first, iter->second.abundance);
                     iter = different_reads.erase(iter);
 
                 } else {

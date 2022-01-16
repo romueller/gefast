@@ -40,6 +40,18 @@
 #include "../include/modes/ConsistencyMode.hpp"
 #include "../include/QualityWeightedDistances.hpp"
 #include "../include/SpacePartitioning.hpp"
+#include "../include/modes/SpaceLevenshteinMode.hpp"
+#include "../include/space/FlexibleAmpliconCollection.hpp"
+#include "../include/space/FlexibleRelations.hpp"
+#include "../include/space/NumericArrays.hpp"
+#include "../include/space/StringArrays.hpp"
+#include "../include/space/SwarmRepresentations.hpp"
+#include "../include/space/k2trees/BasicK2Tree.hpp"
+#include "../include/space/k2trees/HybridK2Tree.hpp"
+#include "../include/space/k2trees/NaiveK2Tree.hpp"
+#include "../include/space/k2trees/PartitionedRectangularK2Tree.hpp"
+#include "../include/space/k2trees/PartitionedVariableK2Tree.hpp"
+#include "../include/space/k2trees/RectangularK2Tree.hpp"
 
 namespace GeFaST {
 
@@ -79,6 +91,10 @@ namespace GeFaST {
 
             case CF_CONSISTENCY:
                 config = new ConsistencyConfiguration(argc, argv);
+                break;
+
+            case CF_SPACE_LEVENSHTEIN:
+                config = new SpaceLevenshteinConfiguration(argc, argv);
                 break;
 
             case CF_UNKNOWN: // fallthrough to default for error handling
@@ -354,6 +370,525 @@ namespace GeFaST {
 
                 tmp->pools_.emplace_back(cnt, total_len_headers, total_len_sequences);
                 res = tmp;
+                break;
+            }
+
+            case AS_UNKNOWN: // fallthrough to default for error handling
+            default:
+                std::cerr << "ERROR: Unknown AmpliconStorage option." << std::endl;
+
+        }
+
+        return res;
+
+    }
+
+    /*
+     * The proper initialisation of the more involved data structures considered in the investigation
+     * of space efficiency require additional pool-wise information.
+     */
+    struct PoolsInformation {
+
+        numSeqs_t num_pools = 0; // number of pools
+        std::vector<numSeqs_t> size; // size of each pool
+        std::vector<unsigned long long> total_len_headers; // total length of headers in each pool
+        std::vector<unsigned long long> total_len_sequences; // total length of sequences in each pool
+        std::map<lenSeqs_t, numSeqs_t> pool_map; // mapping between sequence length and pool
+        std::vector<std::array<size_t, 256>> char_counts; // distribution of characters in headers per pool
+        std::vector<std::map<ularge_t, ularge_t>> abundance_counts; // distribution of abundance values per pool
+
+        /*
+         * Add the information of next pool.
+         */
+        void add_pool(const numSeqs_t s, const numSeqs_t tlh, const numSeqs_t tls,
+                      const std::array<size_t, 256>& cc, const std::map<ularge_t, ularge_t>& ac) {
+
+            num_pools++;
+            size.push_back(s);
+            total_len_headers.push_back(tlh);
+            total_len_sequences.push_back(tls);
+            char_counts.push_back(cc);
+            abundance_counts.push_back(ac);
+
+        }
+
+        /*
+         * Extend the length-pool mapping.
+         */
+        void add_length(lenSeqs_t len, numSeqs_t pi) {
+            pool_map[len] = pi;
+        }
+
+        /*
+         * Determine all lengths that belong to a pool.
+         */
+        std::vector<lenSeqs_t> lengths_in_pool(numSeqs_t pi) {
+
+            std::vector<lenSeqs_t> lengths;
+            for (auto& kv : pool_map) if (kv.second == pi) lengths.push_back(kv.first);
+            return lengths;
+
+        }
+
+    };
+
+    /*
+     * Determine the information on pools from the data statistics and the configuration.
+     */
+    PoolsInformation pool(const DataStatistics<>& ds, const Configuration& config) {
+
+        PoolsInformation pools;
+        std::vector<lenSeqs_t> lengths = ds.get_all_lengths();
+        auto pooling_threshold = static_cast<lenSeqs_t>(std::max(config.main_threshold, config.refinement_threshold));
+
+        lenSeqs_t last_len = ds.get_min_length();
+        numSeqs_t pool_id = 0;
+
+        numSeqs_t cnt = 0;
+        unsigned long long total_len_sequences = 0;
+        unsigned long long total_len_headers = 0;
+        std::array<size_t, 256> char_counts = {};
+        std::map<ularge_t, ularge_t> abundance_counts;
+
+        for (auto len : lengths) {
+
+            if ((last_len + pooling_threshold) < len) { // new pool
+
+                pool_id++;
+                pools.add_pool(cnt, total_len_headers, total_len_sequences, char_counts, abundance_counts);
+
+                cnt = 0;
+                total_len_sequences = 0;
+                total_len_headers = 0;
+                char_counts = {};
+                abundance_counts.clear();
+
+            }
+
+            cnt += ds.get_num_per_length(len);
+            total_len_sequences += (len + 1) * ds.get_num_per_length(len);
+            total_len_headers += ds.get_total_length_headers_per_length(len) + ds.get_num_per_length(len);
+            auto& counts = ds.get_counts_per_length(len);
+            for (auto i = 0; i < 256; i++) char_counts[i] += counts[i];
+            auto& ab_counts = ds.get_abundances_per_length(len);
+            for (auto& kv : ab_counts) abundance_counts[kv.first] += kv.second;
+
+            pools.add_length(len, pool_id);
+            last_len = len;
+
+        }
+
+        pools.add_pool(cnt, total_len_headers, total_len_sequences, char_counts, abundance_counts);
+
+        return pools;
+
+    }
+
+    AmpliconStorage* AmpliconStorageFactory::create(const AmpliconStorageOption opt, const AmpliconCollectionOption ac_opt,
+                                                    const DataStatistics<>& ds, const SpaceLevenshteinConfiguration& config) {
+
+        AmpliconStorage* res = nullptr;
+
+        switch (opt) {
+
+            // Reference:
+            // Create multiple pools when there are sufficient gaps in the length distribution,
+            // across which amplicons cannot be similar.
+            // Each pool is initialised with a sufficient capacity for the amplicons (including their q-gram profiles)
+            // expected to be inserted.
+            case AS_PREPARED_QGRAM_LENGTH_POOLS: {
+                auto tmp = new LengthPoolsAmpliconStorage<ArrayQgramAmpliconCollection>();
+
+                std::vector<lenSeqs_t> lengths = ds.get_all_lengths();
+                auto pooling_threshold = static_cast<lenSeqs_t>(std::max(config.main_threshold, config.refinement_threshold));
+
+                lenSeqs_t last_len = ds.get_min_length();
+                numSeqs_t pool_id = 0;
+
+                numSeqs_t cnt = 0;
+                unsigned long long total_len_sequences = 0;
+                unsigned long long total_len_headers = 0;
+
+                for (auto len : lengths) {
+
+                    if ((last_len + pooling_threshold) < len) { // new pool
+
+                        pool_id++;
+                        tmp->pools_.emplace_back(cnt, total_len_headers, total_len_sequences);
+
+                        cnt = 0;
+                        total_len_sequences = 0;
+                        total_len_headers = 0;
+
+                    }
+
+                    cnt += ds.get_num_per_length(len);
+                    total_len_sequences += (len + 1) * ds.get_num_per_length(len);
+                    total_len_headers += ds.get_total_length_headers_per_length(len) + ds.get_num_per_length(len);
+
+                    tmp->pool_map_[len] = pool_id;
+                    last_len = len;
+
+                }
+
+                tmp->pools_.emplace_back(cnt, total_len_headers, total_len_sequences);
+                res = tmp;
+                break;
+            }
+
+            // Space-effient variants of amplicon storage:
+            // Create multiple pools as for AS_PREPARED_QGRAM_LENGTH_POOLS.
+            // Build components for headers, sequences, lengths, abundances and q-gram profiles based on the configuration.
+            case AS_SPACE_FLEXIBLE: {
+                PoolsInformation pools = pool(ds, config);
+
+                auto tmp = new LengthPoolsAmpliconStorage<FlexibleAmpliconCollection>();
+                for (auto& kv : pools.pool_map) tmp->pool_map_[kv.first] = kv.second;
+
+                switch (ac_opt) {
+
+                    case AC_SPACE_REFERENCE: {
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_ID_PREF: {
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new PrefixStringArray(config.prefix_len, pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_ID_PREF_DACS: {
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new PrefixDacsStringArray(config.prefix_len, pools.size[i], pools.total_len_headers[i], config.chunk_lengths));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_ID_HUFF: {
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new HuffmanStringArray<size_t>(pools.size[i], pools.char_counts[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_ID_HUFF_DACS: {
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new HuffmanDacsStringArray<size_t>(pools.size[i], pools.char_counts[i], config.chunk_lengths));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_SEQ: {
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new TwoBitStringArray<size_t>(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_SEQ_DACS: {
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new TwoBitDacsStringArray<size_t>(pools.size[i], pools.total_len_sequences[i], config.chunk_lengths));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_AB: {
+                        typedef Dacs<numSeqs_t, size_t> dacs_t;
+                        typedef DacsBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new DacsArray<dacs_t, builder_t, numSeqs_t>(pools.abundance_counts[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_AB_BITS: {
+                        typedef Dacs<numSeqs_t, size_t> dacs_t;
+                        typedef DacsBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new DacsBitsArray<dacs_t, builder_t, numSeqs_t, size_t>(pools.abundance_counts[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_LEN: {
+                        typedef Dacs<numSeqs_t, size_t> dacs_t;
+                        typedef DacsBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            std::map<ularge_t, ularge_t> counts;
+                            for (auto len : pools.lengths_in_pool(i)) counts[len] = ds.get_num_per_length(len);
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new DacsArray<dacs_t, builder_t, lenSeqs_t>(counts));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_LEN_OFFSET: {
+                        typedef Dacs<numSeqs_t, size_t> dacs_t;
+                        typedef DacsBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            std::map<ularge_t, ularge_t> counts;
+                            for (auto len : pools.lengths_in_pool(i)) counts[len] = ds.get_num_per_length(len);
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new DacsOffsetArray<dacs_t, builder_t, lenSeqs_t>(counts));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_AB_SPLIT: {
+                        typedef SplitDacs<numSeqs_t, size_t> dacs_t;
+                        typedef SplitDacsDistributionBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new DacsArray<dacs_t, builder_t, numSeqs_t>(pools.abundance_counts[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_AB_BITS_SPLIT: {
+                        typedef SplitDacs<numSeqs_t, size_t> dacs_t;
+                        typedef SplitDacsDistributionBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new DacsBitsArray<dacs_t, builder_t, numSeqs_t, size_t>(pools.abundance_counts[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_LEN_SPLIT: {
+                        typedef SplitDacs<numSeqs_t, size_t> dacs_t;
+                        typedef SplitDacsDistributionBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            std::map<ularge_t, ularge_t> counts;
+                            for (auto len : pools.lengths_in_pool(i)) counts[len] = ds.get_num_per_length(len);
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new DacsArray<dacs_t, builder_t, lenSeqs_t>(counts));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_LEN_OFFSET_SPLIT: {
+                        typedef SplitDacs<numSeqs_t, size_t> dacs_t;
+                        typedef SplitDacsDistributionBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            std::map<ularge_t, ularge_t> counts;
+                            for (auto len : pools.lengths_in_pool(i)) counts[len] = ds.get_num_per_length(len);
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new DacsOffsetArray<dacs_t, builder_t, lenSeqs_t>(counts));
+                            ac.set_qgram_component(new QgramsArray(pools.size[i]));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_QGRAM_DACS: {
+                        typedef SplitDacs<numSeqs_t, size_t> dacs_t;
+                        typedef SplitDacsDistributionBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            std::map<ularge_t, ularge_t> counts;
+                            for (auto len : pools.lengths_in_pool(i)) counts[len] = ds.get_num_per_length(len);
+
+                            ac.set_header_component(new CollectiveStringArray(pools.size[i], pools.total_len_headers[i]));
+                            ac.set_sequence_component(new CollectiveStringArray(pools.size[i], pools.total_len_sequences[i]));
+                            ac.set_abundance_component(new SimpleArray<numSeqs_t>(pools.size[i]));
+                            ac.set_length_component(new SimpleArray<lenSeqs_t>(pools.size[i]));
+                            ac.set_qgram_component(new QgramsDacsArray(pools.size[i], config.chunk_lengths));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_SPACE_FULL: {
+                        typedef Dacs<numSeqs_t, size_t> dacs_t;
+                        typedef DacsBuilder<numSeqs_t, size_t> builder_t;
+
+                        for (auto i = 0; i < pools.num_pools; i++) {
+
+                            tmp->pools_.emplace_back(pools.size[i]);
+                            auto& ac = tmp->pools_.back();
+
+                            std::map<ularge_t, ularge_t> counts;
+                            for (auto len : pools.lengths_in_pool(i)) counts[len] = ds.get_num_per_length(len);
+
+                            ac.set_header_component(new PrefixDacsStringArray(config.prefix_len, pools.size[i], pools.total_len_headers[i], config.chunk_lengths));
+                            ac.set_sequence_component(new TwoBitDacsStringArray<size_t>(pools.size[i], pools.total_len_sequences[i], config.chunk_lengths));
+                            ac.set_abundance_component(new DacsBitsArray<dacs_t, builder_t, numSeqs_t, size_t>(pools.abundance_counts[i]));
+                            ac.set_length_component(new DacsOffsetArray<dacs_t, builder_t, lenSeqs_t>(counts));
+                            ac.set_qgram_component(new QgramsDacsArray(pools.size[i], config.chunk_lengths));
+
+                        }
+                        res = tmp;
+                        break;
+                    }
+
+                    case AC_UNKNOWN: // fallthrough to default for error handling
+                    default:
+                        std::cerr << "ERROR: Unknown AmpliconCollection option." << std::endl;
+
+                }
                 break;
             }
 
@@ -947,6 +1482,39 @@ namespace GeFaST {
     }
 
 
+    Distance* DistanceFactory::create(const DistanceOption opt, const AmpliconStorage& amplicon_storage,
+                                      const dist_t threshold, const SpaceLevenshteinConfiguration& config) {
+
+        Distance* res = nullptr;
+
+        switch (opt) {
+
+            case DT_BOUNDED_LEVENSHTEIN: {
+                res = new BoundedLevenshteinDistance(amplicon_storage.max_length(), static_cast<lenSeqs_t>(threshold));
+                break;
+            }
+
+            case DT_BOUNDED_SCORE_LEVENSHTEIN: {
+                res = new BoundedScoreLevenshteinDistance(amplicon_storage.max_length(), static_cast<lenSeqs_t>(threshold),
+                                                          config.match_reward, config.mismatch_penalty, config.gap_opening_penalty, config.gap_extension_penalty);
+                break;
+            }
+
+            case DT_UNKNOWN: // fallthrough to default for error handling
+            default:
+                std::cerr << "ERROR: Unknown Distance option for space-efficiency (space) mode." << std::endl;
+
+        }
+
+        if (res != nullptr && config.use_qgrams) { // wraps the distance computation by a check of the q-gram distance
+            res = new QgramBoundedLevenshteinDistance(res, static_cast<lenSeqs_t>(threshold));
+        }
+
+        return res;
+
+    }
+
+
     Preprocessor* PreprocessorFactory::create(const PreprocessorOption opt, const QualityEncoding<>& qe,
             const Configuration& config) {
 
@@ -1204,6 +1772,34 @@ namespace GeFaST {
 
 
 
+    SwarmStorage* SwarmStorageFactory::create(const SwarmStorageOption opt, const AmpliconStorage& amplicon_storage,
+            const SpaceLevenshteinConfiguration& config) {
+
+        SwarmStorage* res = nullptr;
+
+        switch (opt) {
+
+            case SS_FORWARDING_DACS_PER_POOL: {
+                res = new DacsSwarmStorage<SharingSplitDacsSwarms>(amplicon_storage, config);
+                break;
+            }
+
+            case SS_FORWARDING_FULL_DACS_PER_POOL: {
+                res = new DacsSwarmStorage<SharingSplitFullDacsSwarms>(amplicon_storage, config);
+                break;
+            }
+
+            default:
+                res = create(opt, amplicon_storage, static_cast<const Configuration&>(config));
+
+        }
+
+        return res;
+
+    }
+
+
+
     AuxiliaryData* AuxiliaryDataFactory::create(const AuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
             const numSeqs_t pool_id, const dist_t threshold, const Configuration& config) {
 
@@ -1261,6 +1857,121 @@ namespace GeFaST {
 
                 res = new ScoreSegmentFilterAuxiliaryData(amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
                         num_threshold_segments, num_extra_segments, config);
+                break;
+            }
+
+            default:
+                res = create(opt, amplicon_storage, pool_id, threshold, config);
+
+        }
+
+        return res;
+
+    }
+
+    AuxiliaryData* AuxiliaryDataFactory::create(const AuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
+            const numSeqs_t pool_id, const dist_t threshold, const lenSeqs_t num_extra_segments, const SpaceLevenshteinConfiguration& config) {
+
+        typedef BitVector<size_t> bit_vector_t;
+        typedef BitRankOne<size_t, 20> rank_t;
+
+        AuxiliaryData* res = nullptr;
+
+        switch (opt) {
+
+            // Reference:
+            // Auxiliary data structures employing a (one-way) segment filter to efficiently search
+            // for (not yet swarmed) partners of an amplicon.
+            case AD_SEGMENT_FILTER: {
+                res = new SegmentFilterAuxiliaryData(amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                        num_extra_segments, config);
+                break;
+            }
+
+            /* The remaining cases use space-efficient variants of the segment filter. */
+
+            // Auxiliary data structures employing a (one-way) segment filter based on NaiveK2Tree instances.
+            case AD_SPACE_SEGMENT_FILTER_NAIVE: {
+                if (config.tree_parameters.static_rels) {
+                    res = new SpaceSegmentFilterAuxiliaryData<StaticSpaceSegmentRelations<NaiveK2Tree<numSeqs_t>>>(
+                        amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                        num_extra_segments, config);
+                } else {
+                    res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<NaiveK2Tree<numSeqs_t>>>(
+                        amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                        num_extra_segments, config);
+                }
+
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on BasicK2Tree instances.
+            case AD_SPACE_SEGMENT_FILTER_BASIC: {
+                if (config.tree_parameters.static_rels) {
+                    res = new SpaceSegmentFilterAuxiliaryData<StaticSpaceSegmentRelations<BasicK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                } else {
+                    res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<BasicK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                }
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on HybridK2Tree instances.
+            case AD_SPACE_SEGMENT_FILTER_HYBRID: {
+                if (config.tree_parameters.static_rels) {
+                    res = new SpaceSegmentFilterAuxiliaryData<StaticSpaceSegmentRelations<HybridK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                } else {
+                    res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<HybridK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                }
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on RectangularK2Tree instances.
+            case AD_SPACE_SEGMENT_FILTER_RECT: {
+                if (config.tree_parameters.static_rels) {
+                    res = new SpaceSegmentFilterAuxiliaryData<StaticSpaceSegmentRelations<RectangularK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                } else {
+                    res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<RectangularK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                }
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on PartitionedRectangularK2Tree instances.
+            case AD_SPACE_SEGMENT_FILTER_PART: {
+                if (config.tree_parameters.static_rels) {
+                    res = new SpaceSegmentFilterAuxiliaryData<StaticSpaceSegmentRelations<PartitionedRectangularK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                } else {
+                    res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<PartitionedRectangularK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                }
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on PartitionedVariableK2Tree instances.
+            case AD_SPACE_SEGMENT_FILTER_VARI: {
+                if (config.tree_parameters.static_rels) {
+                    res = new SpaceSegmentFilterAuxiliaryData<StaticSpaceSegmentRelations<PartitionedVariableK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                } else {
+                    res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<PartitionedVariableK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                            amplicon_storage, pool_id, static_cast<lenSeqs_t>(threshold),
+                            num_extra_segments, config);
+                }
                 break;
             }
 
@@ -1384,6 +2095,85 @@ namespace GeFaST {
 
                 res = new ScoreSegmentFilterAuxiliaryData(amplicon_storage, swarm_storage, pool_id,
                         static_cast<lenSeqs_t>(threshold), num_threshold_segments, num_extra_segments, config);
+                break;
+            }
+
+            default:
+                res = create(opt, amplicon_storage, swarm_storage, pool_id, threshold, config);
+
+        }
+
+        return res;
+
+    }
+
+    AuxiliaryData* AuxiliaryDataFactory::create(const RefinementAuxiliaryDataOption opt, const AmpliconStorage& amplicon_storage,
+            const SwarmStorage& swarm_storage, const numSeqs_t pool_id, const dist_t threshold, const lenSeqs_t num_extra_segments,
+            const SpaceLevenshteinConfiguration& config) {
+
+        typedef BitVector<size_t> bit_vector_t;
+        typedef BitRankOne<size_t, 20> rank_t;
+
+        AuxiliaryData* res = nullptr;
+
+        switch (opt) {
+
+            // Reference:
+            // Auxiliary data structures employing a (one-way) segment filter to efficiently search
+            // for potential grafting links.
+            case RD_SEGMENT_FILTER: {
+                res = new SegmentFilterAuxiliaryData(amplicon_storage, swarm_storage, pool_id,
+                        static_cast<lenSeqs_t>(threshold), num_extra_segments, config);
+                break;
+            }
+
+            /* The remaining cases use space-efficient variants of the segment filter. */
+
+            // Auxiliary data structures employing a (one-way) segment filter based on NaiveK2Tree instances.
+            case RD_SPACE_SEGMENT_FILTER_NAIVE: {
+                res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<NaiveK2Tree<numSeqs_t>>>(
+                        amplicon_storage, swarm_storage, pool_id,
+                        static_cast<lenSeqs_t>(threshold), num_extra_segments, config);
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on BasicK2Tree instances.
+            case RD_SPACE_SEGMENT_FILTER_BASIC: {
+                res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<BasicK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                        amplicon_storage, swarm_storage, pool_id,
+                        static_cast<lenSeqs_t>(threshold), num_extra_segments, config);
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on HybridK2Tree instances.
+            case RD_SPACE_SEGMENT_FILTER_HYBRID: {
+                res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<HybridK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                        amplicon_storage, swarm_storage, pool_id,
+                        static_cast<lenSeqs_t>(threshold), num_extra_segments, config);
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on RectangularK2Tree instances.
+            case RD_SPACE_SEGMENT_FILTER_RECT: {
+                res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<RectangularK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                        amplicon_storage, swarm_storage, pool_id,
+                        static_cast<lenSeqs_t>(threshold), num_extra_segments, config);
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on PartitionedRectangularK2Tree instances.
+            case RD_SPACE_SEGMENT_FILTER_PART: {
+                res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<PartitionedRectangularK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                        amplicon_storage, swarm_storage, pool_id,
+                        static_cast<lenSeqs_t>(threshold), num_extra_segments, config);
+                break;
+            }
+
+            // Auxiliary data structures employing a (one-way) segment filter based on PartitionedVariableK2Tree instances.
+            case RD_SPACE_SEGMENT_FILTER_VARI: {
+                res = new SpaceSegmentFilterAuxiliaryData<SpaceSegmentRelations<PartitionedVariableK2Tree<bit_vector_t, rank_t, numSeqs_t>>>(
+                        amplicon_storage, swarm_storage, pool_id,
+                        static_cast<lenSeqs_t>(threshold), num_extra_segments, config);
                 break;
             }
 

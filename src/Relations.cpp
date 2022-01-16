@@ -61,7 +61,11 @@ namespace GeFaST {
         std::copy(other.positions_, other.positions_ + pool_size_ * num_segs_, positions_);
 
         access_sip_ = new sip_map_type[access_len_.size() * num_segs_];
-        std::copy(other.access_sip_, other.access_sip_ + access_len_.size() * num_segs_, access_sip_);
+        for (auto i = 0; i < access_len_.size() * num_segs_; i++) {
+            for (auto& kv : other.access_sip_[i]) {
+                access_sip_[i][std::unique_ptr<SubstringWrapper>(kv.first->clone())] = kv.second;
+            }
+        }
 
     }
 
@@ -94,7 +98,11 @@ namespace GeFaST {
         access_len_ = other.access_len_;
 
         access_sip_ = new sip_map_type[access_len_.size() * num_segs_];
-        std::copy(other.access_sip_, other.access_sip_ + access_len_.size() * num_segs_, access_sip_);
+        for (auto i = 0; i < access_len_.size() * num_segs_; i++) {
+            for (auto& kv : other.access_sip_[i]) {
+                access_sip_[i][std::unique_ptr<SubstringWrapper>(kv.first->clone())] = kv.second;
+            }
+        }
 
         return *this;
 
@@ -124,22 +132,22 @@ namespace GeFaST {
 
     }
 
-    void SegmentRelations::add_counts(const numSeqs_t len, const numSeqs_t seg, const StringIteratorPair& sip, std::vector<numSeqs_t>& cand_cnts) {
+    void SegmentRelations::add_counts(const numSeqs_t len, const numSeqs_t seg, const std::unique_ptr<SubstringWrapper>& sub_sip, std::vector<numSeqs_t>& cand_cnts) {
 
         auto& acc = access_sip_[access_len_[len] + seg];
-        auto iter = acc.find(sip);
+        auto iter = acc.find(sub_sip);
 
         if (iter != acc.end()) {
             cand_cnts.insert(cand_cnts.end(), iter->second.begin(), iter->second.end());
         }
 
     }
-    void SegmentRelations::add_counts_checked(const numSeqs_t len, const numSeqs_t seg, const StringIteratorPair& sip, std::vector<numSeqs_t>& cand_cnts) {
+    void SegmentRelations::add_counts_checked(const numSeqs_t len, const numSeqs_t seg, const std::unique_ptr<SubstringWrapper>& sub_sip, std::vector<numSeqs_t>& cand_cnts) {
 
         if (access_len_.find(len) != access_len_.end()) {
 
             auto& acc = access_sip_[access_len_[len] + seg];
-            auto iter = acc.find(sip);
+            auto iter = acc.find(sub_sip);
 
             if (iter != acc.end()) {
                 cand_cnts.insert(cand_cnts.end(), iter->second.begin(), iter->second.end());
@@ -149,31 +157,32 @@ namespace GeFaST {
 
     }
 
-    void SegmentRelations::add_neighboured_counts(const numSeqs_t len, const numSeqs_t seg, StringIteratorPair sip,
+    void SegmentRelations::add_neighboured_counts(const numSeqs_t len, const numSeqs_t seg, std::unique_ptr<SubstringWrapper>& sub_sip,
                                 numSeqs_t num_neigh, std::vector<numSeqs_t>& cand_cnts) {
 
         auto& acc = access_sip_[access_len_[len] + seg];
 
-        for (auto n = 0; n <= num_neigh; n++, sip.first++, sip.second++) {
+        for (auto n = 0; n <= num_neigh; n++) {
 
-            auto iter = acc.find(sip);
+            auto iter = acc.find(sub_sip);
 
             if (iter != acc.end()) {
                 cand_cnts.insert(cand_cnts.end(), iter->second.begin(), iter->second.end());
             }
 
+            sub_sip->shift();
+
         }
 
-
     }
-    void SegmentRelations::add_neighboured_counts_checked(const numSeqs_t len, const numSeqs_t seg, StringIteratorPair sip,
+    void SegmentRelations::add_neighboured_counts_checked(const numSeqs_t len, const numSeqs_t seg, std::unique_ptr<SubstringWrapper>& sip,
                                         numSeqs_t num_neigh, std::vector<numSeqs_t>& cand_cnts) {
 
         if (access_len_.find(len) != access_len_.end()) {
 
             auto& acc = access_sip_[access_len_[len] + seg];
 
-            for (auto n = 0; n <= num_neigh; n++, sip.first++, sip.second++) {
+            for (auto n = 0; n <= num_neigh; n++) {
 
                 auto iter = acc.find(sip);
 
@@ -181,17 +190,19 @@ namespace GeFaST {
                     cand_cnts.insert(cand_cnts.end(), iter->second.begin(), iter->second.end());
                 }
 
+                sip->shift();
+
             }
 
         }
 
     }
 
-    void SegmentRelations::record_segment(const numSeqs_t len, const numSeqs_t seg, const StringIteratorPair& sip, const numSeqs_t ampl_id) {
+    void SegmentRelations::record_segment(const numSeqs_t len, const numSeqs_t seg, const std::unique_ptr<SubstringWrapper>& sub_sip, const numSeqs_t ampl_id) {
 
         auto& acc = access_sip_[access_len_[len] + seg];
-        acc[sip].emplace_back(ampl_id);
-        positions_[ampl_id * num_segs_ + seg] = &(*acc.find(sip));
+        acc[std::unique_ptr<SubstringWrapper>(sub_sip->clone())].emplace_back(ampl_id);
+        positions_[ampl_id * num_segs_ + seg] = &(*acc.find(sub_sip));
 
     }
 
@@ -210,6 +221,44 @@ namespace GeFaST {
 
     bool SegmentRelations::contains_length(const numSeqs_t len) const {
         return access_len_.find(len) != access_len_.end();
+    }
+
+    size_t SegmentRelations::size_in_bytes() const {
+
+        size_t allocated_access_sip = 0;
+        for (auto i = 0; i < access_len_.size() * num_segs_; i++) {
+            allocated_access_sip += sip_map_multiple_size_in_bytes(access_sip_[i]);
+        }
+
+        return sizeof(SegmentRelations) // SegmentRelations itself
+            + allocated_access_sip // access_sip_
+            + umap_pod_size_in_bytes(access_len_) - sizeof(length_map_type) // access_len_ (do not count size of length_map_type object twice)
+            + sizeof(position_type*) * pool_size_ * num_segs_; // positions_
+
+    }
+
+    void SegmentRelations::show_memory() const {
+
+        size_t allocated_access_sip = 0;
+        for (auto i = 0; i < access_len_.size() * num_segs_; i++) {
+            allocated_access_sip += sip_map_multiple_size_in_bytes(access_sip_[i]);
+        }
+
+        std::cout << "#  * SegmentRelations " << std::endl;
+        std::cout << "#  * " << std::endl;
+        std::cout << "#  * sizeof(SegmentRelations): " << sizeof(SegmentRelations) << " bytes" << std::endl;
+        std::cout << "#  * sizeof(sip_map_type): " << sizeof(sip_map_type) << " bytes" << std::endl;
+        std::cout << "#  * sizeof(sip_map_type*): " << sizeof(sip_map_type*) << " bytes" << std::endl;
+        std::cout << "#  * sizeof(length_map_type): " << sizeof(length_map_type) << " bytes" << std::endl;
+        std::cout << "#  * sizeof(position_type): " << sizeof(position_type) << " bytes" << std::endl;
+        std::cout << "#  * sizeof(position_type*): " << sizeof(position_type*) << " bytes" << std::endl;
+        std::cout << "#  * sizeof(numSeqs_t): " << sizeof(numSeqs_t) << " bytes" << std::endl;
+        std::cout << "#  * " << std::endl;
+        std::cout << "#  * Total size: " << size_in_bytes() << " bytes" << std::endl;
+        std::cout << "#  * access_sip_: " << allocated_access_sip << " bytes" << std::endl;
+        std::cout << "#  * access_len_: " << umap_pod_size_in_bytes(access_len_) << " bytes" << std::endl;
+        std::cout << "#  * positions_: " << (sizeof(position_type*) * pool_size_ * num_segs_) << " bytes" << std::endl;
+
     }
 
 }

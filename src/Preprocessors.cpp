@@ -109,7 +109,7 @@ namespace GeFaST {
                     upper_case(seq);
 
                     if (check_sequence(seq, config.alphabet, dl.abundance, min_length, max_length, min_abundance, max_abundance)) {
-                        ds.record(dl.id.length(), seq.length());
+                        ds.record(dl.id, seq, dl.abundance);
                     }
 
                     seq.clear();
@@ -127,7 +127,7 @@ namespace GeFaST {
             upper_case(seq);
 
             if (check_sequence(seq, config.alphabet, dl.abundance, min_length, max_length, min_abundance, max_abundance)) {
-                ds.record(dl.id.length(), seq.length());
+                ds.record(dl.id, seq, dl.abundance);
             }
 
         }

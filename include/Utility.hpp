@@ -32,11 +32,12 @@
 #include <vector>
 
 #include "Options.hpp"
+#include "space/dacs/Utility.hpp"
 
 namespace GeFaST {
 
     // version number of current implementation of GeFaST
-    const std::string VERSION = "2.1.0";
+    const std::string VERSION = "2.1.0s";
 
     // output separators
     const char SEP_INTERNALS = '\t'; // between columns in output_internal
@@ -135,6 +136,7 @@ namespace GeFaST {
      *  - total length of headers (identifiers) of all amplicons
      *  - total length of headers (identifiers) of amplicons per sequence length
      *  - total length of sequences of all amplicons
+     *  - occurrences of characters in the headers (identifiers) per sequence length
      *
      *  Offers methods for recording and unrecord amplicons provided in different forms.
      *  Only considers the lengths of headers and sequences, not their content.
@@ -145,7 +147,7 @@ namespace GeFaST {
     public:
         /* === Add / remove information === */
 
-        void record(const std::string header, const std::string seq) {
+        void record(const std::string& header, const std::string& seq, const numSeqs_t ab) {
 
             total_num++;
             total_length_headers += header.length();
@@ -153,9 +155,15 @@ namespace GeFaST {
             num_per_length[seq.length()]++;
             total_length_headers_per_length[seq.length()] += header.length();
 
+            auto& char_counts = char_counts_per_length[seq.length()];
+            for (auto c : header) char_counts[c]++;
+            char_counts['\0']++;
+
+            abundance_counts_per_length[seq.length()][ab]++;
+
         }
 
-        void record(const L len_header, const L len_seq) {
+        void record(const L len_header, const L len_seq, const numSeqs_t ab) {
 
             total_num++;
             total_length_headers += len_header;
@@ -163,9 +171,11 @@ namespace GeFaST {
             num_per_length[len_seq]++;
             total_length_headers_per_length[len_seq] += len_header;
 
+            abundance_counts_per_length[len_seq][ab]++;
+
         }
 
-        void record(const char* header, const L len_header, const char* seq, const L len_seq) {
+        void record(const char* header, const L len_header, const char* seq, const L len_seq, const numSeqs_t ab) {
 
             total_num++;
             total_length_headers += len_header;
@@ -173,9 +183,15 @@ namespace GeFaST {
             num_per_length[len_seq]++;
             total_length_headers_per_length[len_seq] += len_header;
 
+            auto& char_counts = char_counts_per_length[len_seq];
+            for (auto i = 0; i < len_header; i++) char_counts[header[i]]++;
+            char_counts['\0']++;
+
+            abundance_counts_per_length[len_seq][ab]++;
+
         }
 
-        void unrecord(const std::string header, const std::string seq) {
+        void unrecord(const std::string& header, const std::string& seq, const numSeqs_t ab) {
 
             total_num--;
             total_length_headers -= header.length();
@@ -183,9 +199,15 @@ namespace GeFaST {
             num_per_length[seq.length()]--;
             total_length_headers_per_length[seq.length()] -= header.length();
 
+            auto& char_counts = char_counts_per_length[seq.length()];
+            for (auto c : header) char_counts[c]--;
+            char_counts['\0']--;
+
+            abundance_counts_per_length[seq.length()][ab]--;
+
         }
 
-        void unrecord(const L len_header, const L len_seq) {
+        void unrecord(const L len_header, const L len_seq, const numSeqs_t ab) {
 
             total_num--;
             total_length_headers -= len_header;
@@ -193,15 +215,23 @@ namespace GeFaST {
             num_per_length[len_seq]--;
             total_length_headers_per_length[len_seq] -= len_header;
 
+            abundance_counts_per_length[len_seq][ab]--;
+
         }
 
-        void unrecord(const char* header, const L len_header, const char* seq, const L len_seq) {
+        void unrecord(const char* header, const L len_header, const char* seq, const L len_seq, const numSeqs_t ab) {
 
             total_num--;
             total_length_headers -= len_header;
             total_length_seqs -= len_seq;
             num_per_length[len_seq]--;
             total_length_headers_per_length[len_seq] -= len_header;
+
+            auto& char_counts = char_counts_per_length[len_seq];
+            for (auto i = 0; i < len_header; i++) char_counts[header[i]]--;
+            char_counts['\0']--;
+
+            abundance_counts_per_length[len_seq][ab]--;
 
         }
 
@@ -254,12 +284,25 @@ namespace GeFaST {
 
         }
 
+        // Caller has to ensure that only recorded lengths are requested
+        const std::array<size_t, 256>& get_counts_per_length(const L len) const {
+            return char_counts_per_length.find(len)->second;
+        }
+
+        // Caller has to ensure that only recorded lengths are requested
+        const std::map<ularge_t, ularge_t>& get_abundances_per_length(const L len) const {
+            return abundance_counts_per_length.find(len)->second;
+        }
+
     protected:
         N total_num = 0; // total number of amplicons
         unsigned long long total_length_headers = 0; // total length of headers (identifiers) of all amplicons
         unsigned long long total_length_seqs = 0; // total length of sequences of all amplicons
         std::map<L, N> num_per_length; // number of amplicons per observed sequence length
         std::map<L, unsigned long long> total_length_headers_per_length; // total length of headers (identifiers) of amplicons per observed sequence length
+
+        std::map<L, std::array<size_t, 256>> char_counts_per_length; // number of occurrences of the different characters in the headers (identifiers) per observed sequence length
+        std::map<L, std::map<ularge_t, ularge_t>> abundance_counts_per_length; // number of occurrences of abundance values per observed sequence length
 
     };
 

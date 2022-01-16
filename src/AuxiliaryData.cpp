@@ -73,10 +73,10 @@ namespace GeFaST {
     }
 
     SimpleAuxiliaryData::SimpleAuxiliaryData(const SimpleAuxiliaryData& other) : // copy constructor
-            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
+            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()),
             threshold_(other.threshold_), break_swarms_(other.break_swarms_), unswarmed_(other.unswarmed_) {
 
-        // nothing else to do
+        for (auto& s : other.different_seqs_) different_seqs_.emplace(s->clone());
 
     }
 
@@ -97,7 +97,7 @@ namespace GeFaST {
     }
 
     bool SimpleAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id)).second;
     }
 
     void SimpleAuxiliaryData::clear_amplicon_records() {
@@ -127,6 +127,16 @@ namespace GeFaST {
 
     }
 
+    size_t SimpleAuxiliaryData::size_in_bytes() const {
+
+        std::cerr << "ERROR: SimpleAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void SimpleAuxiliaryData::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: SimpleAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
+    }
 
 
     /* === Support data structures and functions for segment-filter auxiliary data === */
@@ -243,6 +253,28 @@ namespace GeFaST {
 
     }
 
+    size_t substrs_archive_size_in_bytes(const std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*>& map) {
+
+        // internal typedefs of the map implementation (red-black trees)
+        typedef std::pair<lenSeqs_t, lenSeqs_t> key_type;
+        typedef Substrings* mapped_type;
+        typedef std::pair<const key_type, mapped_type> value_type;
+        typedef std::less<key_type> key_compare;
+        typedef std::allocator<std::pair<const key_type, mapped_type>> allocator_type;
+        typedef typename __gnu_cxx::__alloc_traits<allocator_type>::template rebind<value_type>::other pair_alloc_type;
+        typedef std::_Rb_tree<key_type, value_type, std::_Select1st<value_type>, key_compare, pair_alloc_type> rep_type;
+
+        size_t allocated_substrings = 0;
+        for (auto& kv : map) {
+            allocated_substrings += kv.second->size_in_bytes();
+        }
+
+        return sizeof(rep_type) // std::map contains only member of type rep_type
+            + sizeof(std::_Rb_tree_node<value_type>) * map.size() // tree nodes (colour, pointers, key-value pair)
+            + allocated_substrings; // memory of the Substrings
+
+    }
+
     // The first t + k - d segments have length floor(seqLen / (t + k)), while the last d segments have length ceil(seqLen / (t + k)).
     // Since d is calculated by seqLen - floor(seqLen / (t + k)) * (t + k), longer segments exist only if seqLen is not divisible by (t + k)
     // and their lengths then higher by exactly one.
@@ -313,9 +345,11 @@ namespace GeFaST {
     }
 
     SegmentFilterAuxiliaryData::SegmentFilterAuxiliaryData(const SegmentFilterAuxiliaryData& other) : // copy constructor
-            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
+            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()),
             threshold_(other.threshold_), num_extra_segments_(other.num_extra_segments_),
             break_swarms_(other.break_swarms_), indices_(other.indices_) {
+
+        for (auto& s : other.different_seqs_) different_seqs_.emplace(s->clone());
 
         for (auto& kv : other.substrs_archive_) {
 
@@ -347,7 +381,7 @@ namespace GeFaST {
     }
 
     bool SegmentFilterAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id)).second;
     }
 
     void SegmentFilterAuxiliaryData::clear_amplicon_records() {
@@ -367,12 +401,44 @@ namespace GeFaST {
 
             cand_cnts.clear();
 
-            add_candidate_counts(ampl_seq, seq_len, partner_len, cand_cnts);
+            add_candidate_counts(*ampl_seq, seq_len, partner_len, cand_cnts);
             verify_candidates(ampl_id, ampl_ab, cand_cnts, partners);
 
         }
 
         return partners;
+
+    }
+
+    size_t SegmentFilterAuxiliaryData::size_in_bytes() const {
+        return sizeof(SegmentFilterAuxiliaryData) // SegmentFilterAuxiliaryData itself
+            + dist_fun_->size_in_bytes() // dist_fun_
+            + different_seqs_size_in_bytes(different_seqs_) - sizeof(std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper>) // different_seqs_ (do not count size of set object twice)
+            + indices_.size_in_bytes() - sizeof(SwarmingIndices) // indices_ (do not count size of SwarmingIndices object twice)
+            + substrs_archive_size_in_bytes(substrs_archive_) - sizeof(std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*>); // substr_archive_ (do not count size of map object twice)
+    }
+
+    void SegmentFilterAuxiliaryData::show_memory(numSeqs_t pid) const {
+
+        std::cout << "##################################################" << std::endl;
+        std::cout << "# SegmentFilterAuxiliaryData " << std::endl;
+        std::cout << "#  - pid: " << pid << std::endl;
+        std::cout << "# " << std::endl;
+        std::cout << "# sizeof(SegmentFilterAuxiliaryData): " << sizeof(SegmentFilterAuxiliaryData) << " bytes" << std::endl;
+        std::cout << "# sizeof(Distance*): " << sizeof(Distance*) << " bytes" << std::endl;
+        std::cout << "# sizeof(std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper>): " << sizeof(std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper>) << " bytes" << std::endl;
+        std::cout << "# sizeof(lenSeqs_t): " << sizeof(lenSeqs_t) << " bytes" << std::endl;
+        std::cout << "# sizeof(bool): " << sizeof(bool) << " bytes" << std::endl;
+        std::cout << "# sizeof(SwarmingIndices): " << sizeof(SwarmingIndices) << " bytes" << std::endl;
+        std::cout << "# sizeof(std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*>): " << sizeof(std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*>) << " bytes" << std::endl;
+        std::cout << "# " << std::endl;
+        std::cout << "# Total size: " << size_in_bytes() << " bytes" << std::endl;
+        std::cout << "# dist_fun_: " << dist_fun_->size_in_bytes() << " bytes" << std::endl;
+        std::cout << "# different_seqs_: " << different_seqs_size_in_bytes(different_seqs_) << " bytes" << std::endl;
+        std::cout << "# indices_: " << indices_.size_in_bytes() << " bytes" << std::endl;
+        indices_.show_memory();
+        std::cout << "# substrs_archive_: " << substrs_archive_size_in_bytes(substrs_archive_) << " bytes" << std::endl;
+        std::cout << "##################################################" << std::endl;
 
     }
 
@@ -408,13 +474,13 @@ namespace GeFaST {
             lenSeqs_t d = seq_len - (seq_len / (threshold_ + num_extra_segments_)) * (threshold_ + num_extra_segments_);
             lenSeqs_t l = (seq_len / (threshold_ + num_extra_segments_));
 
-            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
+            std::unique_ptr<SequenceWrapper> sip = ac_.seq(ampl_id);
 
-            for (lenSeqs_t s = 0; s < threshold_ + num_extra_segments_; s++) {
+            for (lenSeqs_t s = 0, start = 0, len = l + (s >= (threshold_ + num_extra_segments_ - d));
+                 s < threshold_ + num_extra_segments_;
+                 s++, start += len, len = l + (s >= (threshold_ + num_extra_segments_ - d))) {
 
-                sip.first = sip.second;
-                sip.second += l + (s >= (threshold_ + num_extra_segments_ - d));
-                indices_.record_segment(seq_len, s, sip, ampl_id);
+                indices_.record_segment(seq_len, s, sip->substr(start, len), ampl_id);
 
             }
 
@@ -483,13 +549,13 @@ namespace GeFaST {
             lenSeqs_t d = seq_len - (seq_len / (threshold_ + num_extra_segments_)) * (threshold_ + num_extra_segments_);
             lenSeqs_t l = (seq_len / (threshold_ + num_extra_segments_));
 
-            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
+            std::unique_ptr<SequenceWrapper> sip = ac_.seq(ampl_id);
 
-            for (lenSeqs_t s = 0; s < threshold_ + num_extra_segments_; s++) {
+            for (lenSeqs_t s = 0, start = 0, len = l + (s >= (threshold_ + num_extra_segments_ - d));
+                 s < threshold_ + num_extra_segments_;
+                 s++, start += len, len = l + (s >= (threshold_ + num_extra_segments_ - d))) {
 
-                sip.first = sip.second;
-                sip.second += l + (s >= (threshold_ + num_extra_segments_ - d));
-                indices_.record_segment(seq_len, s, sip, ampl_id);
+                indices_.record_segment(seq_len, s, sip->substr(start, len), ampl_id);
 
             }
 
@@ -497,7 +563,7 @@ namespace GeFaST {
 
     }
 
-    void SegmentFilterAuxiliaryData::add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len,
+    void SegmentFilterAuxiliaryData::add_candidate_counts(const SequenceWrapper& ampl_seq, const lenSeqs_t ampl_len,
                                                           lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts) {
 
         if (indices_.contains_length(partner_len)) {
@@ -507,9 +573,9 @@ namespace GeFaST {
             for (lenSeqs_t i = 0; i < threshold_ + num_extra_segments_; i++) {
 
                 Substrings& subs = arr[i];
-                StringIteratorPair sip(ampl_seq + subs.first, ampl_seq + subs.first + subs.len);
+                auto sub_sip = ampl_seq.substr(subs.first, subs.len);
 
-                indices_.add_neighboured_counts(partner_len, i, sip, subs.last - subs.first, cand_cnts);
+                indices_.add_neighboured_counts(partner_len, i, sub_sip, subs.last - subs.first, cand_cnts);
 
             }
 
@@ -610,10 +676,12 @@ namespace GeFaST {
     }
 
     TwoWaySegmentFilterAuxiliaryData::TwoWaySegmentFilterAuxiliaryData(const TwoWaySegmentFilterAuxiliaryData& other) : // copy constructor
-            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
+            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()),
             threshold_(other.threshold_), num_extra_segments_(other.num_extra_segments_),
             break_swarms_(other.break_swarms_), indices_(other.indices_),
             segments_(other.segments_), segment_strs_(other.segment_strs_) {
+
+        for (auto& s : other.different_seqs_) different_seqs_.emplace(s->clone());
 
         for (auto& kv : other.substrs_archive_) {
 
@@ -645,7 +713,7 @@ namespace GeFaST {
     }
 
     bool TwoWaySegmentFilterAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id)).second;
     }
 
     void TwoWaySegmentFilterAuxiliaryData::clear_amplicon_records() {
@@ -663,8 +731,7 @@ namespace GeFaST {
 
         select_segments(segments_, seq_len, threshold_, num_extra_segments_);
         for (auto i = 0; i < threshold_ + num_extra_segments_; i++) {
-            segment_strs_[i] = std::string(ampl_seq + segments_[i].first,
-                                           ampl_seq + segments_[i].first + segments_[i].second);
+            segment_strs_[i] = ampl_seq->substr(segments_[i].first, segments_[i].second)->to_string();
         }
 
         for (lenSeqs_t partner_len = (seq_len > threshold_) * (seq_len - threshold_);
@@ -672,13 +739,24 @@ namespace GeFaST {
 
             cand_cnts.clear();
 
-            add_candidate_counts(ampl_seq, seq_len, partner_len, cand_cnts);
+            add_candidate_counts(*ampl_seq, seq_len, partner_len, cand_cnts);
             verify_candidates(ampl_id, seq_len, ampl_ab, partner_len, cand_cnts, partners);
 
         }
 
         return partners;
 
+    }
+
+    size_t TwoWaySegmentFilterAuxiliaryData::size_in_bytes() const {
+
+        std::cerr << "ERROR: TwoWaySegmentFilterAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void TwoWaySegmentFilterAuxiliaryData::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: TwoWaySegmentFilterAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
     }
 
     void TwoWaySegmentFilterAuxiliaryData::prepare() {
@@ -713,13 +791,13 @@ namespace GeFaST {
             lenSeqs_t d = seq_len - (seq_len / (threshold_ + num_extra_segments_)) * (threshold_ + num_extra_segments_);
             lenSeqs_t l = (seq_len / (threshold_ + num_extra_segments_));
 
-            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
+            std::unique_ptr<SequenceWrapper> sip = ac_.seq(ampl_id);
 
-            for (lenSeqs_t s = 0; s < threshold_ + num_extra_segments_; s++) {
+            for (lenSeqs_t s = 0, start = 0, len = l + (s >= (threshold_ + num_extra_segments_ - d));
+                 s < threshold_ + num_extra_segments_;
+                 s++, start += len, len = l + (s >= (threshold_ + num_extra_segments_ - d))) {
 
-                sip.first = sip.second;
-                sip.second += l + (s >= (threshold_ + num_extra_segments_ - d));
-                indices_.record_segment(seq_len, s, sip, ampl_id);
+                indices_.record_segment(seq_len, s, sip->substr(start, len), ampl_id);
 
             }
 
@@ -786,13 +864,13 @@ namespace GeFaST {
             lenSeqs_t d = seq_len - (seq_len / (threshold_ + num_extra_segments_)) * (threshold_ + num_extra_segments_);
             lenSeqs_t l = (seq_len / (threshold_ + num_extra_segments_));
 
-            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
+            std::unique_ptr<SequenceWrapper> sip = ac_.seq(ampl_id);
 
-            for (lenSeqs_t s = 0; s < threshold_ + num_extra_segments_; s++) {
+            for (lenSeqs_t s = 0, start = 0, len = l + (s >= (threshold_ + num_extra_segments_ - d));
+                 s < threshold_ + num_extra_segments_;
+                 s++, start += len, len = l + (s >= (threshold_ + num_extra_segments_ - d))) {
 
-                sip.first = sip.second;
-                sip.second += l + (s >= (threshold_ + num_extra_segments_ - d));
-                indices_.record_segment(seq_len, s, sip, ampl_id);
+                indices_.record_segment(seq_len, s, sip->substr(start, len), ampl_id);
 
             }
 
@@ -800,7 +878,7 @@ namespace GeFaST {
 
     }
 
-    void TwoWaySegmentFilterAuxiliaryData::add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len,
+    void TwoWaySegmentFilterAuxiliaryData::add_candidate_counts(const SequenceWrapper& ampl_seq, const lenSeqs_t ampl_len,
                                                                 lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts) {
 
         if (indices_.contains_length(partner_len)) {
@@ -810,9 +888,9 @@ namespace GeFaST {
             for (lenSeqs_t i = 0; i < threshold_ + num_extra_segments_; i++) {
 
                 Substrings& subs = arr[i];
-                StringIteratorPair sip(ampl_seq + subs.first, ampl_seq + subs.first + subs.len);
+                auto sub_sip = ampl_seq.substr(subs.first, subs.len);
 
-                indices_.add_neighboured_counts(partner_len, i, sip, subs.last - subs.first, cand_cnts);
+                indices_.add_neighboured_counts(partner_len, i, sub_sip, subs.last - subs.first, cand_cnts);
 
             }
 
@@ -838,7 +916,7 @@ namespace GeFaST {
                 if ((cnt >= num_extra_segments_) && (!break_swarms_ || ampl_ab >= ac_.ab(prev_cand))) {
 
                     cnt = 0; // reset to 0 and count matching segments in the other direction
-                    std::string cand_str = std::string(ac_.seq(prev_cand));
+                    std::string cand_str = ac_.seq_str(prev_cand);
                     for (lenSeqs_t i = 0; i < threshold_ + num_extra_segments_ && cnt < num_extra_segments_; i++) {
                         cnt += (cand_str.substr(
                                 cand_substrs[i].first,
@@ -871,7 +949,7 @@ namespace GeFaST {
         if ((cnt >= num_extra_segments_) && (!break_swarms_ || ampl_ab >= ac_.ab(prev_cand))) {
 
             cnt = 0; // reset to 0 and count matching segments in the other direction
-            std::string cand_str = std::string(ac_.seq(prev_cand));
+            std::string cand_str = ac_.seq_str(prev_cand);
             for (lenSeqs_t i = 0; i < threshold_ + num_extra_segments_ && cnt < num_extra_segments_; i++) {
                 cnt += (cand_str.substr(
                         cand_substrs[i].first,
@@ -939,10 +1017,12 @@ namespace GeFaST {
     }
 
     ScoreSegmentFilterAuxiliaryData::ScoreSegmentFilterAuxiliaryData(const ScoreSegmentFilterAuxiliaryData& other) : // copy constructor
-        ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
+        ac_(other.ac_), dist_fun_(other.dist_fun_->clone()),
         threshold_(other.threshold_), num_threshold_segments_(other.num_threshold_segments_),
         num_extra_segments_(other.num_extra_segments_), break_swarms_(other.break_swarms_),
         indices_(other.indices_) {
+
+        for (auto& s : other.different_seqs_) different_seqs_.emplace(s->clone());
 
         for (auto& kv : other.substrs_archive_) {
 
@@ -973,7 +1053,7 @@ namespace GeFaST {
     }
 
     bool ScoreSegmentFilterAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id)).second;
     }
 
     void ScoreSegmentFilterAuxiliaryData::clear_amplicon_records() {
@@ -993,13 +1073,24 @@ namespace GeFaST {
 
             cand_cnts.clear();
 
-            add_candidate_counts(ampl_seq, seq_len, partner_len, cand_cnts);
+            add_candidate_counts(*ampl_seq, seq_len, partner_len, cand_cnts);
             verify_candidates(ampl_id, ampl_ab, cand_cnts, partners);
 
         }
 
         return partners;
 
+    }
+
+    size_t ScoreSegmentFilterAuxiliaryData::size_in_bytes() const {
+
+        std::cerr << "ERROR: ScoreSegmentFilterAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void ScoreSegmentFilterAuxiliaryData::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: ScoreSegmentFilterAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
     }
 
     void ScoreSegmentFilterAuxiliaryData::prepare() {
@@ -1034,13 +1125,13 @@ namespace GeFaST {
             lenSeqs_t d = seq_len - (seq_len / (num_threshold_segments_ + num_extra_segments_)) * (num_threshold_segments_ + num_extra_segments_);
             lenSeqs_t l = (seq_len / (num_threshold_segments_ + num_extra_segments_));
 
-            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
+            std::unique_ptr<SequenceWrapper> sip = ac_.seq(ampl_id);
 
-            for (lenSeqs_t s = 0; s < num_threshold_segments_ + num_extra_segments_; s++) {
+            for (lenSeqs_t s = 0, start = 0, len = l + (s >= (threshold_ + num_extra_segments_ - d));
+                 s < num_threshold_segments_ + num_extra_segments_;
+                 s++, start += len, len = l + (s >= (threshold_ + num_extra_segments_ - d))) {
 
-                sip.first = sip.second;
-                sip.second += l + (s >= (num_threshold_segments_ + num_extra_segments_ - d));
-                indices_.record_segment(seq_len, s, sip, ampl_id);
+                indices_.record_segment(seq_len, s, sip->substr(start, len), ampl_id);
 
             }
 
@@ -1109,13 +1200,13 @@ namespace GeFaST {
             lenSeqs_t d = seq_len - (seq_len / (num_threshold_segments_ + num_extra_segments_)) * (num_threshold_segments_ + num_extra_segments_);
             lenSeqs_t l = (seq_len / (num_threshold_segments_ + num_extra_segments_));
 
-            StringIteratorPair sip(nullptr, ac_.seq(ampl_id));
+            std::unique_ptr<SequenceWrapper> sip = ac_.seq(ampl_id);
 
-            for (lenSeqs_t s = 0; s < num_threshold_segments_ + num_extra_segments_; s++) {
+            for (lenSeqs_t s = 0, start = 0, len = l + (s >= (threshold_ + num_extra_segments_ - d));
+                 s < num_threshold_segments_ + num_extra_segments_;
+                 s++, start += len, len = l + (s >= (threshold_ + num_extra_segments_ - d))) {
 
-                sip.first = sip.second;
-                sip.second += l + (s >= (num_threshold_segments_ + num_extra_segments_ - d));
-                indices_.record_segment(seq_len, s, sip, ampl_id);
+                indices_.record_segment(seq_len, s, sip->substr(start, len), ampl_id);
 
             }
 
@@ -1123,7 +1214,7 @@ namespace GeFaST {
 
     }
 
-    void ScoreSegmentFilterAuxiliaryData::add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len,
+    void ScoreSegmentFilterAuxiliaryData::add_candidate_counts(const SequenceWrapper& ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len,
             std::vector<numSeqs_t>& cand_cnts) {
 
         if (indices_.contains_length(partner_len)) {
@@ -1133,9 +1224,9 @@ namespace GeFaST {
             for (lenSeqs_t i = 0; i < num_threshold_segments_ + num_extra_segments_; i++) {
 
                 Substrings& subs = arr[i];
-                StringIteratorPair sip(ampl_seq + subs.first, ampl_seq + subs.first + subs.len);
+                auto sub_sip = ampl_seq.substr(subs.first, subs.len);
 
-                indices_.add_neighboured_counts(partner_len, i, sip, subs.last - subs.first, cand_cnts);
+                indices_.add_neighboured_counts(partner_len, i, sub_sip, subs.last - subs.first, cand_cnts);
 
             }
 
@@ -1239,10 +1330,10 @@ namespace GeFaST {
     }
 
     FeatureAuxiliaryData::FeatureAuxiliaryData(const FeatureAuxiliaryData& other) : // copy constructor
-            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()), different_seqs_(other.different_seqs_),
+            ac_(other.ac_), dist_fun_(other.dist_fun_->clone()),
             threshold_(other.threshold_), break_swarms_(other.break_swarms_), unswarmed_(other.unswarmed_) {
 
-        // nothing else to do
+        for (auto& s : other.different_seqs_) different_seqs_.emplace(s->clone());
 
     }
 
@@ -1263,7 +1354,7 @@ namespace GeFaST {
     }
 
     bool FeatureAuxiliaryData::record_amplicon(numSeqs_t ampl_id) {
-        return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
+        return different_seqs_.emplace(ac_.seq(ampl_id)).second;
     }
 
     void FeatureAuxiliaryData::clear_amplicon_records() {
@@ -1291,6 +1382,17 @@ namespace GeFaST {
 
         return partners;
 
+    }
+
+    size_t FeatureAuxiliaryData::size_in_bytes() const {
+
+        std::cerr << "ERROR: FeatureAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
+        return 0;
+
+    }
+
+    void FeatureAuxiliaryData::show_memory(numSeqs_t pid) const {
+        std::cerr << "ERROR: FeatureAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
     }
 
 }

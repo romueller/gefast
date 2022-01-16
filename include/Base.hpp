@@ -26,11 +26,14 @@
 
 #include <algorithm>
 #include <cstring>
+#include <memory>
 #include <vector>
 #include <set>
 #include <emmintrin.h>
 
 #include "Utility.hpp"
+
+#define PRINT_MEMORY 1
 
 namespace GeFaST {
 
@@ -473,6 +476,177 @@ namespace GeFaST {
 #endif
 
     /*
+     * Abstract wrapper class for accessing a substring as needed by GeFaST.
+     *
+     * The investigation of different space-efficient data structure requires
+     * a generalisation of the access to the headers and sequences of the amplicons.
+     * In the standard version of GeFaST, this access is provided through pointers to char arrays
+     * storing the strings. The wrapper classes encapsulate the internal details
+     * in order to use different string representations more easily with
+     * existing clusterers and other components.
+     */
+    class SubstringWrapper {
+
+    public:
+        virtual ~SubstringWrapper() = default;
+
+        virtual char operator[](size_t i) const = 0;
+
+        virtual lenSeqs_t length() const = 0;
+
+        virtual std::string to_string() const = 0;
+
+        virtual SubstringWrapper* clone() const = 0; // deep-copy clone method
+
+        bool operator==(const SubstringWrapper& rhs) const;
+
+        // shift the substring representation one position to the left (without changing the length)
+        virtual void shift() = 0;
+
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
+    private:
+        // condition: only called when other has the same type as this instance
+        virtual bool equals(const SubstringWrapper& other) const = 0;
+
+    };
+
+    // hash function for SubstringWrapper
+    struct hashSubstringWrapper {
+
+        hashSubstringWrapper() : hash(std::hash<std::string>()) {
+            // nothing else to do
+        }
+
+        size_t operator()(const std::unique_ptr<SubstringWrapper>& p) const;
+
+        std::hash<std::string> hash;
+    };
+
+    // comparison function for string equality
+    struct equalSubstringWrapper {
+        bool operator()(const std::unique_ptr<SubstringWrapper>& lhs, const std::unique_ptr<SubstringWrapper>& rhs) const;
+    };
+
+
+    /*
+     * Abstract wrapper class for accessing a full strings as needed by GeFaST.
+     *
+     * See the description of SubstringWrapper for the rationale.
+     */
+    class SequenceWrapper {
+
+    public:
+        virtual ~SequenceWrapper() = default;
+
+        virtual char operator[](size_t i) const = 0;
+
+        virtual lenSeqs_t length() const = 0;
+
+        virtual std::string to_string() const = 0;
+
+        virtual void write(std::ostream& os) const = 0;
+
+        virtual SequenceWrapper* clone() const = 0; // deep-copy clone method
+
+        bool operator<(const SequenceWrapper& rhs) const;
+
+        bool operator==(const SequenceWrapper& rhs) const;
+
+        virtual std::unique_ptr<SubstringWrapper> substr(lenSeqs_t start, lenSeqs_t len) const = 0;
+
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
+    private:
+        // condition: only called when other has the same type as this instance
+        virtual bool less(const SequenceWrapper& other) const = 0;
+
+        // condition: only called when other has the same type as this instance
+        virtual bool equals(const SequenceWrapper& other) const = 0;
+
+    };
+
+    std::ostream& operator<<(std::ostream& os, const SequenceWrapper& s);
+
+    // comparison function for lexicographical order
+    struct lessSequenceWrapper {
+        bool operator()(const std::unique_ptr<SequenceWrapper>& a, const std::unique_ptr<SequenceWrapper>& b) const;
+    };
+
+
+    /*
+     * Substring wrapper simply encapsulating the old access pattern (pointer to char array).
+     */
+    class PointerSubstringWrapper : public SubstringWrapper {
+
+    public:
+        PointerSubstringWrapper(const char* seq, size_t len);
+
+        ~PointerSubstringWrapper() override = default;
+
+        char operator[](size_t i) const override;
+
+        lenSeqs_t length() const override;
+
+        std::string to_string() const override;
+
+        PointerSubstringWrapper* clone() const override;
+
+        void shift() override;
+
+        size_t size_in_bytes() const override;
+
+    private:
+        bool equals(const SubstringWrapper& other) const override;
+
+        const char* seq_; // wrapped sequence
+        lenSeqs_t len_; // length of the sequence
+
+    };
+
+
+    /*
+     * Sequence wrapper simply encapsulating the old access pattern (pointer to char array).
+     */
+    class PointerSequenceWrapper : public SequenceWrapper {
+
+    public:
+        PointerSequenceWrapper(const char* seq, size_t len);
+
+        ~PointerSequenceWrapper() override = default;
+
+        char operator[](size_t i) const override;
+
+        lenSeqs_t length() const override;
+
+        std::string to_string() const override;
+
+        void write(std::ostream& os) const override;
+
+        PointerSequenceWrapper* clone() const override;
+
+        std::unique_ptr<SubstringWrapper> substr(lenSeqs_t start, lenSeqs_t len) const override;
+
+        size_t size_in_bytes() const override;
+
+    private:
+        bool less(const SequenceWrapper& other) const override;
+
+        bool equals(const SequenceWrapper& other) const override;
+
+        const char* seq_; // wrapped sequence
+        lenSeqs_t len_; // length of the sequence
+
+    };
+
+
+    /*
      * Abstract class for storing a collection of amplicons (optionally including quality scores).
      *
      * Provides access to (the characteristics of) the amplicons.
@@ -502,8 +676,10 @@ namespace GeFaST {
         /*
          * Return the respective characteristic of the i-th amplicon of the collection.
          */
-        virtual const char* id(const numSeqs_t i) const = 0; // identifier
-        virtual const char* seq(const numSeqs_t i) const = 0; // sequence
+        virtual std::unique_ptr<SequenceWrapper> id(const numSeqs_t i) const = 0; // identifier
+        virtual std::string id_str(const numSeqs_t i) const = 0; // identifier
+        virtual std::unique_ptr<SequenceWrapper> seq(const numSeqs_t i) const = 0; // sequence
+        virtual std::string seq_str(const numSeqs_t i) const = 0; // sequence
         virtual lenSeqs_t len(const numSeqs_t i) const = 0; // length
         virtual numSeqs_t ab(const numSeqs_t i) const = 0; // abundance
         virtual const char* quals(const numSeqs_t i) const = 0; // returns nullptr when there are no quality scores available
@@ -512,6 +688,16 @@ namespace GeFaST {
          * Compute q-gram distance between two amplicons.
          */
         unsigned long qgram_diff(const numSeqs_t i, const numSeqs_t j) const override;
+
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
+        /*
+         * Show memory profile.
+         */
+        virtual void show_memory(numSeqs_t pid) const = 0;
 
     protected:
         AmpliconCollection() = default;
@@ -595,6 +781,16 @@ namespace GeFaST {
          */
         virtual void print(const std::string& file, const Configuration& config) const = 0;
 
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
+        /*
+         * Show memory profile.
+         */
+        virtual void show_memory() const = 0;
+
     protected:
         AmpliconStorage() = default;
 
@@ -654,6 +850,11 @@ namespace GeFaST {
          */
         virtual numSeqs_t num_links() const = 0;
 
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
     protected:
         GraftingInfo() = default;
 
@@ -702,6 +903,8 @@ namespace GeFaST {
         void add_link(const numSeqs_t p, const numSeqs_t c, Swarm* cs, const dist_t d) override;
 
         numSeqs_t num_links() const override;
+
+        size_t size_in_bytes() const override;
 
     protected:
         std::vector<numSeqs_t> parents_; // pool-internal integer id of parent amplicon
@@ -931,6 +1134,11 @@ namespace GeFaST {
          */
         virtual GraftingInfo* get_grafting_info() const = 0;
 
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
     protected:
         Swarm() = default;
 
@@ -977,6 +1185,22 @@ namespace GeFaST {
          * Discard the swarms in the collection, leaving behind an empty collection.
          */
         virtual void clear() = 0;
+
+        /*
+         * Implementations might require a finalisation step after determining the clusters
+         * before all contents can be freely accessed, which is induced by calling finalise() once.
+         */
+        virtual void finalise() = 0;
+
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
+        /*
+         * Show memory profile.
+         */
+        virtual void show_memory(numSeqs_t pid) const = 0;
 
     protected:
         Swarms() = default;
@@ -1028,6 +1252,16 @@ namespace GeFaST {
          * Return the number of swarms in the p-th pool.
          */
         virtual numSeqs_t num_swarms(const numSeqs_t p) const = 0;
+
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
+        /*
+         * Show memory profile.
+         */
+        virtual void show_memory() const = 0;
 
     protected:
         SwarmStorage() = default;
@@ -1085,6 +1319,11 @@ namespace GeFaST {
          * Compute distance between the two given amplicons.
          */
         virtual dist_t distance(const AmpliconCollection& ac, const numSeqs_t i, const numSeqs_t j) = 0;
+
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
 
     protected:
         Distance() = default;
@@ -1150,6 +1389,16 @@ namespace GeFaST {
          * Determine the partners of the amplicon with the given pool-internal integer id.
          */
         virtual std::vector<Partner> find_partners(const numSeqs_t ampl_id) = 0;
+
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        virtual size_t size_in_bytes() const = 0;
+
+        /*
+         * Show memory profile.
+         */
+        virtual void show_memory(numSeqs_t pid) const = 0;
 
     protected:
         AuxiliaryData() = default;

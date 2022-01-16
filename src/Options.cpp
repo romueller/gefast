@@ -37,7 +37,8 @@ namespace GeFaST {
             {"as", CF_ALIGNMENT_SCORE},
             {"qas", CF_QUALITY_ALIGNMENT_SCORE},
             {"af", CF_ALIGNMENT_FREE},
-            {"cons", CF_CONSISTENCY}
+            {"cons", CF_CONSISTENCY},
+            {"space", CF_SPACE_LEVENSHTEIN}
     };
 
     ConfigurationOption get_configuration_option(const std::string& type) {
@@ -59,7 +60,8 @@ namespace GeFaST {
             {"prepared-quality", AS_PREPARED_POOLS_QUALITY},
             {"prepared-qgram-length", AS_PREPARED_QGRAM_LENGTH_POOLS},
             {"prepared-qgram-length-quality", AS_PREPARED_QGRAM_LENGTH_POOLS_QUALITY},
-            {"simple-features", AS_SIMPLE_FEATURES}
+            {"simple-features", AS_SIMPLE_FEATURES},
+            {"space-flexible", AS_SPACE_FLEXIBLE}
     };
 
     AmpliconStorageOption get_amplicon_storage_option(const std::string& type) {
@@ -78,7 +80,24 @@ namespace GeFaST {
             {"array", AC_ARRAY},
             {"array-quality", AC_ARRAY_QUALITY},
             {"array-qgram", AC_ARRAY_QGRAM},
-            {"array-qgram-quality", AC_ARRAY_QGRAM_QUALITY}
+            {"array-qgram-quality", AC_ARRAY_QGRAM_QUALITY},
+            {"array-space-ref", AC_SPACE_REFERENCE},
+            {"array-space-id-pref", AC_SPACE_ID_PREF},
+            {"array-space-id-pref-dacs", AC_SPACE_ID_PREF_DACS},
+            {"array-space-id-huff", AC_SPACE_ID_HUFF},
+            {"array-space-id-huff-dacs", AC_SPACE_ID_HUFF_DACS},
+            {"array-space-seq", AC_SPACE_SEQ},
+            {"array-space-seq-dacs", AC_SPACE_SEQ_DACS},
+            {"array-space-ab", AC_SPACE_AB},
+            {"array-space-ab-bits", AC_SPACE_AB_BITS},
+            {"array-space-len", AC_SPACE_LEN},
+            {"array-space-len-offset", AC_SPACE_LEN_OFFSET},
+            {"array-space-ab-split", AC_SPACE_AB_SPLIT},
+            {"array-space-ab-bits-split", AC_SPACE_AB_BITS_SPLIT},
+            {"array-space-len-split", AC_SPACE_LEN_SPLIT},
+            {"array-space-len-offset-split", AC_SPACE_LEN_OFFSET_SPLIT},
+            {"array-space-qgram-dacs", AC_SPACE_QGRAM_DACS},
+            {"array-space-full", AC_SPACE_FULL}
     };
 
     AmpliconCollectionOption get_amplicon_collection_option(const std::string& type) {
@@ -264,7 +283,9 @@ namespace GeFaST {
             {"simple", SS_SIMPLE_PER_POOL},
             {"simple-combined", SS_SIMPLE_COMB_PER_POOL},
             {"forwarding", SS_FORWARDING_PER_POOL},
-            {"forwarding-combined", SS_FORWARDING_COMB_PER_POOL}
+            {"forwarding-combined", SS_FORWARDING_COMB_PER_POOL},
+            {"forwarding-dacs", SS_FORWARDING_DACS_PER_POOL},
+            {"forwarding-full-dacs", SS_FORWARDING_FULL_DACS_PER_POOL}
     };
 
     SwarmStorageOption get_swarm_storage_option(const std::string& type) {
@@ -284,7 +305,13 @@ namespace GeFaST {
             {"one-way", AD_SEGMENT_FILTER},
             {"two-way", AD_2W_SEGMENT_FILTER},
             {"score", AD_SCORE_SEGMENT_FILTER},
-            {"kdtree", AD_KDTREE_AUXILIARY}
+            {"kdtree", AD_KDTREE_AUXILIARY},
+            {"space-naive", AD_SPACE_SEGMENT_FILTER_NAIVE},
+            {"space-basic", AD_SPACE_SEGMENT_FILTER_BASIC},
+            {"space-hybrid", AD_SPACE_SEGMENT_FILTER_HYBRID},
+            {"space-rectangular", AD_SPACE_SEGMENT_FILTER_RECT},
+            {"space-partitioned", AD_SPACE_SEGMENT_FILTER_PART},
+            {"space-variable", AD_SPACE_SEGMENT_FILTER_VARI}
     };
 
     AuxiliaryDataOption get_auxiliary_data_option(const std::string& type) {
@@ -304,7 +331,13 @@ namespace GeFaST {
             {"one-way", RD_SEGMENT_FILTER},
             {"two-way", RD_2W_SEGMENT_FILTER},
             {"score", RD_SCORE_SEGMENT_FILTER},
-            {"kdtree", RD_KDTREE_AUXILIARY}
+            {"kdtree", RD_KDTREE_AUXILIARY},
+            {"space-naive", RD_SPACE_SEGMENT_FILTER_NAIVE},
+            {"space-basic", RD_SPACE_SEGMENT_FILTER_BASIC},
+            {"space-hybrid", RD_SPACE_SEGMENT_FILTER_HYBRID},
+            {"space-rectangular", RD_SPACE_SEGMENT_FILTER_RECT},
+            {"space-partitioned", RD_SPACE_SEGMENT_FILTER_PART},
+            {"space-variable", RD_SPACE_SEGMENT_FILTER_VARI}
     };
 
     RefinementAuxiliaryDataOption get_refinement_auxiliary_data_option(const std::string &type) {

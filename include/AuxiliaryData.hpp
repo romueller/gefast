@@ -66,10 +66,14 @@ namespace GeFaST {
 
         std::vector<Partner> find_partners(numSeqs_t ampl_id) override;
 
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
+
     protected:
         const AmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
+        std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper> different_seqs_; // recorded different sequences
 
         dist_t threshold_; // threshold applied during search for partners / similar amplicons
         bool break_swarms_; // flag indicating whether swarm breaking should be applied
@@ -93,6 +97,13 @@ namespace GeFaST {
 
         Substrings(lenSeqs_t fp, lenSeqs_t lp, lenSeqs_t l);
 
+        /*
+         * Determine the memory consumption (in bytes).
+         */
+        size_t size_in_bytes() const {
+            return sizeof(Substrings);
+        }
+
     };
 
     /*
@@ -106,6 +117,15 @@ namespace GeFaST {
             const lenSeqs_t t, const lenSeqs_t k);
     Substrings select_substrs_backward(const lenSeqs_t self_len, const lenSeqs_t partner_len, const lenSeqs_t seg_index,
             const lenSeqs_t t, const lenSeqs_t k);
+
+    /*
+     * Approximate the memory consumption (in bytes) of an std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*> instance
+     * as used by auxiliary data structures.
+     * Assumes the _Rb_tree implementation of GCC 4.9.2.
+     *
+     * Inspired by https://stackoverflow.com/questions/720507/how-can-i-estimate-memory-usage-of-stdmap/720520.
+     */
+    size_t substrs_archive_size_in_bytes(const std::map<std::pair<lenSeqs_t, lenSeqs_t>, Substrings*>& map);
 
 
     /*
@@ -167,6 +187,10 @@ namespace GeFaST {
 
         std::vector<Partner> find_partners(numSeqs_t ampl_id) override;
 
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
+
     private:
         /*
          * Prepare inverted indices using all amplicons from the amplicon collection.
@@ -182,7 +206,7 @@ namespace GeFaST {
          * Search for segment matches with indexed amplicons of a given length and
          * add the found matches to the candidate counts.
          */
-        void add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
+        void add_candidate_counts(const SequenceWrapper& ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
 
         /*
          * Verify the candidates by searching for amplicons with sufficient segment matches
@@ -193,7 +217,7 @@ namespace GeFaST {
 
         const AmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
+        std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper> different_seqs_; // recorded different sequences
 
         lenSeqs_t threshold_; // threshold applied to partner search
         lenSeqs_t num_extra_segments_; // number of extra segments for segment filter
@@ -254,6 +278,10 @@ namespace GeFaST {
 
         std::vector<Partner> find_partners(numSeqs_t ampl_id) override;
 
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
+
 
     private:
         /*
@@ -270,7 +298,7 @@ namespace GeFaST {
          * Search for segment matches with indexed amplicons of a given length and
          * add the found matches to the candidate counts.
          */
-        void add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
+        void add_candidate_counts(const SequenceWrapper& ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
 
         /*
          * Verify the candidates by searching for amplicons with sufficient segment matches,
@@ -283,7 +311,7 @@ namespace GeFaST {
 
         const AmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
+        std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper> different_seqs_; // recorded different sequences
 
         lenSeqs_t threshold_; // threshold applied to partner search
         lenSeqs_t num_extra_segments_; // number of extra segments for segment filter
@@ -356,6 +384,10 @@ namespace GeFaST {
 
         std::vector<Partner> find_partners(numSeqs_t ampl_id) override;
 
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
+
     private:
         /*
          * Prepare inverted indices using all amplicons from the amplicon collection.
@@ -371,7 +403,7 @@ namespace GeFaST {
          * Search for segment matches with indexed amplicons of a given length and
          * add the found matches to the candidate counts.
          */
-        void add_candidate_counts(const char* ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
+        void add_candidate_counts(const SequenceWrapper& ampl_seq, const lenSeqs_t ampl_len, lenSeqs_t partner_len, std::vector<numSeqs_t>& cand_cnts);
 
         /*
          * Verify the candidates by searching for amplicons with sufficient segment matches
@@ -382,7 +414,7 @@ namespace GeFaST {
 
         const AmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
+        std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper> different_seqs_; // recorded different sequences
 
         lenSeqs_t threshold_; // threshold applied to partner search
         lenSeqs_t num_threshold_segments_; // number of segments based on threshold and minimum penalty for edit operation for segment filter
@@ -431,10 +463,14 @@ namespace GeFaST {
 
         std::vector<Partner> find_partners(numSeqs_t ampl_id) override;
 
+        size_t size_in_bytes() const override;
+
+        void show_memory(numSeqs_t pid) const override;
+
     protected:
         const FeatureAmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
+        std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper> different_seqs_; // recorded different sequences
 
         dist_t threshold_; // threshold applied during search for partners / similar amplicons
         bool break_swarms_; // flag indicating whether swarm breaking should be applied
@@ -507,7 +543,7 @@ namespace GeFaST {
         SpacePartitioningAuxiliaryData(const SpacePartitioningAuxiliaryData& other) : ac_(other.ac_) { // copy constructor
 
             dist_fun_ = other.dist_fun_->clone();
-            different_seqs_ = other.different_seqs_;
+            for (auto& s : other.different_seqs_) different_seqs_.emplace(s->clone());
             threshold_ = other.threshold_;
             break_swarms_ = other.break_swarms_;
 
@@ -517,10 +553,9 @@ namespace GeFaST {
 
         }
 
-        SpacePartitioningAuxiliaryData(SpacePartitioningAuxiliaryData&& other) noexcept : ac_(other.ac_) { // move constructor
+        SpacePartitioningAuxiliaryData(SpacePartitioningAuxiliaryData&& other) noexcept : ac_(other.ac_), different_seqs_(std::move(other.different_seqs_)) { // move constructor
 
             dist_fun_ = other.dist_fun_; other.dist_fun_ = nullptr;
-            different_seqs_ = other.different_seqs_;
             threshold_ = other.threshold_;
             break_swarms_ = other.break_swarms_;
 
@@ -542,7 +577,7 @@ namespace GeFaST {
         }
 
         bool record_amplicon(numSeqs_t ampl_id) override {
-            return different_seqs_.emplace(ac_.seq(ampl_id), ac_.seq(ampl_id) + ac_.len(ampl_id)).second;
+            return different_seqs_.emplace(ac_.seq(ampl_id)).second;
         }
 
         void clear_amplicon_records() override {
@@ -569,10 +604,21 @@ namespace GeFaST {
 
         }
 
+        size_t size_in_bytes() const override {
+
+            std::cerr << "ERROR: SpacePartitioningAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
+            return 0;
+
+        }
+
+        void show_memory(numSeqs_t pid) const override {
+            std::cerr << "ERROR: SpacePartitioningAuxiliaryData is currently not part of the space-efficiency analysis." << std::endl;
+        }
+
     protected:
         const FeatureAmpliconCollection& ac_; // amplicon collection which is supported
         Distance* dist_fun_; // distance function used to find partners
-        std::set<StringIteratorPair, lessStringIteratorPair> different_seqs_; // recorded different sequences
+        std::set<std::unique_ptr<SequenceWrapper>, lessSequenceWrapper> different_seqs_; // recorded different sequences
 
         dist_t threshold_; // threshold applied to partner search
         bool break_swarms_; // flag indicating whether swarm breaking should be applied

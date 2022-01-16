@@ -27,6 +27,7 @@
 #include <map>
 
 #include "../include/Base.hpp"
+#include "../include/space/Basics.hpp"
 
 namespace GeFaST {
 
@@ -665,6 +666,122 @@ namespace GeFaST {
     }
 
 
+    /* === SubstringWrapper === */
+
+    bool SubstringWrapper::operator==(const SubstringWrapper& rhs) const {
+        return typeid(*this) == typeid(rhs) && equals(rhs); // compare only if derived types are the same
+    }
+
+    //TODO? custom hash function (e.g. FNV) to avoid construction of temporary string
+    size_t hashSubstringWrapper::operator()(const std::unique_ptr<SubstringWrapper>& p) const {
+        return hash(p->to_string());
+    }
+
+    bool equalSubstringWrapper::operator()(const std::unique_ptr<SubstringWrapper>& lhs, const std::unique_ptr<SubstringWrapper>& rhs) const {
+        return (lhs->length() == rhs->length()) && (*lhs == *rhs);
+    }
+
+
+    /* === SequenceWrapper === */
+
+    bool SequenceWrapper::operator<(const SequenceWrapper& rhs) const {
+        return typeid(*this) == typeid(rhs) && less(rhs); // compare only if derived types are the same
+    }
+
+    bool SequenceWrapper::operator==(const SequenceWrapper& rhs) const {
+        return typeid(*this) == typeid(rhs) && equals(rhs); // compare only if derived types are the same
+    }
+
+    std::ostream& operator<<(std::ostream& os, const SequenceWrapper& s) {
+
+        s.write(os);
+        return os;
+
+    }
+
+    bool lessSequenceWrapper::operator()(const std::unique_ptr<SequenceWrapper>& a, const std::unique_ptr<SequenceWrapper>& b) const {
+        return *a < *b;
+    }
+
+
+    /* === PointerSubstringWrapper === */
+
+    PointerSubstringWrapper::PointerSubstringWrapper(const char* seq, size_t len) : seq_(seq), len_(len) {
+        // nothing else to do
+    }
+
+    char PointerSubstringWrapper::operator[](size_t i) const {
+        return seq_[i];
+    }
+
+    lenSeqs_t PointerSubstringWrapper::length() const {
+        return len_;
+    }
+
+    std::string PointerSubstringWrapper::to_string() const {
+        return std::string(seq_, seq_ + len_);
+    }
+
+    PointerSubstringWrapper* PointerSubstringWrapper::clone() const {
+        return new PointerSubstringWrapper(*this);
+    }
+
+    void PointerSubstringWrapper::shift() {
+        seq_++;
+    }
+
+    size_t PointerSubstringWrapper::size_in_bytes() const {
+        return sizeof(PointerSubstringWrapper);
+    }
+
+    bool PointerSubstringWrapper::equals(const SubstringWrapper& other) const {
+        return std::strncmp(seq_, static_cast<const PointerSubstringWrapper&>(other).seq_, len_) == 0;
+    }
+
+
+    /* === PointerSequenceWrapper === */
+
+    PointerSequenceWrapper::PointerSequenceWrapper(const char* seq, size_t len) : seq_(seq), len_(len) {
+        // nothing else to do
+    }
+
+    char PointerSequenceWrapper::operator[](size_t i) const {
+        return seq_[i];
+    }
+
+    lenSeqs_t PointerSequenceWrapper::length() const {
+        return len_;
+    }
+
+    std::string PointerSequenceWrapper::to_string() const {
+        return std::string(seq_);
+    }
+
+    void PointerSequenceWrapper::write(std::ostream& os) const {
+        os << seq_;
+    }
+
+    PointerSequenceWrapper* PointerSequenceWrapper::clone() const {
+        return new PointerSequenceWrapper(*this);
+    }
+
+    std::unique_ptr<SubstringWrapper> PointerSequenceWrapper::substr(lenSeqs_t start, lenSeqs_t len) const {
+        return std::unique_ptr<SubstringWrapper>(new PointerSubstringWrapper(seq_ + start, len));
+    }
+
+    size_t PointerSequenceWrapper::size_in_bytes() const {
+        return sizeof(PointerSequenceWrapper);
+    }
+
+    bool PointerSequenceWrapper::less(const SequenceWrapper& other) const {
+        return std::strcmp(seq_, static_cast<const PointerSequenceWrapper&>(other).seq_) < 0;
+    }
+
+    bool PointerSequenceWrapper::equals(const SequenceWrapper& other) const {
+        return std::strcmp(seq_, static_cast<const PointerSequenceWrapper&>(other).seq_) == 0;
+    }
+
+
     /* === SimpleGraftingInfo === */
 
     SimpleGraftingInfo* SimpleGraftingInfo::clone() const {
@@ -700,6 +817,14 @@ namespace GeFaST {
         return parents_.size();
     }
 
+    size_t SimpleGraftingInfo::size_in_bytes() const {
+        return sizeof(SimpleGraftingInfo) // SimpleGraftingInfo itself
+            + vec_pod_size_in_bytes(parents_) - sizeof(std::vector<numSeqs_t>) // parents_ (do not count size of vector object twice)
+            + vec_pod_size_in_bytes(children_) - sizeof(std::vector<numSeqs_t>) // children_ (do not count size of vector object twice)
+            + vec_pod_size_in_bytes(child_swarms_) - sizeof(std::vector<Swarm*>) // child_swarms_ (do not count size of vector object twice)
+            + vec_pod_size_in_bytes(distances_) - sizeof(std::vector<dist_t>); // distances_ (do not count size of vector object twice)
+    }
+
 
     /* === SwarmOrderer === */
 
@@ -723,7 +848,7 @@ namespace GeFaST {
                              || ((a.second->total_mass() == b.second->total_mass())
                                  && ((a.first->ab(a.second->seed()) > b.first->ab(b.second->seed()))
                                      || ((a.first->ab(a.second->seed()) == b.first->ab(b.second->seed()))
-                                         && (strcmp(a.first->id(a.second->seed()), b.first->id(b.second->seed())) < 0)))
+                                         && (*a.first->id(a.second->seed()) < *b.first->id(b.second->seed()))))
                              );
                   });
 
@@ -749,7 +874,7 @@ namespace GeFaST {
                      const std::pair<const AmpliconCollection *, const Swarm *> &b) {
                       return (a.first->ab(a.second->seed()) > b.first->ab(b.second->seed()))
                              || ((a.first->ab(a.second->seed()) > b.first->ab(b.second->seed()))
-                                 && (strcmp(a.first->id(a.second->seed()), b.first->id(b.second->seed())) < 0)
+                                 && (*a.first->id(a.second->seed()) < *b.first->id(b.second->seed()))
                              );
                   });
 

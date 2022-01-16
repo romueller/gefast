@@ -25,6 +25,7 @@
 #define GEFAST_AMPLICONSTORAGES_HPP
 
 #include "Base.hpp"
+#include "space/Basics.hpp"
 
 namespace GeFaST {
 
@@ -109,6 +110,48 @@ namespace GeFaST {
 
         }
 
+        size_t size_in_bytes() const override {
+
+            size_t allocated_pools = 0;
+            for (auto& p : pools_) {
+                allocated_pools += p.size_in_bytes();
+            }
+
+            return sizeof(LengthPoolsAmpliconStorage) // LengthPoolsAmpliconStorage itself
+                + allocated_pools // pools_ (actually existing amplicon collections)
+                + sizeof(C) * (pools_.capacity() - pools_.size()) // pools_ (allocated, empty amplicon collections in vector)
+                + map_pod_size_in_bytes(pool_map_) - sizeof(std::map<lenSeqs_t, numSeqs_t>); // pool_map_ (do not count size of map object twice)
+
+        }
+
+        void show_memory() const override {
+
+            size_t allocated_pools = 0;
+            for (auto& p : pools_) {
+                allocated_pools += p.size_in_bytes();
+            }
+
+            std::cout << "##################################################" << std::endl;
+            std::cout << "# LengthPoolsAmpliconStorage" << std::endl;
+            std::cout << "#  - number of pools: " << pools_.size() << std::endl;
+            std::cout << "#  - max_len_: " << max_len_ << std::endl;
+            std::cout << "# " << std::endl;
+            std::cout << "# sizeof(LengthPoolsAmpliconStorage): " << sizeof(LengthPoolsAmpliconStorage) << " bytes" << std::endl;
+            std::cout << "# sizeof(std::vector<C>): " << sizeof(std::vector<C>) << " bytes" << std::endl;
+            std::cout << "# sizeof(lenSeqs_t): " << sizeof(lenSeqs_t) << " bytes" << std::endl;
+            std::cout << "# sizeof(std::map<lenSeqs_t, numSeqs_t>): " << sizeof(std::map<lenSeqs_t, numSeqs_t>) << " bytes" << std::endl;
+            std::cout << "# " << std::endl;
+            std::cout << "# Total size: " << size_in_bytes() << " bytes" << std::endl;
+            std::cout << "# pools_ (actual amplicon collections): " << allocated_pools << " bytes" << std::endl;
+            std::cout << "# pools_ (additional reserved space in vector): " << sizeof(C) * (pools_.capacity() - pools_.size()) << " bytes" << std::endl;
+            std::cout << "# pool_map_: " << map_pod_size_in_bytes(pool_map_) << " bytes" << std::endl;
+            std::cout << "# " << std::endl;
+            std::cout << "# Size of amplicon collections:" << std::endl;
+            for (auto p = 0; p < num_pools(); p++) std::cout << "# " << p << ": " << get_pool(p).size_in_bytes() << " bytes" << std::endl;
+            std::cout << "##################################################" << std::endl;
+
+        }
+
     protected:
         LengthPoolsAmpliconStorage() = default;
 
@@ -185,6 +228,17 @@ namespace GeFaST {
             // print contents of the pool in one file
             pool_.print(file, config);
 
+        }
+
+        size_t size_in_bytes() const override {
+
+            std::cerr << "ERROR: SimpleFeatureAmpliconStorage is currently not part of the space-efficiency analysis." << std::endl;
+            return 0;
+
+        }
+
+        void show_memory() const override {
+            std::cerr << "ERROR: SimpleFeatureAmpliconStorage is currently not part of the space-efficiency analysis." << std::endl;
         }
 
     protected:
